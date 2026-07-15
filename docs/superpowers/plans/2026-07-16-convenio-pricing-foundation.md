@@ -4,7 +4,7 @@
 
 **Goal:** Replace the off-brand pricing surface with a shared, yearly-first Convenio plan selector that serves anonymous pricing and authenticated plan selection without changing Polar checkout behavior.
 
-**Architecture:** Keep PricingPage as the only checkout controller and extract a presentation-only PlanSelector. The stable /pricing route chooses a marketing wrapper for anonymous visitors and the authenticated Shell for signed-in users. Marketing CSS remains scoped to .cv-root but is imported once from the root layout because current Next.js App Router permits global CSS imports only from layouts.
+**Architecture:** Keep PricingPage as the only checkout controller and extract a presentation-only PlanSelector. The stable /pricing route chooses a marketing wrapper for anonymous visitors and the authenticated Shell for signed-in users. Marketing CSS is imported by both the marketing layout and a pricing segment layout because current Next.js App Router permits global CSS imports from layouts; this contains the standalone marketing selectors to the route segments that render them.
 
 **Tech Stack:** Next.js App Router, React, TypeScript, Tailwind CSS, Radix Sheet through @calcom/ui, next-i18next, Vitest, Playwright.
 
@@ -340,8 +340,7 @@ Expected: all tests PASS; Biome exits 0.
 ### Task 3: Marketing stylesheet and pricing navigation
 
 **Files:**
-- Modify: apps/web/app/layout.tsx
-- Modify: apps/web/app/(marketing)/layout.tsx
+- Create: apps/web/app/(use-page-wrapper)/pricing/layout.tsx
 - Modify: apps/web/app/(marketing)/MarketingShell.tsx
 - Modify: apps/web/playwright/marketing.e2e.ts
 
@@ -357,7 +356,7 @@ Append to apps/web/playwright/marketing.e2e.ts:
       await page.goto("/pricing");
 
       await expect(page.locator(".cv-header")).toBeVisible();
-      await expect(page.getByRole("link", { name: "Pricing" })).toHaveAttribute(
+      await expect(page.getByRole("banner").getByRole("link", { name: "Pricing" })).toHaveAttribute(
         "aria-current",
         "page"
       );
@@ -373,17 +372,18 @@ Append to apps/web/playwright/marketing.e2e.ts:
 
 Expected: FAIL because .cv-header and the Pricing navigation link are absent.
 
-- [ ] **Step 3: Move the scoped stylesheet import to the root layout**
+- [ ] **Step 3: Load marketing styles from the pricing segment layout**
 
-Add beside the existing globals import in apps/web/app/layout.tsx:
+Create apps/web/app/(use-page-wrapper)/pricing/layout.tsx:
 
-    import "./(marketing)/marketing.css";
+    import "../../(marketing)/marketing.css";
+    import type React from "react";
 
-Remove from apps/web/app/(marketing)/layout.tsx:
+    export default function PricingLayout({ children }: { children: React.ReactNode }) {
+      return children;
+    }
 
-    import "./marketing.css";
-
-The stylesheet remains scoped under .cv-root and therefore does not restyle authenticated routes.
+Keep the existing import in apps/web/app/(marketing)/layout.tsx. Loading the global stylesheet from these two layouts mechanically contains its standalone .cv-* selectors to the marketing and pricing route segments.
 
 - [ ] **Step 4: Add Pricing to the shared marketing shell**
 
@@ -402,7 +402,7 @@ Add the same link without aria-current to MarketingFooter.
 
 - [ ] **Step 5: Run focused verification**
 
-    yarn biome check --write apps/web/app/layout.tsx 'apps/web/app/(marketing)/layout.tsx' 'apps/web/app/(marketing)/MarketingShell.tsx' apps/web/playwright/marketing.e2e.ts
+    yarn biome check --write 'apps/web/app/(use-page-wrapper)/pricing/layout.tsx' 'apps/web/app/(marketing)/MarketingShell.tsx' apps/web/playwright/marketing.e2e.ts
     TZ=UTC yarn test apps/web/modules/billing/PlanSelector.test.tsx apps/web/modules/billing/Pricing.test.tsx
     PLAYWRIGHT_HEADLESS=1 yarn playwright test apps/web/playwright/marketing.e2e.ts --project=@calcom/web --workers=1
     yarn type-check:ci --force
@@ -411,7 +411,7 @@ Expected: Biome exits 0; component and marketing tests PASS; the forced type-che
 
 - [ ] **Step 6: Commit Task 3**
 
-    git add apps/web/app/layout.tsx 'apps/web/app/(marketing)/layout.tsx' 'apps/web/app/(marketing)/MarketingShell.tsx' apps/web/playwright/marketing.e2e.ts
+    git add 'apps/web/app/(use-page-wrapper)/pricing/layout.tsx' 'apps/web/app/(marketing)/MarketingShell.tsx' apps/web/playwright/marketing.e2e.ts
     git commit -m "feat(marketing): connect pricing to the Convenio shell"
 
 ## Slice Completion Evidence
