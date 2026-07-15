@@ -23,6 +23,15 @@ type FixtureManifest = {
   runTag: string;
 };
 type OwnedFixture = { metadata: unknown };
+type InterruptedSignupCandidate = {
+  clerkExternalId: string | null;
+  clerkMetadata: unknown;
+  clerkUserId: string;
+  email: string;
+  localMetadata: unknown;
+  localUserId: number;
+  mappedClerkUserId: string | null;
+};
 type FixtureCleanupAdapter = {
   close?(): Promise<void>;
   load(reference: FixtureReference): Promise<OwnedFixture | null>;
@@ -73,6 +82,26 @@ function ownsRunTag(metadata: unknown, runTag: string): boolean {
     metadata !== null &&
     E2E_METADATA_KEY in metadata &&
     (metadata as Record<string, unknown>)[E2E_METADATA_KEY] === runTag
+  );
+}
+
+function isEmptyMetadata(metadata: unknown): boolean {
+  return (
+    metadata === null ||
+    (typeof metadata === "object" && !Array.isArray(metadata) && Object.keys(metadata).length === 0)
+  );
+}
+
+function isRecoverableInterruptedSignup(candidate: InterruptedSignupCandidate, runTag: string): boolean {
+  assertE2ERunTag(runTag);
+  const suffix = runTag.split("-").at(-1);
+  if (!suffix || candidate.email !== `convenio+clerk_test_${suffix}@example.com`) return false;
+  if (!Number.isSafeInteger(candidate.localUserId) || candidate.localUserId <= 0) return false;
+  if (candidate.mappedClerkUserId !== candidate.clerkUserId) return false;
+  if (candidate.clerkExternalId !== String(candidate.localUserId)) return false;
+
+  return [candidate.clerkMetadata, candidate.localMetadata].every(
+    (metadata) => isEmptyMetadata(metadata) || ownsRunTag(metadata, runTag)
   );
 }
 
@@ -173,10 +202,19 @@ export {
   cleanupTaggedFixtures,
   createE2ERunTag,
   createFixtureManifest,
+  isRecoverableInterruptedSignup,
   manifestPath,
+  ownsRunTag,
   readFixtureManifest,
   registerFixture,
   taggedMetadata,
   writeFixtureManifest,
 };
-export type { FixtureCleanupAdapter, FixtureKind, FixtureManifest, FixtureReference, OwnedFixture };
+export type {
+  FixtureCleanupAdapter,
+  FixtureKind,
+  FixtureManifest,
+  FixtureReference,
+  InterruptedSignupCandidate,
+  OwnedFixture,
+};

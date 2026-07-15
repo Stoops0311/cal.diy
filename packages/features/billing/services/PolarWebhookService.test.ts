@@ -37,6 +37,7 @@ function customerStateEvent(): PolarWebhookEvent {
         },
       ],
       customerId: "customer_test",
+      deletedAt: null,
       externalCustomerId: "user:user_test",
       grantedBenefitIds: ["benefit_pro"],
       modifiedAt: new Date("2026-07-15T12:00:00.000Z"),
@@ -170,6 +171,28 @@ describe("PolarWebhookService", () => {
 
     await expect(process(test.service, eventId, event)).resolves.toBe("ignored");
     expect(test.projectCustomerState).not.toHaveBeenCalled();
+  });
+
+  it("acknowledges a terminal customer deletion snapshot without an external subject", async () => {
+    const test = setup();
+    const event = customerStateEvent();
+    if (!event.data) throw new Error("Expected customer state data");
+    Object.assign(event.data, {
+      activeSubscriptions: [],
+      deletedAt: new Date("2026-07-15T13:06:28.084Z"),
+      externalCustomerId: null,
+      grantedBenefitIds: [],
+    });
+    const eventId = `event_${crypto.randomUUID()}`;
+
+    await expect(process(test.service, eventId, event)).resolves.toBe("ignored");
+    expect(test.projectCustomerState).not.toHaveBeenCalled();
+    await expect(
+      prisma.externalWebhookEvent.findUniqueOrThrow({
+        where: { provider_externalEventId: { externalEventId: eventId, provider: "POLAR" } },
+        select: { sanitizedError: true, state: true },
+      })
+    ).resolves.toEqual({ sanitizedError: null, state: "SUCCEEDED" });
   });
 
   it("deduplicates a successfully processed event", async () => {

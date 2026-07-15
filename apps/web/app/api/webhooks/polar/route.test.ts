@@ -69,6 +69,46 @@ describe("POST /api/webhooks/polar", () => {
     expect(response.status).toBe(200);
   });
 
+  it("preserves the customer deletion timestamp for terminal state handling", async () => {
+    const timestamp = new Date("2026-07-15T13:06:28.397Z");
+    const deletedAt = new Date("2026-07-15T13:06:28.084Z");
+    validateEventMock.mockReturnValue({
+      data: {
+        activeSubscriptions: [],
+        deletedAt,
+        externalId: null,
+        grantedBenefits: [],
+        id: "customer_deleted",
+        modifiedAt: deletedAt,
+        type: "individual",
+      },
+      timestamp,
+      type: "customer.state_changed",
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(request());
+
+    expect(response.status).toBe(200);
+    expect(processMock).toHaveBeenCalledWith({
+      event: {
+        data: {
+          activeSubscriptions: [],
+          customerId: "customer_deleted",
+          deletedAt,
+          externalCustomerId: null,
+          grantedBenefitIds: [],
+          modifiedAt: deletedAt,
+          type: "individual",
+        },
+        timestamp,
+        type: "customer.state_changed",
+      },
+      eventId: "event_test",
+      rawBody: '{"type":"customer.state_changed"}',
+    });
+  });
+
   it("rejects a request without the provider event id", async () => {
     const { POST } = await import("./route");
     const response = await POST(request("{}", ""));

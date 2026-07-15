@@ -11,6 +11,7 @@ type VerifiedCustomerState = {
     productId: string;
     status: string;
   }>;
+  deletedAt: Date | null;
   externalId?: string | null;
   grantedBenefits: Array<{ benefitId: string }>;
   id: string;

@@ -50,6 +50,24 @@ function isMissingProviderObject(error: unknown): boolean {
   );
 }
 
+function isTerminalPolarSubscriptionValidation(error: unknown, subscriptionId: string): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as {
+    name?: string;
+    rawValue?: { ended_at?: unknown; id?: unknown; status?: unknown };
+    statusCode?: number;
+  };
+  const rawValue = candidate.rawValue;
+  return (
+    candidate.name === "ResponseValidationError" &&
+    candidate.statusCode === 200 &&
+    rawValue?.id === subscriptionId &&
+    rawValue.status === "canceled" &&
+    typeof rawValue.ended_at === "string" &&
+    rawValue.ended_at.length > 0
+  );
+}
+
 function splitMembership(reference: FixtureReference): { organizationId: string; userId: string } {
   const [organizationId, userId] = reference.id.split(":");
   if (!organizationId || !userId) throw new Error("invalid Clerk membership fixture ID");
@@ -94,8 +112,13 @@ async function createRuntimeCleanupAdapter(): Promise<FixtureCleanupAdapter> {
           return { metadata: (await polar.customers.get({ id: reference.id })).metadata };
         }
         if (reference.kind === "polar_subscription") {
-          const subscription = await polar.subscriptions.get({ id: reference.id });
-          return { metadata: (await polar.customers.get({ id: subscription.customer.id })).metadata };
+          try {
+            const subscription = await polar.subscriptions.get({ id: reference.id });
+            return { metadata: (await polar.customers.get({ id: subscription.customer.id })).metadata };
+          } catch (error) {
+            if (isTerminalPolarSubscriptionValidation(error, reference.id)) return null;
+            throw error;
+          }
         }
         if (reference.kind === "local_user") {
           const result = await database.query<LocalUserOwnershipRow>(
@@ -192,5 +215,10 @@ if (entrypoint && import.meta.url === pathToFileURL(entrypoint).href) {
   });
 }
 
-export { createRuntimeCleanupAdapter, isMissingProviderObject, parseCleanupArguments };
+export {
+  createRuntimeCleanupAdapter,
+  isMissingProviderObject,
+  isTerminalPolarSubscriptionValidation,
+  parseCleanupArguments,
+};
 export { E2E_METADATA_KEY };

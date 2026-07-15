@@ -27,6 +27,7 @@ type PolarWebhookEvent = {
   data?: {
     activeSubscriptions: PolarWebhookSubscription[];
     customerId: string;
+    deletedAt: Date | null;
     externalCustomerId: string | null;
     grantedBenefitIds: string[];
     modifiedAt: Date | null;
@@ -73,6 +74,16 @@ class PolarWebhookService {
 
     try {
       if (input.event.type !== "customer.state_changed" || !input.event.data) {
+        await this.markSucceeded(input.eventId);
+        return "ignored";
+      }
+      const data = input.event.data;
+      if (
+        data.deletedAt &&
+        !data.externalCustomerId &&
+        data.activeSubscriptions.length === 0 &&
+        data.grantedBenefitIds.length === 0
+      ) {
         await this.markSucceeded(input.eventId);
         return "ignored";
       }

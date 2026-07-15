@@ -12,6 +12,8 @@ import {
   createE2ERunTag,
   createFixtureManifest,
   type FixtureManifest,
+  isRecoverableInterruptedSignup,
+  ownsRunTag,
   registerFixture,
   taggedMetadata,
   writeFixtureManifest,
@@ -477,6 +479,47 @@ async function tagAndRegisterMappedUser(
   return { clerkUserId: clerkUser.id, localUserId: localUser.id };
 }
 
+async function recoverInterruptedPrimarySignup(): Promise<void> {
+  const users = await clerk.users.getUserList({ emailAddress: [primaryEmail], limit: 2 });
+  if (users.data.length === 0) return;
+  if (users.data.length !== 1 || !users.data[0]) {
+    throw new Error(`Refusing to recover ambiguous interrupted signup for ${primaryEmail}`);
+  }
+  const clerkUser = users.data[0];
+  const localUser = await prisma.user.findUnique({
+    where: { email: primaryEmail },
+    select: { clerkUserId: true, email: true, id: true, metadata: true },
+  });
+  if (!localUser) throw new Error(`Refusing to recover interrupted signup without a local mapping`);
+
+  const recoverable = isRecoverableInterruptedSignup(
+    {
+      clerkExternalId: clerkUser.externalId,
+      clerkMetadata: clerkUser.publicMetadata,
+      clerkUserId: clerkUser.id,
+      email: localUser.email,
+      localMetadata: localUser.metadata,
+      localUserId: localUser.id,
+      mappedClerkUserId: localUser.clerkUserId,
+    },
+    runTag
+  );
+  if (!recoverable) throw new Error(`Refusing to recover an interrupted signup without exact ownership`);
+
+  if (!ownsRunTag(clerkUser.publicMetadata, runTag)) {
+    await clerk.users.updateUserMetadata(clerkUser.id, { publicMetadata: taggedMetadata(runTag) });
+  }
+  await registerFixture(manifest, { id: clerkUser.id, kind: "clerk_user" });
+  if (!ownsRunTag(localUser.metadata, runTag)) {
+    await prisma.user.update({
+      where: { id: localUser.id },
+      data: { metadata: taggedMetadata(runTag) },
+      select: { id: true },
+    });
+  }
+  await registerFixture(manifest, { id: String(localUser.id), kind: "local_user" });
+}
+
 async function createMigratedBcryptFixture(): Promise<{ clerkUserId: string; localUserId: number }> {
   const passwordHash = await hash(migratedPassword, 12);
   const local = await prisma.user.create({
@@ -797,11 +840,15 @@ test.afterEach(async ({ page }) => {
 });
 
 test.afterAll(async () => {
-  await prisma.apiKey.deleteMany({ where: { note: runTag } });
-  await execFileAsync("yarn", ["clerk-polar:e2e-cleanup", `--run-tag=${runTag}`], {
-    cwd: process.cwd(),
-    env: process.env,
-  });
+  try {
+    await prisma.apiKey.deleteMany({ where: { note: runTag } });
+    await recoverInterruptedPrimarySignup();
+  } finally {
+    await execFileAsync("yarn", ["clerk-polar:e2e-cleanup", `--run-tag=${runTag}`], {
+      cwd: process.cwd(),
+      env: process.env,
+    });
+  }
 });
 
 test("authenticated organization endpoints create a Free projection and enforce the invite gate", async ({

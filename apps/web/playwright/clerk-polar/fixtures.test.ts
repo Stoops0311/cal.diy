@@ -4,6 +4,7 @@ import {
   createE2ERunTag,
   type FixtureCleanupAdapter,
   type FixtureManifest,
+  isRecoverableInterruptedSignup,
 } from "./fixtures";
 
 const runTag = "convenio-e2e-20260715T120000Z-ab12cd";
@@ -85,5 +86,38 @@ describe("Clerk and Polar E2E fixture ownership", () => {
     ]);
 
     await expect(cleanupTaggedFixtures(input, safe)).resolves.toEqual({ removed: 1, skipped: 1 });
+  });
+
+  it("recovers only the exact interrupted signup mapping owned by the run", () => {
+    const candidate = {
+      clerkMetadata: {},
+      clerkExternalId: "42",
+      clerkUserId: "user_fixture",
+      email: "convenio+clerk_test_ab12cd@example.com",
+      localMetadata: null,
+      localUserId: 42,
+      mappedClerkUserId: "user_fixture",
+    };
+
+    expect(isRecoverableInterruptedSignup(candidate, runTag)).toBe(true);
+    expect(isRecoverableInterruptedSignup({ ...candidate, email: "someone@example.com" }, runTag)).toBe(
+      false
+    );
+    expect(
+      isRecoverableInterruptedSignup({ ...candidate, mappedClerkUserId: "user_different" }, runTag)
+    ).toBe(false);
+    expect(isRecoverableInterruptedSignup({ ...candidate, clerkExternalId: "43" }, runTag)).toBe(false);
+    expect(
+      isRecoverableInterruptedSignup(
+        { ...candidate, clerkMetadata: { convenioE2ERunTag: "another-run" } },
+        runTag
+      )
+    ).toBe(false);
+    expect(
+      isRecoverableInterruptedSignup(
+        { ...candidate, localMetadata: { convenioE2ERunTag: "another-run" } },
+        runTag
+      )
+    ).toBe(false);
   });
 });

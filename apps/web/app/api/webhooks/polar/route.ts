@@ -46,6 +46,7 @@ function toServiceEvent(event: VerifiedPolarEvent): PolarWebhookEvent {
         status: subscriptionStatus(subscription.status),
       })),
       customerId: event.data.id,
+      deletedAt: event.data.deletedAt,
       externalCustomerId: event.data.externalId ?? null,
       grantedBenefitIds: event.data.grantedBenefits.map(({ benefitId }) => benefitId),
       modifiedAt: event.data.modifiedAt,

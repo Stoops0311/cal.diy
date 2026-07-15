@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isMissingProviderObject, parseCleanupArguments } from "./cleanup-clerk-polar-e2e";
+import {
+  isMissingProviderObject,
+  isTerminalPolarSubscriptionValidation,
+  parseCleanupArguments,
+} from "./cleanup-clerk-polar-e2e";
 
 describe("cleanup Clerk and Polar E2E CLI", () => {
   it("requires one exact run tag", () => {
@@ -25,5 +29,23 @@ describe("cleanup Clerk and Polar E2E CLI", () => {
     expect(isMissingProviderObject({ name: "ResourceNotFound" })).toBe(true);
     expect(isMissingProviderObject({ response$: { status: 404 } })).toBe(true);
     expect(isMissingProviderObject({ response$: { status: 500 } })).toBe(false);
+  });
+
+  it("treats only the exact terminal Polar subscription validation response as absent", () => {
+    const error = {
+      name: "ResponseValidationError",
+      rawValue: { ended_at: "2026-07-15T13:44:06Z", id: "sub_fixture", status: "canceled" },
+      statusCode: 200,
+    };
+
+    expect(isTerminalPolarSubscriptionValidation(error, "sub_fixture")).toBe(true);
+    expect(isTerminalPolarSubscriptionValidation(error, "sub_different")).toBe(false);
+    expect(
+      isTerminalPolarSubscriptionValidation(
+        { ...error, rawValue: { ...error.rawValue, status: "active" } },
+        "sub_fixture"
+      )
+    ).toBe(false);
+    expect(isTerminalPolarSubscriptionValidation({ ...error, statusCode: 500 }, "sub_fixture")).toBe(false);
   });
 });
