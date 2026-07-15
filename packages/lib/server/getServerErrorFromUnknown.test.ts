@@ -1,10 +1,8 @@
-import { describe, expect, test } from "vitest";
-import { ZodError } from "zod";
-
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
 import { Prisma } from "@calcom/prisma/client";
-
+import { describe, expect, test } from "vitest";
+import { ZodError } from "zod";
 import { HttpError } from "../http-error";
 import { TracedError } from "../tracing/error";
 import { getServerErrorFromUnknown } from "./getServerErrorFromUnknown";
@@ -41,6 +39,18 @@ const test409Codes = [
 ];
 
 describe("getServerErrorFromUnknown", () => {
+  test("maps an entitlement limit error to forbidden", () => {
+    const error = new ErrorWithCode(
+      ErrorCode.EntitlementLimitExceeded,
+      "This plan's resource limit was reached"
+    );
+
+    const result = getServerErrorFromUnknown(error);
+
+    expect(result.statusCode).toBe(403);
+    expect(result.message).toBe("This plan's resource limit was reached");
+  });
+
   test("should handle a StripeInvalidRequestError", () => {
     const stripeError = {
       name: "StripeInvalidRequestError",

@@ -1,13 +1,25 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import type { Session } from "next-auth";
-
 import { throwIfNotHaveAdminAccessToTeam } from "@calcom/app-store/_utils/throwIfNotHaveAdminAccessToTeam";
+import { appStoreMetadata } from "@calcom/app-store/apps.metadata.generated";
 import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { CalendarConnectionEntitlementService } from "@calcom/features/calendars/services/CalendarConnectionEntitlementService";
 import { deriveAppDictKeyFromType } from "@calcom/lib/deriveAppDictKeyFromType";
 import { HttpError } from "@calcom/lib/http-error";
 import { getServerErrorFromUnknown } from "@calcom/lib/server/getServerErrorFromUnknown";
 import prisma from "@calcom/prisma";
 import type { AppDeclarativeHandler, AppHandler } from "@calcom/types/AppHandler";
+import type { NextApiRequest, NextApiResponse } from "next";
+import type { Session } from "next-auth";
+
+const calendarConnectionEntitlements = new CalendarConnectionEntitlementService();
+
+function getAppCategories(metadata: unknown): string[] {
+  if (!metadata || typeof metadata !== "object") return [];
+  if ("categories" in metadata && Array.isArray(metadata.categories)) {
+    return metadata.categories.filter((category): category is string => typeof category === "string");
+  }
+  if ("category" in metadata && typeof metadata.category === "string") return [metadata.category];
+  return [];
+}
 
 const defaultIntegrationAddHandler = async ({
   slug,
@@ -69,6 +81,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const handler = handlers[apiEndpoint as keyof typeof handlers] as AppHandler;
     if (typeof handler === "undefined")
       throw new HttpError({ statusCode: 404, message: `API handler not found` });
+
+    if ((apiEndpoint === "add" || apiEndpoint === "callback") && req.session?.user?.id) {
+      await calendarConnectionEntitlements.assertCanConnectApp({
+        categories: getAppCategories(appStoreMetadata[handlerKey as keyof typeof appStoreMetadata]),
+        userId: req.session.user.id,
+      });
+    }
 
     if (typeof handler === "function") {
       await handler(req, res);

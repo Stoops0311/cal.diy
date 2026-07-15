@@ -1,10 +1,8 @@
-import type { ZodIssue } from "zod";
-import { ZodError } from "zod";
-
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
 import { Prisma } from "@calcom/prisma/client";
-
+import type { ZodIssue } from "zod";
+import { ZodError } from "zod";
 import { HttpError } from "../http-error";
 import { redactError } from "../redactError";
 import { stripeInvalidRequestErrorSchema } from "../stripe-error";
@@ -134,6 +132,7 @@ export function getHttpStatusCode(cause: Error | ErrorWithCode): number {
     case ErrorCode.Unauthorized:
       return 401;
     case ErrorCode.Forbidden:
+    case ErrorCode.EntitlementLimitExceeded:
       return 403;
     case ErrorCode.NotFound:
       return 404;
