@@ -53,4 +53,6 @@ export enum ErrorCode {
   ClerkMemberLocalUserMissing = "clerk_member_local_user_missing",
   ClerkOrganizationConflict = "clerk_organization_conflict",
   ClerkWebhookPayloadConflict = "clerk_webhook_payload_conflict",
+  PolarProjectionConflict = "polar_projection_conflict",
+  PolarSubjectNotFound = "polar_subject_not_found",
 }
