@@ -1,4 +1,5 @@
 import { fireEvent, render, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { CheckoutContext } from "./usePaidPlanCheckout";
@@ -177,5 +178,23 @@ describe("UpgradePromptProvider", () => {
     ];
     for (const control of controls) expect(dialog).toContainElement(control);
     expect(controls[0]).toHaveClass("min-h-10");
+  });
+
+  it("dismisses from the real Sheet overlay and restores focus to the opener", async () => {
+    const user = userEvent.setup();
+    const view = render(
+      <UpgradePromptProvider>
+        <Harness />
+      </UpgradePromptProvider>
+    );
+    const opener = view.getByRole("button", { name: "open" });
+    await user.click(opener);
+    const overlay = view.getByRole("dialog").parentElement;
+    if (!overlay) throw new Error("Expected the Sheet overlay");
+
+    await user.click(overlay);
+
+    await waitFor(() => expect(view.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(opener).toHaveFocus());
   });
 });
