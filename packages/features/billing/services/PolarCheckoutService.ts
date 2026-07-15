@@ -150,7 +150,7 @@ class PolarCheckoutService {
         products: [product.id],
         returnUrl: new URL("/pricing", this.dependencies.webAppUrl).toString(),
         successUrl: new URL(
-          "/settings/billing?checkout_id={CHECKOUT_ID}",
+          "/api/billing/checkout-complete?checkout_id={CHECKOUT_ID}",
           this.dependencies.webAppUrl
         ).toString(),
       });

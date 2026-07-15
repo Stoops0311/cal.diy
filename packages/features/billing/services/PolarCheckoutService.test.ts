@@ -110,7 +110,7 @@ describe("PolarCheckoutService", () => {
       },
       products: [productId],
       returnUrl: "https://app.example.com/pricing",
-      successUrl: "https://app.example.com/settings/billing?checkout_id={CHECKOUT_ID}",
+      successUrl: "https://app.example.com/api/billing/checkout-complete?checkout_id={CHECKOUT_ID}",
     });
     expect(ctx.projection.projectCustomerState).not.toHaveBeenCalled();
   });
@@ -141,7 +141,7 @@ describe("PolarCheckoutService", () => {
       products: [productId],
       returnUrl: "https://app.example.com/pricing",
       seats: 3,
-      successUrl: "https://app.example.com/settings/billing?checkout_id={CHECKOUT_ID}",
+      successUrl: "https://app.example.com/api/billing/checkout-complete?checkout_id={CHECKOUT_ID}",
     });
   });
 

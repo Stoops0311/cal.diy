@@ -84,7 +84,8 @@ async function createRuntimeCleanupAdapter(): Promise<FixtureCleanupAdapter> {
           return { metadata: (await polar.customers.get({ id: reference.id })).metadata };
         }
         if (reference.kind === "polar_subscription") {
-          return { metadata: (await polar.subscriptions.get({ id: reference.id })).metadata };
+          const subscription = await polar.subscriptions.get({ id: reference.id });
+          return { metadata: (await polar.customers.get({ id: subscription.customer.id })).metadata };
         }
         if (reference.kind === "local_user") {
           const result = await database.query<LocalUserOwnershipRow>(

@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 import { prisma } from "@calcom/prisma";
 import { createClerkClient } from "@clerk/backend";
 import { expect, type Page, test } from "@playwright/test";
+import { Polar } from "@polar-sh/sdk";
 import { hash } from "bcryptjs";
 import { migrateUserToClerk } from "../../../../packages/features/auth/scripts/importUsersToClerk";
 import { assertOneLocalUser, waitForOneLocalUser } from "./databaseAssertions";
@@ -20,12 +21,16 @@ import { generateTOTP } from "./totp";
 test.describe.configure({ mode: "serial" });
 
 const clerk = createClerkClient({ secretKey: requireEnvironment("CLERK_SECRET_KEY") });
+const polar = new Polar({
+  accessToken: requireEnvironment("POLAR_ACCESS_TOKEN"),
+  server: process.env.POLAR_SERVER === "production" ? "production" : "sandbox",
+});
 const runTag = createE2ERunTag();
 const suffix = runTag.split("-").at(-1) ?? "fixture";
 const primaryEmail = `convenio+clerk_test_${suffix}@example.com`;
 const primaryPassword = `Conv!${suffix}Pass2026`;
 const primaryResetPassword = `Reset!${suffix}Pass2026`;
-const migratedEmail = `convenio+clerk_test_migrated_${suffix}@example.com`;
+const migratedEmail = `convenio+clerk_test_migrated_${suffix}@gmail.com`;
 const migratedPassword = `Migrated!${suffix}Pass2026`;
 const primaryUsername = `conv_${suffix}_primary`;
 const migratedUsername = `conv_${suffix}_migrated`;
@@ -159,7 +164,7 @@ async function signInWithPassword(
   password: string,
   totpSecret?: string
 ): Promise<void> {
-  await page.goto("/auth/login");
+  await page.goto("/auth/login", { timeout: 60_000, waitUntil: "domcontentloaded" });
   await page.getByRole("textbox", { name: "Email address" }).fill(email);
   await page.locator('input[name="password"]').fill(password);
   const clientTrustCodeSent = page
@@ -188,16 +193,110 @@ async function signInWithPassword(
     if (isSecondFactor && totpSecret) code = generateTOTP(totpSecret);
     await verificationCode.fill(code);
     await expect(verificationCode).toHaveValue(code);
-    await page.waitForURL(/\/event-types/, { timeout: 5_000 }).catch(async () => {
+    await page.waitForURL(/\/event-types/, { timeout: 5_000 }).catch(() => null);
+    if (!page.url().includes("/event-types") && (await verificationCode.isVisible().catch(() => false))) {
       await verificationCode.press("Enter");
-    });
+    }
   }
-  await expect(page).toHaveURL(/\/event-types/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\/event-types/, { timeout: 45_000 });
 }
 
 async function signOut(page: Page): Promise<void> {
   await page.goto("/auth/logout");
   await expect(page).toHaveURL(/\/auth\/login/);
+}
+
+async function tagPolarCustomer(externalCustomerId: string): Promise<void> {
+  const customer = await polar.customers.getExternal({ externalId: externalCustomerId });
+  await polar.customers.update({
+    id: customer.id,
+    customerUpdate: { metadata: taggedMetadata(runTag) },
+  });
+  await registerFixture(manifest, { id: customer.id, kind: "polar_customer" });
+}
+
+async function selectPolarCombobox(page: Page, value: string): Promise<void> {
+  const combobox = page.getByRole("combobox").first();
+  await combobox.focus();
+  await combobox.press("Enter");
+  await page
+    .getByRole("option", { name: value, exact: true })
+    .evaluate((option: HTMLElement) => option.click());
+  await expect(combobox).toContainText(value, { timeout: 5_000 });
+}
+
+async function completePolarCardCheckout(page: Page, externalCustomerId: string): Promise<void> {
+  const checkoutReturn = /http:\/\/localhost:3000\/(?:settings\/billing\?checkout_id=|auth\/login)/;
+  const mutations: Array<{ host: string; method: string; path: string; status: number }> = [];
+  const browserErrors: string[] = [];
+  page.on("response", (response) => {
+    const method = response.request().method();
+    if (method === "GET" || method === "OPTIONS") return;
+    const url = new URL(response.url());
+    if (!url.hostname.endsWith("polar.sh") && !url.hostname.endsWith("stripe.com")) return;
+    mutations.push({ host: url.hostname, method, path: url.pathname, status: response.status() });
+  });
+  page.on("pageerror", (error) => browserErrors.push(error.message));
+
+  await selectPolarCombobox(page, "United States");
+  await page.getByRole("textbox", { name: "Street address" }).fill("510 Townsend St");
+  await page.getByRole("textbox", { name: "Postal code" }).fill("94103");
+  await page.getByRole("textbox", { name: "City" }).fill("San Francisco");
+  await selectPolarCombobox(page, "California");
+
+  const payment = page.frameLocator("iframe").first();
+  await payment.getByRole("textbox", { name: "Card number" }).fill("4242424242424242");
+  await payment.getByRole("textbox", { name: "Expiration date MM / YY" }).fill("12/34");
+  await payment.getByRole("textbox", { name: "Security code" }).fill("123");
+
+  const submit = page.getByRole("button", { name: "Start trial", exact: true });
+  await expect(submit).toBeEnabled();
+  await submit.click();
+  await expect
+    .poll(() => mutations.some(({ path }) => path.endsWith("/confirm")), { timeout: 20_000 })
+    .toBe(true)
+    .catch(() => null);
+  if (!mutations.some(({ path }) => path.endsWith("/confirm")) && !checkoutReturn.test(page.url())) {
+    const settledSubmit = page.getByRole("button", { name: "Start trial", exact: true });
+    await expect(settledSubmit).toBeEnabled({ timeout: 20_000 });
+    await settledSubmit.click();
+  }
+  const subscribeNow = page.getByRole("button", { name: "Subscribe now", exact: true });
+  await Promise.race([
+    page.waitForURL(checkoutReturn, { timeout: 45_000 }),
+    subscribeNow.waitFor({ state: "visible", timeout: 45_000 }),
+  ]).catch(() => null);
+  if (await subscribeNow.isVisible().catch(() => false)) {
+    await subscribeNow.click();
+    await page.waitForURL(checkoutReturn, { timeout: 45_000 }).catch(() => null);
+  }
+  const confirmationSucceeded = mutations.some(
+    ({ path, status }) => path.endsWith("/confirm") && status >= 200 && status < 300
+  );
+  if (!checkoutReturn.test(page.url()) || !confirmationSucceeded) {
+    throw new Error(
+      `Polar checkout did not redirect. Mutations: ${JSON.stringify(mutations)}. Browser errors: ${JSON.stringify(browserErrors)}`
+    );
+  }
+  await expect(page).toHaveURL(checkoutReturn);
+  await tagPolarCustomer(externalCustomerId);
+}
+
+async function tagAndRegisterPolarSubscription(externalCustomerId: string): Promise<void> {
+  await tagPolarCustomer(externalCustomerId);
+  const state = await polar.customers.getStateExternal({ externalId: externalCustomerId });
+  const subscription = state.activeSubscriptions[0];
+  if (!subscription) throw new Error("Polar customer state is missing an active subscription");
+  await registerFixture(manifest, { id: subscription.id, kind: "polar_subscription" });
+}
+
+async function registerPersonalProjection(userId: number): Promise<void> {
+  const subscription = await prisma.billingSubscription.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!subscription) throw new Error("Polar subscription projection is missing");
+  await registerFixture(manifest, { id: subscription.id, kind: "local_projection" });
 }
 
 async function resetPasswordByEmail(page: Page): Promise<void> {
@@ -445,6 +544,75 @@ test("authenticated organization endpoints create a Free projection and enforce 
     "POST"
   );
   expect(deniedInvite.status).toBe(403);
+});
+
+test("Polar Pro monthly checkout activates a paid projection", async ({ page }) => {
+  await setupClerkTestingToken(page);
+  const migrated = await migratedBcryptFixture();
+  await signInWithPassword(page, migratedEmail, migratedPassword);
+  await assertOneLocalUser(migratedEmail, migrated.clerkUserId);
+
+  const projection = await callTRPC(page, "billing/get", {}, "GET");
+  expect(projection.status).toBe(200);
+  expect(readTRPCData<{ plan: string }>(projection.body).plan).toBe("FREE");
+
+  const checkout = await callTRPC(page, "billing/createCheckout", { interval: "MONTH", plan: "PRO" }, "POST");
+  expect(checkout.status).toBe(200);
+  const { checkoutUrl } = readTRPCData<{ checkoutUrl: string }>(checkout.body);
+  await page.goto(checkoutUrl, { timeout: 60_000, waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/https:\/\/sandbox\.polar\.sh\/checkout\//);
+  await page.screenshot({
+    fullPage: true,
+    path: `test-results/clerk-polar/screenshots/${runTag}-polar-checkout.png`,
+  });
+  const externalCustomerId = `user:${migrated.clerkUserId}`;
+  await completePolarCardCheckout(page, externalCustomerId);
+  await tagAndRegisterPolarSubscription(externalCustomerId);
+  if (new URL(page.url()).pathname === "/auth/login") {
+    await page.evaluate(() => {
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+    });
+    await page.context().clearCookies();
+    await signInWithPassword(page, migratedEmail, migratedPassword);
+  }
+  await expect
+    .poll(
+      async () => {
+        const result = await callTRPC(page, "billing/get", {}, "GET");
+        if (result.status !== 200) return "ERROR";
+        return readTRPCData<{ plan: string }>(result.body).plan;
+      },
+      { timeout: 30_000 }
+    )
+    .toBe("PRO");
+  const paidProjection = await callTRPC(page, "billing/get", {}, "GET");
+  expect(paidProjection.status).toBe(200);
+  const paid = readTRPCData<{
+    cancelAtPeriodEnd: boolean;
+    currentPeriodEnd: string;
+    currentPeriodStart: string;
+    interval: string;
+    plan: string;
+    seatCount: number;
+    status: string;
+  }>(paidProjection.body);
+  expect(paid).toMatchObject({
+    cancelAtPeriodEnd: false,
+    interval: "MONTH",
+    plan: "PRO",
+    seatCount: 1,
+    status: "ACTIVE",
+  });
+  expect(new Date(paid.currentPeriodEnd).getTime()).toBeGreaterThan(
+    new Date(paid.currentPeriodStart).getTime()
+  );
+  await registerPersonalProjection(migrated.localUserId);
+  await page.screenshot({
+    fullPage: true,
+    path: `test-results/clerk-polar/screenshots/${runTag}-polar-pro-active.png`,
+  });
+  await page.unrouteAll({ behavior: "ignoreErrors" });
 });
 
 test("Clerk and Polar full acceptance story", async ({ page, request }) => {
