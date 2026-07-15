@@ -1,5 +1,6 @@
 "use client";
 
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import SettingsHeader from "@calcom/features/settings/appDir/SettingsHeader";
 import SectionBottomActions from "@calcom/features/settings/SectionBottomActions";
 import { formatLocalizedDateTime } from "@calcom/lib/dayjs";
@@ -17,7 +18,6 @@ import { revalidateTravelSchedules } from "@calcom/web/app/cache/travelSchedule"
 import { TimezoneSelect } from "@calcom/web/modules/timezone/components/TimezoneSelect";
 import TravelScheduleModal from "@components/settings/TravelScheduleModal";
 import { revalidateSettingsGeneral } from "app/(use-page-wrapper)/settings/(settings-layout)/my-account/general/actions";
-import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 

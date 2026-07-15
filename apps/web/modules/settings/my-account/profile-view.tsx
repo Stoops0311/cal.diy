@@ -1,6 +1,8 @@
 "use client";
 
+import process from "node:process";
 import { ErrorCode } from "@calcom/features/auth/lib/ErrorCode";
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import SettingsHeader from "@calcom/features/settings/appDir/SettingsHeader";
 import SectionBottomActions from "@calcom/features/settings/SectionBottomActions";
@@ -34,7 +36,7 @@ import type { TRPCClientErrorLike } from "@trpc/client";
 import { revalidateSettingsProfile } from "app/cache/path/settings/my-account";
 // eslint-disable-next-line no-restricted-imports
 import { get, pick } from "lodash";
-import { signOut, useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import type React from "react";
 import type { BaseSyntheticEvent } from "react";
 import { useRef, useState } from "react";
