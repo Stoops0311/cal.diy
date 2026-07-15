@@ -49,4 +49,7 @@ export enum ErrorCode {
   UsernameUnavailable = "username_unavailable",
   EntitlementRequired = "entitlement_required",
   EntitlementLimitExceeded = "entitlement_limit_exceeded",
+  ClerkOrganizationOwnerRequired = "clerk_organization_owner_required",
+  ClerkMemberLocalUserMissing = "clerk_member_local_user_missing",
+  ClerkOrganizationConflict = "clerk_organization_conflict",
 }
