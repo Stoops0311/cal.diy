@@ -227,6 +227,10 @@ class ClerkWebhookService {
 
       let snapshot: ClerkOrganizationSnapshot;
       if (input.event.type === "organization.deleted") {
+        if (!(await this.organizationRepository.getOrganizationState(id))) {
+          await this.eventStore.markSucceeded(input.eventId);
+          return "ignored";
+        }
         snapshot = {
           creatorClerkUserId: null,
           deleted: true,
@@ -241,6 +245,10 @@ class ClerkWebhookService {
       if (input.event.type.startsWith("organizationMembership.")) {
         const organization = await this.organizationRepository.getOrganizationState(id);
         const desiredSeats = snapshot.memberships.filter(({ active }) => active).length;
+        if (organization && desiredSeats === 0) {
+          await this.eventStore.markSucceeded(input.eventId);
+          return "ignored";
+        }
         if (organization && organization.acceptedSeats !== desiredSeats) {
           await this.seatBilling.syncAcceptedSeats({
             desiredSeats,
@@ -252,6 +260,10 @@ class ClerkWebhookService {
       await this.eventStore.markSucceeded(input.eventId);
       return "processed";
     } catch (error) {
+      if (error instanceof Error && error.name === "ResourceNotFound") {
+        await this.eventStore.markSucceeded(input.eventId);
+        return "ignored";
+      }
       await this.eventStore.markFailed(input.eventId, sanitizedError(error));
       throw error;
     }

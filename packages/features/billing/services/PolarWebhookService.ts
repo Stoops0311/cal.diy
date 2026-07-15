@@ -80,6 +80,13 @@ class PolarWebhookService {
       await this.markSucceeded(input.eventId);
       return "processed";
     } catch (error) {
+      const subjectWasDeleted =
+        error instanceof ErrorWithCode && error.code === ErrorCode.PolarSubjectNotFound;
+      const providerObjectWasDeleted = error instanceof Error && error.name === "ResourceNotFound";
+      if (subjectWasDeleted || providerObjectWasDeleted) {
+        await this.markSucceeded(input.eventId);
+        return "ignored";
+      }
       await prisma.externalWebhookEvent.update({
         where: { provider_externalEventId: { externalEventId: input.eventId, provider: "POLAR" } },
         data: { sanitizedError: sanitizedError(error), state: "FAILED" },

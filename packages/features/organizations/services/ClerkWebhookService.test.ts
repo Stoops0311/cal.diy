@@ -142,6 +142,20 @@ describe("ClerkWebhookService", () => {
     ).resolves.toEqual({ attempts: 2, sanitizedError: null, state: "SUCCEEDED" });
   });
 
+  it("acknowledges a delayed event after its Clerk organization was deleted", async () => {
+    const deps = dependencies();
+    const notFound = new Error("missing organization");
+    notFound.name = "ResourceNotFound";
+    deps.getSnapshot.mockRejectedValue(notFound);
+    const service = new ClerkWebhookService(deps.value);
+    const eventId = `evt_${crypto.randomUUID()}`;
+
+    await expect(
+      process(service, eventId, organizationEvent("organization.updated", deps.organizationSnapshot.id))
+    ).resolves.toBe("ignored");
+    expect(deps.reconcileOrganization).not.toHaveBeenCalled();
+  });
+
   it("rejects a changed payload under an existing event id", async () => {
     const deps = dependencies();
     const service = new ClerkWebhookService(deps.value);
@@ -172,6 +186,18 @@ describe("ClerkWebhookService", () => {
       name: "",
       slug: "",
     });
+  });
+
+  it("acknowledges deletion after the local organization is already gone", async () => {
+    const deps = dependencies();
+    deps.getOrganizationState.mockResolvedValue(null);
+    const service = new ClerkWebhookService(deps.value);
+    const eventId = `evt_${crypto.randomUUID()}`;
+
+    await expect(
+      process(service, eventId, organizationEvent("organization.deleted", deps.organizationSnapshot.id))
+    ).resolves.toBe("ignored");
+    expect(deps.reconcileOrganization).not.toHaveBeenCalled();
   });
 
   it("resolves the organization from membership events", async () => {
@@ -244,6 +270,23 @@ describe("ClerkWebhookService", () => {
     expect(deps.syncAcceptedSeats.mock.invocationCallOrder[0]).toBeLessThan(
       deps.reconcileOrganization.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY
     );
+  });
+
+  it("acknowledges the final membership deletion while organization deletion is in flight", async () => {
+    const deps = dependencies();
+    deps.organizationSnapshot.memberships = [];
+    const service = new ClerkWebhookService(deps.value);
+    const eventId = `evt_${crypto.randomUUID()}`;
+
+    await expect(
+      process(
+        service,
+        eventId,
+        membershipEvent(deps.organizationSnapshot.id, "organizationMembership.deleted")
+      )
+    ).resolves.toBe("ignored");
+    expect(deps.syncAcceptedSeats).not.toHaveBeenCalled();
+    expect(deps.reconcileOrganization).not.toHaveBeenCalled();
   });
 
   it("does not write Polar when a membership role changes without changing seat count", async () => {

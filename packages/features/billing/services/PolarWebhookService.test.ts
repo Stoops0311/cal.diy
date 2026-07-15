@@ -1,3 +1,5 @@
+import { ErrorCode } from "@calcom/lib/errorCodes";
+import { ErrorWithCode } from "@calcom/lib/errors";
 import { prisma } from "@calcom/prisma";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -136,6 +138,37 @@ describe("PolarWebhookService", () => {
       })
     ).resolves.toBe("ignored");
 
+    expect(test.projectCustomerState).not.toHaveBeenCalled();
+  });
+
+  it("acknowledges delayed state for a deleted local subject", async () => {
+    const test = setup();
+    test.projectCustomerState.mockRejectedValue(
+      new ErrorWithCode(ErrorCode.PolarSubjectNotFound, "Polar customer subject is not mapped")
+    );
+    const eventId = `event_${crypto.randomUUID()}`;
+
+    await expect(process(test.service, eventId, customerStateEvent())).resolves.toBe("ignored");
+    await expect(
+      prisma.externalWebhookEvent.findUniqueOrThrow({
+        where: { provider_externalEventId: { externalEventId: eventId, provider: "POLAR" } },
+        select: { sanitizedError: true, state: true },
+      })
+    ).resolves.toEqual({ sanitizedError: null, state: "SUCCEEDED" });
+  });
+
+  it("acknowledges delayed Team state after its provider subscription was deleted", async () => {
+    const test = setup();
+    const notFound = new Error("missing subscription");
+    notFound.name = "ResourceNotFound";
+    test.getSubscription.mockRejectedValue(notFound);
+    const event = customerStateEvent();
+    if (!event.data) throw new Error("Expected customer state data");
+    event.data.type = "team";
+    event.data.externalCustomerId = "org:org_test";
+    const eventId = `event_${crypto.randomUUID()}`;
+
+    await expect(process(test.service, eventId, event)).resolves.toBe("ignored");
     expect(test.projectCustomerState).not.toHaveBeenCalled();
   });
 
