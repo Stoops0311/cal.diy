@@ -8,6 +8,7 @@ import { ErrorBoundary } from "@calcom/ui/components/errorBoundary";
 import { SkeletonText } from "@calcom/ui/components/skeleton";
 import { useRedirectToLoginIfUnauthenticated } from "@calcom/web/modules/auth/hooks/useRedirectToLoginIfUnauthenticated";
 import { useRedirectToOnboardingIfNeeded } from "@calcom/web/modules/auth/hooks/useRedirectToOnboardingIfNeeded";
+import { UpgradePromptProvider } from "@calcom/web/modules/billing/UpgradePromptProvider";
 import { useFormbricks } from "@calcom/web/modules/formbricks/hooks/useFormbricks";
 import { useRouter } from "next/navigation";
 import type React from "react";
@@ -107,9 +108,11 @@ export default function Shell(props: LayoutProps) {
   useAppTheme();
 
   return !props.isPublic ? (
-    <KBarWrapper withKBar>
-      <Layout {...props} />
-    </KBarWrapper>
+    <UpgradePromptProvider>
+      <KBarWrapper withKBar>
+        <Layout {...props} />
+      </KBarWrapper>
+    </UpgradePromptProvider>
   ) : (
     <PublicShell {...props} />
   );

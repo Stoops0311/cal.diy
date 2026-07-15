@@ -71,4 +71,21 @@ describe("PlanSelector", () => {
     fireEvent.click(view.getByRole("button", { name: "billing_choose_team" }));
     expect(onSelectPlan).toHaveBeenCalledWith({ interval: "MONTH", plan: "TEAM" });
   });
+
+  it("can present only the required plan without the Free sheet", () => {
+    const view = render(
+      <PlanSelector
+        freeHref="/event-types"
+        onSelectPlan={vi.fn()}
+        showAllPlans={false}
+        visiblePlans={["TEAM"]}
+        ctaKeys={{ TEAM: "billing_upgrade_choose_team" }}
+      />
+    );
+
+    expect(view.getByRole("heading", { name: "billing_plan_team" })).toBeInTheDocument();
+    expect(view.queryByRole("heading", { name: "billing_plan_pro" })).not.toBeInTheDocument();
+    expect(view.queryByRole("button", { name: "billing_view_all_plans" })).not.toBeInTheDocument();
+    expect(view.getByRole("button", { name: "billing_upgrade_choose_team" })).toBeInTheDocument();
+  });
 });

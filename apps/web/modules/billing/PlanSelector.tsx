@@ -26,9 +26,12 @@ export type PaidSelection =
   | { interval: BillingIntervalType; plan: "TEAM" };
 
 export type PlanSelectorProps = {
+  ctaKeys?: Partial<Record<PaidPlanKey, string>>;
   freeHref: string;
   onSelectPlan(selection: PaidSelection): void;
   pendingPlan?: PaidPlanKey;
+  showAllPlans?: boolean;
+  visiblePlans?: readonly PaidPlanKey[];
 };
 
 const paidPlans = [
@@ -74,9 +77,17 @@ function getCadenceKey(price: {
   return "billing_price_cadence_monthly";
 }
 
-export function PlanSelector({ freeHref, onSelectPlan, pendingPlan }: PlanSelectorProps): React.ReactElement {
+export function PlanSelector({
+  ctaKeys,
+  freeHref,
+  onSelectPlan,
+  pendingPlan,
+  showAllPlans = true,
+  visiblePlans = ["PRO", "TEAM"],
+}: PlanSelectorProps): React.ReactElement {
   const { t } = useLocale();
   const [interval, setInterval] = useState<BillingIntervalType>("YEAR");
+  const displayedPlans = paidPlans.filter((plan) => visiblePlans.includes(plan.plan));
 
   return (
     <section className="text-emphasis">
@@ -101,10 +112,11 @@ export function PlanSelector({ freeHref, onSelectPlan, pendingPlan }: PlanSelect
         </div>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2">
-        {paidPlans.map((plan) => {
+      <div className={classNames("grid gap-5", displayedPlans.length > 1 && "md:grid-cols-2")}>
+        {displayedPlans.map((plan) => {
           const price = PAID_PLAN_CATALOG[plan.plan].prices[interval];
           const cadenceKey = getCadenceKey(price);
+          const ctaKey = ctaKeys?.[plan.plan] ?? plan.cta;
 
           return (
             <article
@@ -143,7 +155,7 @@ export function PlanSelector({ freeHref, onSelectPlan, pendingPlan }: PlanSelect
               </ul>
 
               <Button
-                aria-label={t(plan.cta)}
+                aria-label={t(ctaKey)}
                 className="mt-8 w-full justify-center"
                 color="primary"
                 disabled={pendingPlan !== undefined}
@@ -153,7 +165,7 @@ export function PlanSelector({ freeHref, onSelectPlan, pendingPlan }: PlanSelect
                     ? onSelectPlan({ interval, plan: "PRO" })
                     : onSelectPlan({ interval, plan: "TEAM" })
                 }>
-                <span>{t(plan.cta)}</span>
+                <span>{t(ctaKey)}</span>
                 <span aria-hidden="true">›</span>
               </Button>
               <p className="text-subtle mt-2 text-center text-xs">{t("billing_cancel_anytime")}</p>
@@ -162,32 +174,36 @@ export function PlanSelector({ freeHref, onSelectPlan, pendingPlan }: PlanSelect
         })}
       </div>
 
-      <p className="text-subtle mt-6 text-center text-sm">{t("billing_plan_proof")}</p>
+      {showAllPlans ? (
+        <>
+          <p className="text-subtle mt-6 text-center text-sm">{t("billing_plan_proof")}</p>
 
-      <Sheet>
-        <div className="mt-5 flex justify-center">
-          <SheetTrigger asChild>
-            <Button color="minimal">{t("billing_view_all_plans")}</Button>
-          </SheetTrigger>
-        </div>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>{t("billing_all_plans_title")}</SheetTitle>
-            <SheetDescription>{t("billing_all_plans_description")}</SheetDescription>
-          </SheetHeader>
-          <SheetBody>
-            <article className="border-subtle bg-default rounded-2xl border p-6">
-              <h2 className="font-cal text-emphasis text-2xl font-semibold">{t("billing_plan_free")}</h2>
-              <p className="text-emphasis mt-3 text-base font-medium">{t("billing_free_outcome")}</p>
-              <p className="text-subtle mt-2 text-sm leading-6">{t("billing_free_description")}</p>
-              <p className="font-mono mt-6 text-4xl font-semibold tracking-tight">$0</p>
-              <Button className="mt-6 w-full justify-center" color="secondary" href={freeHref}>
-                {t("billing_keep_working_free")}
-              </Button>
-            </article>
-          </SheetBody>
-        </SheetContent>
-      </Sheet>
+          <Sheet>
+            <div className="mt-5 flex justify-center">
+              <SheetTrigger asChild>
+                <Button color="minimal">{t("billing_view_all_plans")}</Button>
+              </SheetTrigger>
+            </div>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>{t("billing_all_plans_title")}</SheetTitle>
+                <SheetDescription>{t("billing_all_plans_description")}</SheetDescription>
+              </SheetHeader>
+              <SheetBody>
+                <article className="border-subtle bg-default rounded-2xl border p-6">
+                  <h2 className="font-cal text-emphasis text-2xl font-semibold">{t("billing_plan_free")}</h2>
+                  <p className="text-emphasis mt-3 text-base font-medium">{t("billing_free_outcome")}</p>
+                  <p className="text-subtle mt-2 text-sm leading-6">{t("billing_free_description")}</p>
+                  <p className="font-mono mt-6 text-4xl font-semibold tracking-tight">$0</p>
+                  <Button className="mt-6 w-full justify-center" color="secondary" href={freeHref}>
+                    {t("billing_keep_working_free")}
+                  </Button>
+                </article>
+              </SheetBody>
+            </SheetContent>
+          </Sheet>
+        </>
+      ) : null}
     </section>
   );
 }
