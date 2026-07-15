@@ -1,16 +1,26 @@
 import { fireEvent, render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import common from "../../../../packages/i18n/locales/en/common.json";
 
-const mocks = vi.hoisted(() => ({
-  data: undefined as
-    | {
-        canManageBilling: boolean;
-        plan: "FREE" | "PRO" | "TEAM";
-        seats: { accepted: number; billed: number | null; limit: number } | null;
-        status: "NONE" | "TRIALING" | "ACTIVE" | "PAST_DUE" | "CANCELED" | "UNPAID";
-        subject: { id: number; type: "USER" | "ORGANIZATION" };
-      }
-    | undefined,
+type BillingSummary = {
+  canManageBilling: boolean;
+  plan: "FREE" | "PRO" | "TEAM";
+  seats: { accepted: number; billed: number | null; limit: number } | null;
+  status: "NONE" | "TRIALING" | "ACTIVE" | "PAST_DUE" | "CANCELED" | "UNPAID";
+  subject: { id: number; type: "USER" | "ORGANIZATION" };
+};
+
+type Mocks = {
+  data: BillingSummary | undefined;
+  isError: boolean;
+  isPending: boolean;
+  queryInput: unknown;
+  queryOptions: { retry?: number; staleTime?: number } | undefined;
+  refetch: ReturnType<typeof vi.fn>;
+};
+
+const mocks: Mocks = vi.hoisted(() => ({
+  data: undefined,
   isError: false,
   isPending: true,
   queryInput: null as unknown,
@@ -20,8 +30,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@calcom/lib/hooks/useLocale", () => ({
   useLocale: () => ({
-    t: (key: string, values?: Record<string, number | string>) =>
-      values ? `${key}:${Object.values(values).join(":")}` : key,
+    t: (key: string, values?: Record<string, number | string>): string => {
+      if (values) return `${key}:${Object.values(values).join(":")}`;
+      return key;
+    },
   }),
 }));
 
@@ -61,7 +73,11 @@ describe("BillingStatusWidget", () => {
   it("shows a quiet fixed-height skeleton while loading", () => {
     const view = render(<BillingStatusWidget />);
 
-    expect(view.getByLabelText("billing_status_widget_loading")).toHaveClass("min-h-24");
+    expect(view.getByLabelText("billing_status_widget_loading")).toHaveClass(
+      "min-h-24",
+      "motion-safe:animate-pulse"
+    );
+    expect(view.getByLabelText("billing_status_widget_loading")).not.toHaveClass("animate-pulse");
     expect(view.queryByRole("link")).not.toBeInTheDocument();
     expect(mocks.queryInput).toBeUndefined();
     expect(mocks.queryOptions).toEqual({ retry: 1, staleTime: 60_000 });
@@ -116,7 +132,7 @@ describe("BillingStatusWidget", () => {
     mocks.data = {
       canManageBilling: true,
       plan: "TEAM",
-      seats: { accepted: 4, billed: 5, limit: 50 },
+      seats: { accepted: 4, billed: 49_873, limit: 50 },
       status: "ACTIVE",
       subject: { id: 41, type: "ORGANIZATION" },
     };
@@ -126,7 +142,7 @@ describe("BillingStatusWidget", () => {
       "href",
       "/settings/billing?organizationId=41"
     );
-    expect(view.queryByText("5")).not.toBeInTheDocument();
+    expect(view.container).not.toHaveTextContent(/49,?873|billed/i);
   });
 
   it("links a Free organization manager to organization-aware pricing", () => {
@@ -161,5 +177,16 @@ describe("BillingStatusWidget", () => {
       "href",
       "/settings/billing"
     );
+  });
+
+  it("keeps the exact Convenio billing status copy in the English locale", () => {
+    expect(common).toMatchObject({
+      billing_status_widget_eyebrow: "PLAN IN USE",
+      billing_status_widget_seats: "{{used}} of {{limit}} seats in use",
+      billing_status_widget_loading: "Loading plan status",
+      billing_status_widget_unavailable: "Plan status is quiet for a moment. Your calendar is still working.",
+      billing_status_widget_retry: "Check again",
+      billing_manage_plan: "Manage plan",
+    });
   });
 });
