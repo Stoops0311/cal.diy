@@ -174,6 +174,7 @@ export const getPublicEventSelect = (fetchAllUsers: boolean) => {
     rescheduleWithSameRoundRobinHost: true,
     parent: {
       select: {
+        teamId: true,
         team: {
           select: {
             theme: true,

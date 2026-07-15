@@ -4,6 +4,7 @@ import { getBookingForReschedule, getBookingForSeatedEvent } from "@calcom/featu
 import { getUsernameList } from "@calcom/features/eventtypes/lib/defaultEvents";
 import type { getPublicEvent } from "@calcom/features/eventtypes/lib/getPublicEvent";
 import { EventRepository } from "@calcom/features/eventtypes/repositories/EventRepository";
+import { TeamEventEntitlementService } from "@calcom/features/eventtypes/services/TeamEventEntitlementService";
 import { shouldHideBrandingForUserEvent } from "@calcom/features/profile/lib/hideBranding";
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import slugify from "@calcom/lib/slugify";
@@ -26,7 +27,17 @@ type Props = {
   isSEOIndexable: boolean | null;
   themeBasis: null | string;
   orgBannerUrl: null;
+  isPlanInactive: boolean;
 };
+
+const teamEventEntitlements = new TeamEventEntitlementService();
+
+async function isPlanInactive(
+  eventData: NonNullable<Awaited<ReturnType<typeof getPublicEvent>>>
+): Promise<boolean> {
+  const billingTeamId = eventData.teamId ?? eventData.parent?.teamId ?? null;
+  return !(await teamEventEntitlements.isActive(billingTeamId));
+}
 
 async function processReschedule({
   props,
@@ -181,6 +192,7 @@ async function getDynamicGroupPageProps(context: GetServerSidePropsContext) {
     bookingUid: bookingUid ? `${bookingUid}` : null,
     rescheduleUid: null,
     orgBannerUrl: null,
+    isPlanInactive: await isPlanInactive(eventData),
   };
 
   if (rescheduleUid) {
@@ -277,6 +289,7 @@ async function getUserPageProps(context: GetServerSidePropsContext) {
     bookingUid: bookingUid ? `${bookingUid}` : null,
     rescheduleUid: null,
     orgBannerUrl: eventData?.owner?.profile?.organization?.bannerUrl ?? null,
+    isPlanInactive: await isPlanInactive(eventData),
   };
   if (rescheduleUid) {
     const processRescheduleResult = await processReschedule({

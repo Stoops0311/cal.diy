@@ -4848,5 +4848,7 @@
   "user_updated_successfully": "User updated successfully.",
   "error_updating_user": "There was an error updating this user.",
   "please_reschedule": "Please reschedule.",
+  "team_booking_plan_inactive_title": "This team’s booking page is temporarily unavailable",
+  "team_booking_plan_inactive_description": "The organization’s Team plan is inactive. Ask an organization owner to restore billing access.",
   "ADD_NEW_STRINGS_ABOVE_THIS_LINE_TO_PREVENT_MERGE_CONFLICTS": "↑↑↑↑↑↑↑↑↑↑↑↑↑ Add your new strings above here ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑"
 }

@@ -1,7 +1,15 @@
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 
-const UnAvailableMessage = ({ children, title }: { children: React.ReactNode; title: string }) => (
-  <div className="mx-auto w-full max-w-2xl">
+const UnAvailableMessage = ({
+  children,
+  title,
+  testId,
+}: {
+  children: React.ReactNode;
+  title: string;
+  testId?: string;
+}) => (
+  <div className="mx-auto w-full max-w-2xl" data-testid={testId}>
     <div className="border-subtle bg-default dark:bg-cal-muted overflow-hidden rounded-lg border p-10">
       <h2 className="font-cal mb-4 text-3xl">{title}</h2>
       {children}
@@ -25,6 +33,16 @@ export const NotFound = () => {
   return (
     <UnAvailableMessage title={t("404_page_not_found")}>
       <p className="max-w-[50ch]">{t("booker_event_not_found")}</p>
+    </UnAvailableMessage>
+  );
+};
+
+export const PlanInactive = () => {
+  const { t } = useLocale();
+
+  return (
+    <UnAvailableMessage title={t("team_booking_plan_inactive_title")} testId="team-plan-inactive">
+      <p className="max-w-[50ch]">{t("team_booking_plan_inactive_description")}</p>
     </UnAvailableMessage>
   );
 };
