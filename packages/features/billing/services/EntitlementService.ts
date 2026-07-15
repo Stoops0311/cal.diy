@@ -73,8 +73,14 @@ class PrismaEntitlementRepository implements EntitlementRepository {
   }
 
   async getOrganizationState(organizationId: number): Promise<OrganizationEntitlementState | null> {
+    const subject = await prisma.team.findUnique({
+      where: { id: organizationId },
+      select: { id: true, isOrganization: true, parentId: true },
+    });
+    const billingOrganizationId = subject?.isOrganization ? subject.id : subject?.parentId;
+    if (!billingOrganizationId) return null;
     const organization = await prisma.team.findFirst({
-      where: { archivedAt: null, id: organizationId, isOrganization: true },
+      where: { archivedAt: null, id: billingOrganizationId, isOrganization: true },
       select: {
         _count: { select: { members: { where: { accepted: true } } } },
         billingSubscription: { select: subscriptionSelect },

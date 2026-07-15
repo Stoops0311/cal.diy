@@ -1,13 +1,16 @@
 import { getPremiumMonthlyPlanPriceId } from "@calcom/app-store/stripepayment/lib/utils";
 import { sendChangeOfEmailVerification } from "@calcom/features/auth/lib/verifyEmail";
+import { assertEntitled } from "@calcom/features/billing/lib/entitlements";
+import type { EvaluatedEntitlements } from "@calcom/features/billing/services/EntitlementService";
+import { EntitlementService } from "@calcom/features/billing/services/EntitlementService";
 import { FeaturesRepository } from "@calcom/features/flags/features.repository";
 import { checkUsername } from "@calcom/features/profile/lib/checkUsername";
 import { ScheduleRepository } from "@calcom/features/schedules/repositories/ScheduleRepository";
+import { getTranslation } from "@calcom/i18n/server";
 import hasKeyInMetadata from "@calcom/lib/hasKeyInMetadata";
 import { HttpError } from "@calcom/lib/http-error";
 import logger from "@calcom/lib/logger";
 import { uploadAvatar } from "@calcom/lib/server/avatar";
-import { getTranslation } from "@calcom/i18n/server";
 import { resizeBase64Image } from "@calcom/lib/server/resizeBase64Image";
 import slugify from "@calcom/lib/slugify";
 import { validateBookerLayouts } from "@calcom/lib/validateBookerLayouts";
@@ -24,7 +27,9 @@ import { type TUpdateProfileInputSchema, updateUserMetadataAllowedKeys } from ".
 const getBillingProviderService = async (..._args: unknown[]) => ({
   createCustomer: async (..._a: unknown[]) => null,
   getCustomer: async (..._a: unknown[]) => null,
-  getSubscriptions: async (..._a: unknown[]): Promise<{ items: { data: { price: { id: string } }[] }; status: string }[]> => [],
+  getSubscriptions: async (
+    ..._a: unknown[]
+  ): Promise<{ items: { data: { price: { id: string } }[] }; status: string }[]> => [],
   updateCustomer: async (..._a: unknown[]) => null,
 });
 const updateNewTeamMemberEventTypes = async (..._args: unknown[]) => {};
@@ -35,11 +40,26 @@ type UpdateProfileOptions = {
     user: NonNullable<TrpcSessionUser>;
     res?: NextApiResponse | GetServerSidePropsContext["res"];
   };
+  entitlements?: Pick<EntitlementService, "forUser">;
   input: TUpdateProfileInputSchema;
 };
 
-export const updateProfileHandler = async ({ ctx, input }: UpdateProfileOptions) => {
+function assertProfileUpdateEntitled(
+  entitlements: EvaluatedEntitlements,
+  input: TUpdateProfileInputSchema
+): void {
+  if (input.hideBranding) assertEntitled(entitlements, "canRemoveBranding");
+}
+
+export const updateProfileHandler = async ({
+  ctx,
+  entitlements = new EntitlementService(),
+  input,
+}: UpdateProfileOptions) => {
   const { user } = ctx;
+  if (input.hideBranding) {
+    assertProfileUpdateEntitled(await entitlements.forUser(user.id), input);
+  }
   const billingService = await getBillingProviderService();
   const userMetadata = handleUserMetadata({ ctx, input });
   const locale = input.locale || user.locale;
@@ -419,3 +439,5 @@ const handleUserMetadata = ({ ctx, input }: UpdateProfileOptions) => {
   // Required so we don't override and delete saved values
   return { ...userMetadata, ...cleanMetadata };
 };
+
+export { assertProfileUpdateEntitled };

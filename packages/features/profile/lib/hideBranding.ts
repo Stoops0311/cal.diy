@@ -1,3 +1,4 @@
+import { EntitlementService } from "@calcom/features/billing/services/EntitlementService";
 import { ProfileRepository } from "@calcom/features/profile/repositories/ProfileRepository";
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import logger from "@calcom/lib/logger";
@@ -6,8 +7,10 @@ import { prisma } from "@calcom/prisma";
 const log = logger.getSubLogger({ name: "hideBranding" });
 const userRepository = new UserRepository(prisma);
 type Team = {
+  id?: number;
   hideBranding: boolean | null;
   parent: {
+    id?: number;
     hideBranding: boolean | null;
   } | null;
 };
@@ -48,11 +51,14 @@ function resolveHideBranding(options: {
 export async function getHideBranding({
   userId,
   teamId,
+  entitlements = new EntitlementService(),
 }: {
   userId?: number;
   teamId?: number;
+  entitlements?: Pick<EntitlementService, "forOrganization" | "forUser">;
 }): Promise<boolean> {
   if (teamId) {
+    if ((await entitlements.forOrganization(teamId)).showBranding) return false;
     const team = await prisma.team.findUnique({
       where: { id: teamId },
       select: {
@@ -68,6 +74,7 @@ export async function getHideBranding({
       organizationHideBranding: team.parent?.hideBranding ?? null,
     });
   } else if (userId) {
+    if ((await entitlements.forUser(userId)).showBranding) return false;
     // Get user data with profile and organization
     const user = await userRepository.findUserWithHideBranding({ userId });
 
@@ -121,19 +128,26 @@ export async function shouldHideBrandingForEvent({
   team,
   owner,
   organizationId,
+  entitlements = new EntitlementService(),
 }: {
   eventTypeId: number;
   team: Team | null;
   owner: UserWithoutProfile | null;
   organizationId: number | null;
+  entitlements?: Pick<EntitlementService, "forOrganization" | "forUser">;
 }) {
   let ownerProfile = null;
   if (team) {
+    const billingOrganizationId = team.parent?.id ?? team.id;
+    if (billingOrganizationId && (await entitlements.forOrganization(billingOrganizationId)).showBranding) {
+      return false;
+    }
     return shouldHideBrandingForTeamEvent({
       team,
       eventTypeId,
     });
   } else if (owner) {
+    if ((await entitlements.forUser(owner.id)).showBranding) return false;
     // Needed only for User events, not for Team events
     ownerProfile = organizationId
       ? await ProfileRepository.findByUserIdAndOrgSlug({

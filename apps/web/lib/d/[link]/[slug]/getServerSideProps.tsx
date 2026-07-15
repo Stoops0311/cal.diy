@@ -3,10 +3,7 @@ import type { GetBookingType } from "@calcom/features/bookings/lib/get-booking";
 import { getBookingForReschedule, getMultipleDurationValue } from "@calcom/features/bookings/lib/get-booking";
 import { EventRepository } from "@calcom/features/eventtypes/repositories/EventRepository";
 import { HashedLinkService } from "@calcom/features/hashedLink/lib/service/HashedLinkService";
-import {
-  shouldHideBrandingForTeamEvent,
-  shouldHideBrandingForUserEvent,
-} from "@calcom/features/profile/lib/hideBranding";
+import { shouldHideBrandingForEvent } from "@calcom/features/profile/lib/hideBranding";
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import slugify from "@calcom/lib/slugify";
 import prisma from "@calcom/prisma";
@@ -55,8 +52,10 @@ async function getUserPageProps(context: GetServerSidePropsContext) {
 
   if (hashedLink.eventType.team) {
     name = hashedLink.eventType.team.slug || "";
-    hideBranding = shouldHideBrandingForTeamEvent({
+    hideBranding = await shouldHideBrandingForEvent({
       eventTypeId: hashedLink.eventTypeId,
+      organizationId: null,
+      owner: null,
       team: hashedLink.eventType.team,
     });
   } else {
@@ -98,9 +97,11 @@ async function getUserPageProps(context: GetServerSidePropsContext) {
       return notFound;
     }
 
-    hideBranding = shouldHideBrandingForUserEvent({
+    hideBranding = await shouldHideBrandingForEvent({
       eventTypeId: hashedLink.eventTypeId,
+      organizationId: user.profiles?.[0]?.organizationId ?? null,
       owner: user,
+      team: null,
     });
   }
 

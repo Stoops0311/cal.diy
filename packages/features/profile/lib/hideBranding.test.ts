@@ -1,5 +1,8 @@
+import { getEntitlements } from "@calcom/features/billing/lib/entitlements";
+import { BillingStatus, PlanKey } from "@calcom/features/billing/lib/plans";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  shouldHideBrandingForEvent,
   shouldHideBrandingForEventUsingProfile,
   shouldHideBrandingForTeamEvent,
   shouldHideBrandingForUserEvent,
@@ -35,6 +38,38 @@ vi.mock("@calcom/prisma", () => ({
 describe("hideBranding", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe("verified entitlement override", () => {
+    it("forces branding on for a Free user even when the stored preference hides it", async () => {
+      const result = await shouldHideBrandingForEvent({
+        entitlements: { forOrganization: vi.fn(), forUser: vi.fn().mockResolvedValue(getEntitlements(null)) },
+        eventTypeId: 1,
+        organizationId: null,
+        owner: { hideBranding: true, id: 7 },
+        team: null,
+      });
+
+      expect(result).toBe(false);
+    });
+
+    it("honors the stored preference for an active Pro user", async () => {
+      const pro = getEntitlements({
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: new Date("2026-08-15T12:00:00.000Z"),
+        plan: PlanKey.PRO,
+        status: BillingStatus.ACTIVE,
+      });
+      const result = await shouldHideBrandingForEvent({
+        entitlements: { forOrganization: vi.fn(), forUser: vi.fn().mockResolvedValue(pro) },
+        eventTypeId: 1,
+        organizationId: null,
+        owner: { hideBranding: true, id: 7 },
+        team: null,
+      });
+
+      expect(result).toBe(true);
+    });
   });
 
   describe("shouldHideBrandingForEventUsingProfile", () => {
