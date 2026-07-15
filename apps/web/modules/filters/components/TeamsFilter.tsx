@@ -1,3 +1,4 @@
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { filterQuerySchema } from "@calcom/features/filters/lib/getTeamsFiltersFromQuery";
 import { getOrgOrTeamAvatar } from "@calcom/lib/defaultAvatarImage";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -10,7 +11,6 @@ import { FilterSearchField } from "@calcom/ui/components/form";
 import { AnimatedPopover } from "@calcom/ui/components/popover";
 import { Tooltip } from "@calcom/ui/components/tooltip";
 import { LayersIcon, UserIcon } from "@coss/ui/icons";
-import { useSession } from "next-auth/react";
 import type { InputHTMLAttributes, ReactNode } from "react";
 import { forwardRef, useState } from "react";
 
