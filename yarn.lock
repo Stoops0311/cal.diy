@@ -2502,6 +2502,7 @@ __metadata:
     "@calcom/prisma": "workspace:*"
     "@calcom/trpc": "workspace:*"
     "@calcom/ui": "workspace:*"
+    "@clerk/backend": "npm:^3.11.5"
     bcryptjs: "npm:2.4.3"
     dub: "npm:0.59.1"
     handlebars: "npm:4.7.9"
@@ -3320,6 +3321,7 @@ __metadata:
     "@calcom/tsconfig": "workspace:*"
     "@calcom/types": "workspace:*"
     "@calcom/ui": "workspace:*"
+    "@clerk/nextjs": "npm:^7.5.18"
     "@coss/ui": "workspace:*"
     "@daily-co/daily-js": "npm:0.83.1"
     "@daily-co/daily-react": "npm:0.23.2"
@@ -3890,6 +3892,67 @@ __metadata:
     picocolors: "npm:^1.0.0"
     sisteransi: "npm:^1.0.5"
   checksum: 10/3159002db77f029e47a1bde7aebb7b233bffed867c41ded3daf9986accfa4bda0b248ed5f17d483cd34446a480a37764f2c94df0a7960f5744cf30f426c14ed6
+  languageName: node
+  linkType: hard
+
+"@clerk/backend@npm:^3.11.5":
+  version: 3.11.5
+  resolution: "@clerk/backend@npm:3.11.5"
+  dependencies:
+    "@clerk/shared": "npm:^4.25.3"
+    standardwebhooks: "npm:^1.0.0"
+    tslib: "npm:2.8.1"
+  checksum: 10/be7b2d7a15f311c1fe718fdc30f85cdaf7fe79c4a21c499ea154339eaaf70b89fb79eec9dc88188bf2a13a19662a348b1d6fe80aa54c9dfa8cca05cca71232f5
+  languageName: node
+  linkType: hard
+
+"@clerk/nextjs@npm:^7.5.18":
+  version: 7.5.18
+  resolution: "@clerk/nextjs@npm:7.5.18"
+  dependencies:
+    "@clerk/backend": "npm:^3.11.5"
+    "@clerk/react": "npm:^6.12.3"
+    "@clerk/shared": "npm:^4.25.3"
+    server-only: "npm:0.0.1"
+    tslib: "npm:2.8.1"
+  peerDependencies:
+    next: ^15.2.8 || ^15.3.8 || ^15.4.10 || ^15.5.9 || ^15.6.0-0 || ^16.0.10 || ^16.1.0-0
+    react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
+    react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
+  checksum: 10/2385ba507e60cad657781e7dd1b12334eda9c0e21fcda63c59147d1a56622ee360631b12cf71c4e721dc8076c5f36b991605199a280d50fe4ae5f5e262fe1358
+  languageName: node
+  linkType: hard
+
+"@clerk/react@npm:^6.12.3":
+  version: 6.12.3
+  resolution: "@clerk/react@npm:6.12.3"
+  dependencies:
+    "@clerk/shared": "npm:^4.25.3"
+    tslib: "npm:2.8.1"
+  peerDependencies:
+    react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
+    react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
+  checksum: 10/310ab7f13ed6d493897564edab701dba208e28fa7a6a1b0f853c92a23f7144ab19405e4a23bfbd4319578f426d407e39731148e474f24689b5c4820ff5dcaf58
+  languageName: node
+  linkType: hard
+
+"@clerk/shared@npm:^4.25.3":
+  version: 4.25.3
+  resolution: "@clerk/shared@npm:4.25.3"
+  dependencies:
+    "@tanstack/query-core": "npm:^5.100.6"
+    dequal: "npm:2.0.3"
+    glob-to-regexp: "npm:0.4.1"
+    js-cookie: "npm:3.0.7"
+  peerDependencies:
+    react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
+    react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
+  peerDependenciesMeta:
+    react:
+      optional: true
+    react-dom:
+      optional: true
+  checksum: 10/a53544a9569536836e565ef8ae3291e3f7ae4bc63dc1be53d16d1fd56c20b4d80024ab8d64c1189e2b1709106125cde1cdb8550757c93753420f217c3014329b
   languageName: node
   linkType: hard
 
@@ -15301,6 +15364,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/query-core@npm:^5.100.6":
+  version: 5.101.2
+  resolution: "@tanstack/query-core@npm:5.101.2"
+  checksum: 10/567af5e3c21628745a08c1a5054d838597bc620dcbbeabe20cdd6ccffdcca85a8d38128f6e80829b6e04d10f79ca793a7dd8fddc8a3d6bef10c2d580ae214c7d
+  languageName: node
+  linkType: hard
+
 "@tanstack/react-query@npm:5.17.19":
   version: 5.17.19
   resolution: "@tanstack/react-query@npm:5.17.19"
@@ -22138,7 +22208,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dequal@npm:^2.0.0, dequal@npm:^2.0.3":
+"dequal@npm:2.0.3, dequal@npm:^2.0.0, dequal@npm:^2.0.3":
   version: 2.0.3
   resolution: "dequal@npm:2.0.3"
   checksum: 10/6ff05a7561f33603df87c45e389c9ac0a95e3c056be3da1a0c4702149e3a7f6fe5ffbb294478687ba51a9e95f3a60e8b6b9005993acd79c292c7d15f71964b6b
@@ -24961,7 +25031,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob-to-regexp@npm:^0.4.1":
+"glob-to-regexp@npm:0.4.1, glob-to-regexp@npm:^0.4.1":
   version: 0.4.1
   resolution: "glob-to-regexp@npm:0.4.1"
   checksum: 10/9009529195a955c40d7b9690794aeff5ba665cc38f1519e111c58bb54366fd0c106bde80acf97ba4e533208eb53422c83b136611a54c5fefb1edd8dc267cb62e
@@ -28215,6 +28285,13 @@ __metadata:
   version: 3.0.5
   resolution: "js-cookie@npm:3.0.5"
   checksum: 10/366494b1630b9fb8abaef3659748db5dfd52c58c6fc3459b9f0a03b492593bc1b01c6dfcc066b46f6413c28edb3a00cc68fb61ea8cdf6991bedf1f100f8a389d
+  languageName: node
+  linkType: hard
+
+"js-cookie@npm:3.0.7":
+  version: 3.0.7
+  resolution: "js-cookie@npm:3.0.7"
+  checksum: 10/c0542acd416806182baaaecaae9a1dd7754b48699589c5c3a088495cee9fc2e44f81e66567b6e76e16d29c469655fdc9cd948edb2cfd9ece446f8817b9046ce9
   languageName: node
   linkType: hard
 
@@ -37102,7 +37179,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"server-only@npm:^0.0.1":
+"server-only@npm:0.0.1, server-only@npm:^0.0.1":
   version: 0.0.1
   resolution: "server-only@npm:0.0.1"
   checksum: 10/c432348956641ea3f460af8dc3765f3a1bdbcf7a1e0205b0756d868e6e6fe8934cdee6bff68401a1dd49ba4a831c75916517a877446d54b334f7de36fa273e53
@@ -38102,6 +38179,16 @@ __metadata:
   version: 2.1.0
   resolution: "standard-as-callback@npm:2.1.0"
   checksum: 10/88bec83ee220687c72d94fd86a98d5272c91d37ec64b66d830dbc0d79b62bfa6e47f53b71646011835fc9ce7fae62739545d13124262b53be4fbb3e2ebad551c
+  languageName: node
+  linkType: hard
+
+"standardwebhooks@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "standardwebhooks@npm:1.0.0"
+  dependencies:
+    "@stablelib/base64": "npm:^1.0.0"
+    fast-sha256: "npm:^1.3.0"
+  checksum: 10/02b74a3e4cd131affe8bf18945360747a5a0bf81c1d62a7bbbea3d40976b4fef4bb37de71a35cdc0fdc4d6f0d951a3b6031052e78bd086dc9b09b629b82d3919
   languageName: node
   linkType: hard
 
