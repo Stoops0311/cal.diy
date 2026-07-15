@@ -1,25 +1,19 @@
-import { isApiKey } from "@/lib/api-key";
+import { X_CAL_CLIENT_ID } from "@calcom/platform-constants";
+import { hasPermissions } from "@calcom/platform-utils";
+import type { PlatformOAuthClient } from "@calcom/prisma/client";
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { AuthMethods } from "@/lib/enums/auth-methods";
 import { Permissions } from "@/modules/auth/decorators/permissions/permissions.decorator";
 import { OAuthClientRepository } from "@/modules/oauth-clients/oauth-client.repository";
 import { OAuthClientsOutputService } from "@/modules/oauth-clients/services/oauth-clients/oauth-clients-output.service";
 import { TokensRepository } from "@/modules/tokens/tokens.repository";
-import { TokensService } from "@/modules/tokens/tokens.service";
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { Reflector } from "@nestjs/core";
-import { getToken } from "next-auth/jwt";
-
-import { X_CAL_CLIENT_ID } from "@calcom/platform-constants";
-import { hasPermissions } from "@calcom/platform-utils";
-import type { PlatformOAuthClient } from "@calcom/prisma/client";
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private tokensRepository: TokensRepository,
-    private tokensService: TokensService,
-    private readonly config: ConfigService,
     private readonly oAuthClientRepository: OAuthClientRepository,
     private readonly oAuthClientsOutputService: OAuthClientsOutputService
   ) {}
@@ -33,14 +27,14 @@ export class PermissionsGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const bearerToken = request.get("Authorization")?.replace("Bearer ", "");
-    const nextAuthSecret = this.config.get("next.authSecret", { infer: true });
-    const nextAuthToken = await getToken({ req: request, secret: nextAuthSecret });
     const oAuthClientId = request.params?.clientId || request.get(X_CAL_CLIENT_ID);
-    const apiKey = bearerToken && isApiKey(bearerToken, this.config.get("api.apiKeyPrefix") ?? "cal_");
-    const isThirdPartyBearerToken = bearerToken && this.getDecodedThirdPartyAccessToken(bearerToken);
 
-    // only check permissions for accessTokens attached to platform oAuth Client or platform oAuth credentials, not for next token or api key or third party oauth client
-    if (nextAuthToken || apiKey || isThirdPartyBearerToken) {
+    if (
+      request.authMethod === AuthMethods.NEXT_AUTH ||
+      request.authMethod === AuthMethods.CLERK ||
+      request.authMethod === AuthMethods.API_KEY ||
+      request.authMethod === AuthMethods.THIRD_PARTY_ACCESS_TOKEN
+    ) {
       return true;
     }
 
@@ -89,9 +83,5 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException(`PermissionsGuard - no oAuth client found for client id=${id}`);
     }
     return oAuthClient;
-  }
-
-  getDecodedThirdPartyAccessToken(bearerToken: string) {
-    return this.tokensService.getDecodedThirdPartyAccessToken(bearerToken);
   }
 }

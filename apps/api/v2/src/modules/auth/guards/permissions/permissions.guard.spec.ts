@@ -1,15 +1,12 @@
+import { APPS_WRITE, SCHEDULE_READ, SCHEDULE_WRITE } from "@calcom/platform-constants";
+import { createMock } from "@golevelup/ts-jest";
+import { ExecutionContext } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { PermissionsGuard } from "./permissions.guard";
+import { AuthMethods } from "@/lib/enums/auth-methods";
 import { OAuthClientRepository } from "@/modules/oauth-clients/oauth-client.repository";
 import { OAuthClientsOutputService } from "@/modules/oauth-clients/services/oauth-clients/oauth-clients-output.service";
 import { TokensRepository } from "@/modules/tokens/tokens.repository";
-import { TokensService } from "@/modules/tokens/tokens.service";
-import { createMock } from "@golevelup/ts-jest";
-import { ExecutionContext } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { Reflector } from "@nestjs/core";
-
-import { APPS_WRITE, SCHEDULE_READ, SCHEDULE_WRITE } from "@calcom/platform-constants";
-
-import { PermissionsGuard } from "./permissions.guard";
 
 describe("PermissionsGuard", () => {
   let guard: PermissionsGuard;
@@ -20,17 +17,6 @@ describe("PermissionsGuard", () => {
     guard = new PermissionsGuard(
       reflector,
       createMock<TokensRepository>(),
-      createMock<TokensService>(),
-      createMock<ConfigService>({
-        get: jest.fn().mockImplementation((key: string) => {
-          switch (key) {
-            case "api.apiKeyPrefix":
-              return "cal_";
-            default:
-              return null;
-          }
-        }),
-      }),
       createMock<OAuthClientRepository>(),
       createMock<OAuthClientsOutputService>({
         transformOAuthClientPermission: jest.fn().mockImplementation((permission: number) => {
@@ -73,6 +59,13 @@ describe("PermissionsGuard", () => {
   });
 
   describe("when access token is provided", () => {
+    it("uses the authenticated Clerk method without parsing the token again", async () => {
+      const mockContext = createMockExecutionContext({}, AuthMethods.CLERK);
+      jest.spyOn(reflector, "get").mockReturnValue([SCHEDULE_WRITE]);
+
+      await expect(guard.canActivate(mockContext)).resolves.toBe(true);
+    });
+
     it("should return true for valid permissions", async () => {
       const mockContext = createMockExecutionContext({ Authorization: "Bearer token" });
       jest.spyOn(reflector, "get").mockReturnValue([SCHEDULE_WRITE]);
@@ -120,8 +113,6 @@ describe("PermissionsGuard", () => {
       jest
         .spyOn(guard, "getOAuthClientByAccessToken")
         .mockResolvedValue(getMockOAuthClient(oAuthClientPermissions));
-      jest.spyOn(guard, "getDecodedThirdPartyAccessToken").mockReturnValue(null);
-
       await expect(guard.canActivate(mockContext)).rejects.toThrow(
         "PermissionsGuard - oAuth client with id=100 does not have the required permissions=SCHEDULE_WRITE"
       );
@@ -136,19 +127,16 @@ describe("PermissionsGuard", () => {
       jest
         .spyOn(guard, "getOAuthClientByAccessToken")
         .mockResolvedValue(getMockOAuthClient(oAuthClientPermissions));
-      jest.spyOn(guard, "getDecodedThirdPartyAccessToken").mockReturnValue(null);
-
       await expect(guard.canActivate(mockContext)).rejects.toThrow(
         "PermissionsGuard - oAuth client with id=100 does not have the required permissions=SCHEDULE_WRITE, SCHEDULE_READ"
       );
     });
 
     it("should return true for 3rd party access token", async () => {
-      const mockContext = createMockExecutionContext({ Authorization: "Bearer token" });
-      jest.spyOn(guard, "getDecodedThirdPartyAccessToken").mockReturnValue({
-        scope: ["scope"],
-        token_type: "Bearer",
-      });
+      const mockContext = createMockExecutionContext(
+        { Authorization: "Bearer token" },
+        AuthMethods.THIRD_PARTY_ACCESS_TOKEN
+      );
 
       await expect(guard.canActivate(mockContext)).resolves.toBe(true);
     });
@@ -214,10 +202,14 @@ describe("PermissionsGuard", () => {
     });
   });
 
-  function createMockExecutionContext(headers: Record<string, string>): ExecutionContext {
+  function createMockExecutionContext(
+    headers: Record<string, string>,
+    authMethod?: AuthMethods
+  ): ExecutionContext {
     return createMock<ExecutionContext>({
       switchToHttp: () => ({
         getRequest: () => ({
+          authMethod,
           headers,
           get: (headerName: string) => headers[headerName],
         }),

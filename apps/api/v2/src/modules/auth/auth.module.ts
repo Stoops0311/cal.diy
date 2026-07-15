@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { PassportModule } from "@nestjs/passport";
 import { ApiKeysModule } from "@/modules/api-keys/api-keys.module";
 import { ApiAuthGuard } from "@/modules/auth/guards/api-auth/api-auth.guard";
+import { ClerkGuard } from "@/modules/auth/guards/clerk/clerk.guard";
 import { NextAuthGuard } from "@/modules/auth/guards/next-auth/next-auth.guard";
 import { ApiAuthStrategy } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
 import { ClerkStrategy } from "@/modules/auth/strategies/clerk/clerk.strategy";
@@ -26,11 +27,12 @@ import { UsersModule } from "@/modules/users/users.module";
   providers: [
     NextAuthGuard,
     NextAuthStrategy,
+    ClerkGuard,
     ClerkStrategy,
     ApiAuthGuard,
     ApiAuthStrategy,
     OAuthFlowService,
   ],
-  exports: [NextAuthGuard, ApiAuthGuard],
+  exports: [NextAuthGuard, ClerkGuard, ApiAuthGuard],
 })
 export class AuthModule {}
