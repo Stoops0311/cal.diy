@@ -558,6 +558,8 @@ model Profile {
 
 model Team {
   id                     Int                     @id @default(autoincrement())
+  clerkOrganizationId    String?                 @unique
+  archivedAt             DateTime?
   /// @zod.string.min(1)
   name                   String
   // It is unique across teams and organizations. We don't have a strong reason for organization and team slug to be conflicting, could be fixed.
@@ -2625,6 +2627,35 @@ enum BillingStatus {
   PAST_DUE
   CANCELED
   UNPAID
+}
+
+enum ExternalWebhookProvider {
+  CLERK
+  POLAR
+}
+
+enum ExternalWebhookProcessingState {
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
+model ExternalWebhookEvent {
+  id              String                         @id @default(uuid())
+  provider        ExternalWebhookProvider
+  externalEventId String
+  type            String
+  state           ExternalWebhookProcessingState @default(PROCESSING)
+  attempts        Int                            @default(1)
+  payloadHash     String
+  effectiveAt     DateTime?
+  processedAt     DateTime?
+  sanitizedError  String?
+  createdAt       DateTime                       @default(now())
+  updatedAt       DateTime                       @updatedAt
+
+  @@unique([provider, externalEventId])
+  @@index([provider, state])
 }
 
 model BillingSubscription {
