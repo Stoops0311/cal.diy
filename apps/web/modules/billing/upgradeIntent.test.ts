@@ -25,6 +25,9 @@ describe("upgrade intent", () => {
     "/\\evil.test/x",
     "/%5Cevil.test/x",
     "/foo\\bar",
+    "/foo/%2e%2e//evil.test/x",
+    "/.%2e//evil.test/x",
+    "/foo/..//evil.test/x",
     "",
     "pricing",
   ])("rejects unsafe return path %s", (value) => expect(normalizeRelativePath(value)).toBeNull());

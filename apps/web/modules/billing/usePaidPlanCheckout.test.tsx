@@ -1,19 +1,36 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { PaidSelection } from "./PlanSelector";
 import { usePaidPlanCheckout } from "./usePaidPlanCheckout";
 
+type MutationOptions = {
+  onError(): void;
+  onSuccess(result: { checkoutUrl: string }): void;
+};
 const mocks: {
+  assign: ReturnType<typeof vi.fn>;
+  isPending: boolean;
   mutate: ReturnType<typeof vi.fn>;
+  mutationOptions?: MutationOptions;
   push: ReturnType<typeof vi.fn>;
   showToast: ReturnType<typeof vi.fn>;
+  variables?: PaidSelection;
 } = vi.hoisted(() => ({
+  assign: vi.fn(),
+  isPending: false,
   mutate: vi.fn(),
   push: vi.fn(),
   showToast: vi.fn(),
+  variables: undefined,
 }));
 
 vi.mock("@calcom/lib/hooks/useLocale", () => ({
-  useLocale: () => ({ t: (key: string) => key }),
+  useLocale: () => ({
+    t: (key: string) => {
+      if (key === "billing_checkout_error") return "Payment did not open. Try again.";
+      return key;
+    },
+  }),
 }));
 
 vi.mock("@calcom/trpc/react", () => ({
@@ -21,7 +38,10 @@ vi.mock("@calcom/trpc/react", () => ({
     viewer: {
       billing: {
         createCheckout: {
-          useMutation: () => ({ isPending: false, mutate: mocks.mutate, variables: undefined }),
+          useMutation: (options: MutationOptions) => {
+            mocks.mutationOptions = options;
+            return { isPending: mocks.isPending, mutate: mocks.mutate, variables: mocks.variables };
+          },
         },
       },
     },
@@ -33,8 +53,14 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }));
 
 describe("usePaidPlanCheckout", () => {
   beforeEach(() => {
+    mocks.assign.mockClear();
+    mocks.isPending = false;
     mocks.mutate.mockClear();
+    mocks.mutationOptions = undefined;
     mocks.push.mockClear();
+    mocks.showToast.mockClear();
+    mocks.variables = undefined;
+    Object.defineProperty(window, "location", { value: { assign: mocks.assign }, writable: true });
   });
 
   it("uses the existing mutation for Pro without an organization subject", () => {
@@ -75,5 +101,27 @@ describe("usePaidPlanCheckout", () => {
     });
     expect(mocks.mutate).toHaveBeenCalledWith({ interval: "YEAR", organizationId: 41, plan: "TEAM" });
     expect(before.mock.invocationCallOrder[0]).toBeLessThan(mocks.mutate.mock.invocationCallOrder[0]);
+  });
+
+  it("preserves Polar callbacks and exposes the pending mutation plan", () => {
+    mocks.isPending = true;
+    mocks.variables = { interval: "MONTH", plan: "TEAM" };
+    const { result } = renderHook(() => usePaidPlanCheckout());
+
+    expect(result.current.pendingPlan).toBe("TEAM");
+    act(() => mocks.mutationOptions?.onError());
+    expect(mocks.showToast).toHaveBeenCalledWith("Payment did not open. Try again.", "error");
+    act(() => mocks.mutationOptions?.onSuccess({ checkoutUrl: "https://polar.test/checkout" }));
+    expect(mocks.assign).toHaveBeenCalledWith("https://polar.test/checkout");
+  });
+
+  it("keeps startCheckout stable while its dependencies are unchanged", () => {
+    const before = vi.fn();
+    const { result, rerender } = renderHook(() =>
+      usePaidPlanCheckout({ organizationId: 41, returnTo: "/pricing", onBeforeNavigate: before })
+    );
+    const initial = result.current.startCheckout;
+    rerender();
+    expect(result.current.startCheckout).toBe(initial);
   });
 });

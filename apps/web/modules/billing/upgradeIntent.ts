@@ -41,7 +41,9 @@ function normalizeRelativePath(value: string): string | null {
   try {
     const url = new URL(value, BASE_ORIGIN);
     if (url.origin !== BASE_ORIGIN) return null;
-    return `${url.pathname}${url.search}${url.hash}`;
+    const normalized = `${url.pathname}${url.search}${url.hash}`;
+    if (normalized.startsWith("//")) return null;
+    return normalized;
   } catch {
     return null;
   }
