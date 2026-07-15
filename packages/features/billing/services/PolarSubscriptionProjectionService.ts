@@ -53,8 +53,10 @@ class PolarSubscriptionProjectionService {
     let interval: BillingInterval | null = null;
     let status: BillingStatus = "NONE";
     let seatCount = 1;
-    if (planBenefits.length === 1) {
-      if (!snapshot.productId) throw projectionConflict("A paid Polar state requires a product");
+    if (Boolean(snapshot.productId) !== Boolean(snapshot.subscriptionId)) {
+      throw projectionConflict("Polar product and subscription identifiers must change together");
+    }
+    if (snapshot.productId) {
       let product: ReturnType<typeof resolveConfiguredPolarProduct>;
       try {
         product = resolveConfiguredPolarProduct(
@@ -66,7 +68,7 @@ class PolarSubscriptionProjectionService {
         throw projectionConflict("Polar product configuration does not match the customer state");
       }
       const expectedBenefit = product.plan === "PRO" ? "convenio-pro" : "convenio-team";
-      if (planBenefits[0] !== expectedBenefit) {
+      if (planBenefits.length === 1 && planBenefits[0] !== expectedBenefit) {
         throw projectionConflict("Polar benefit does not match the configured product");
       }
       if (product.plan === "PRO" && subject.type !== "USER") {
@@ -82,6 +84,8 @@ class PolarSubscriptionProjectionService {
       interval = product.interval;
       status = statusMap[snapshot.status];
       if (product.plan === "TEAM") seatCount = snapshot.seats;
+    } else if (planBenefits.length === 1) {
+      throw projectionConflict("A paid Polar benefit requires an active subscription");
     }
 
     return prisma.$transaction(async (tx) => {

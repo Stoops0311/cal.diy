@@ -191,6 +191,29 @@ describe("PolarSubscriptionProjectionService", () => {
     });
   });
 
+  it("projects a configured Team trial before Polar grants its custom benefit", async () => {
+    const organization = await createMappedOrganization();
+
+    const result = await service.projectCustomerState(
+      snapshot({
+        activeBenefits: [],
+        externalCustomerId: `org:${organization.clerkOrganizationId}`,
+        productId: "product_team_month",
+        productMetadata: { billing_interval: "MONTH", plan_key: "TEAM" },
+        seats: 1,
+        status: "trialing",
+      })
+    );
+
+    expect(result.subscription).toMatchObject({
+      interval: "MONTH",
+      organizationId: organization.id,
+      plan: "TEAM",
+      seatCount: 1,
+      status: "TRIALING",
+    });
+  });
+
   it("does not let an older event overwrite newer state", async () => {
     const user = await createMappedUser();
     const externalCustomerId = `user:${user.clerkUserId}`;
