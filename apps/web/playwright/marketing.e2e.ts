@@ -24,7 +24,10 @@ test.describe("Convenio marketing layout", () => {
     await page.goto("/pricing");
 
     await expect(page.locator(".cv-header")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Pricing" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("banner").getByRole("link", { name: "Pricing" })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
     await expect(page.getByRole("heading", { name: "Pro" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Team" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Free" })).toHaveCount(0);
