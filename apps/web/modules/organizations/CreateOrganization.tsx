@@ -10,6 +10,8 @@ import { Icon } from "@calcom/ui/components/icon";
 import { showToast } from "@calcom/ui/components/toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { bindUpgradeIntentToOrganization, normalizeRelativePath } from "../billing/upgradeIntent";
+import { usePaidPlanCheckout } from "../billing/usePaidPlanCheckout";
 
 type OrganizationInput = { name: string; slug: string };
 type CreateOrganizationFormProps = {
@@ -38,8 +40,7 @@ function withOrganizationId(returnTo: string, organizationId: number): string {
 }
 
 function safeReturnTo(value: string | undefined): string {
-  if (!value?.startsWith("/") || value.startsWith("//")) return "/settings/billing";
-  return value;
+  return normalizeRelativePath(value ?? "") ?? "/settings/billing";
 }
 
 function CreateOrganizationForm({ isPending, onSubmit }: CreateOrganizationFormProps) {
@@ -94,22 +95,17 @@ function CreateOrganizationForm({ isPending, onSubmit }: CreateOrganizationFormP
 function CreateOrganization({ checkoutInterval, returnTo }: CreateOrganizationProps) {
   const { t } = useLocale();
   const router = useRouter();
-  const checkout = trpc.viewer.billing.createCheckout.useMutation({
-    onError: (_error, variables) => {
-      showToast(t("billing_checkout_error"), "error");
-      if (variables.organizationId) {
-        router.push(withOrganizationId("/pricing", variables.organizationId));
-        return;
-      }
-      router.push("/pricing");
+  const paidCheckout = usePaidPlanCheckout({
+    returnTo,
+    onBeforeNavigate: ({ organizationId }) => {
+      if (organizationId) bindUpgradeIntentToOrganization(organizationId);
     },
-    onSuccess: ({ checkoutUrl }) => window.location.assign(checkoutUrl),
   });
   const create = trpc.viewer.organizations.create.useMutation({
     onError: (error) => showToast(error.message || t("organization_bootstrap_error"), "error"),
     onSuccess: ({ organizationId }) => {
       if (checkoutInterval) {
-        checkout.mutate({ interval: checkoutInterval, organizationId, plan: "TEAM" });
+        paidCheckout.startCheckout({ interval: checkoutInterval, plan: "TEAM" }, organizationId);
         return;
       }
       router.push(withOrganizationId(returnTo, organizationId));
@@ -130,7 +126,7 @@ function CreateOrganization({ checkoutInterval, returnTo }: CreateOrganizationPr
           </div>
         </div>
         <CreateOrganizationForm
-          isPending={create.isPending || checkout.isPending}
+          isPending={create.isPending || paidCheckout.pendingPlan !== undefined}
           onSubmit={(input) => create.mutate(input)}
         />
       </div>

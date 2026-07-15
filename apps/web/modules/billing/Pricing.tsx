@@ -2,8 +2,6 @@
 
 import type { PaidPlanKey } from "@calcom/features/billing/lib/plans";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
-import { trpc } from "@calcom/trpc/react";
-import { showToast } from "@calcom/ui/components/toast";
 import Shell from "@calcom/web/modules/shell/Shell";
 import { useRouter } from "next/navigation";
 import {
@@ -13,6 +11,7 @@ import {
 } from "../../app/(marketing)/MarketingShell";
 import type { PaidSelection } from "./PlanSelector";
 import { PlanSelector } from "./PlanSelector";
+import { usePaidPlanCheckout } from "./usePaidPlanCheckout";
 
 type PricingProps = {
   isAuthenticated: boolean;
@@ -59,12 +58,8 @@ function PricingPage({
   isAuthenticated: boolean;
   organizationId?: number;
 }) {
-  const { t } = useLocale();
   const router = useRouter();
-  const checkout = trpc.viewer.billing.createCheckout.useMutation({
-    onError: () => showToast(t("billing_checkout_error"), "error"),
-    onSuccess: ({ checkoutUrl }) => window.location.assign(checkoutUrl),
-  });
+  const paidCheckout = usePaidPlanCheckout({ organizationId, returnTo: "/pricing" });
 
   const selectPlan = (selection: PaidSelection) => {
     if (!isAuthenticated) {
@@ -72,24 +67,14 @@ function PricingPage({
       router.push("/signup");
       return;
     }
-    if (selection.plan === "PRO") {
-      checkout.mutate(selection);
-      return;
-    }
-    if (organizationId === undefined) {
-      router.push(
-        `/settings/organizations/new?returnTo=${encodeURIComponent("/pricing")}&interval=${selection.interval}`
-      );
-      return;
-    }
-    checkout.mutate({ ...selection, organizationId });
+    paidCheckout.startCheckout(selection);
   };
 
   return (
     <Pricing
       isAuthenticated={isAuthenticated}
       onSelectPlan={selectPlan}
-      pendingPlan={checkout.isPending ? checkout.variables?.plan : undefined}
+      pendingPlan={paidCheckout.pendingPlan}
     />
   );
 }

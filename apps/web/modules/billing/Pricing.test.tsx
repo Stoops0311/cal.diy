@@ -3,11 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PaidSelection } from "./PlanSelector";
 
 const mocks = vi.hoisted(() => ({
-  checkoutMutate: vi.fn(),
-  checkoutOnError: () => {},
+  checkoutOptions: undefined as { organizationId?: number; returnTo?: string } | undefined,
+  pendingPlan: undefined as "PRO" | "TEAM" | undefined,
   push: vi.fn(),
   selectPlan: (_selection: PaidSelection) => {},
-  showToast: vi.fn(),
+  startCheckout: vi.fn(),
 }));
 
 vi.mock("@calcom/lib/hooks/useLocale", () => ({
@@ -23,27 +23,14 @@ vi.mock("@calcom/lib/hooks/useLocale", () => ({
   }),
 }));
 
-vi.mock("@calcom/trpc/react", () => ({
-  trpc: {
-    viewer: {
-      billing: {
-        createCheckout: {
-          useMutation: (options: { onError(): void }) => {
-            mocks.checkoutOnError = options.onError;
-            return {
-              isPending: false,
-              mutate: mocks.checkoutMutate,
-              variables: undefined,
-            };
-          },
-        },
-      },
-    },
+vi.mock("./usePaidPlanCheckout", () => ({
+  usePaidPlanCheckout: (options: { organizationId?: number; returnTo?: string }) => {
+    mocks.checkoutOptions = options;
+    return {
+      pendingPlan: mocks.pendingPlan,
+      startCheckout: mocks.startCheckout,
+    };
   },
-}));
-
-vi.mock("@calcom/ui/components/toast", () => ({
-  showToast: mocks.showToast,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -71,9 +58,10 @@ import { Pricing, PricingPage } from "./Pricing";
 
 describe("Pricing", () => {
   beforeEach(() => {
-    mocks.checkoutMutate.mockClear();
+    mocks.checkoutOptions = undefined;
+    mocks.pendingPlan = undefined;
     mocks.push.mockClear();
-    mocks.showToast.mockClear();
+    mocks.startCheckout.mockClear();
     localStorage.clear();
   });
 
@@ -107,43 +95,32 @@ describe("Pricing", () => {
 
     expect(localStorage.getItem("onBoardingRedirect")).toBe("/pricing");
     expect(mocks.push).toHaveBeenCalledWith("/signup");
-    expect(mocks.checkoutMutate).not.toHaveBeenCalled();
+    expect(mocks.startCheckout).not.toHaveBeenCalled();
   });
 
-  it("keeps Pro on the existing authenticated checkout mutation", () => {
+  it("starts shared checkout for authenticated Pro", () => {
     render(<PricingPage isAuthenticated />);
 
     mocks.selectPlan({ interval: "YEAR", plan: "PRO" });
 
-    expect(mocks.checkoutMutate).toHaveBeenCalledWith({ interval: "YEAR", plan: "PRO" });
+    expect(mocks.startCheckout).toHaveBeenCalledWith({ interval: "YEAR", plan: "PRO" });
   });
 
-  it("keeps checkout errors on the pricing surface with Convenio copy", () => {
-    render(<PricingPage isAuthenticated />);
-
-    mocks.checkoutOnError();
-
-    expect(mocks.showToast).toHaveBeenCalledWith("Payment did not open. Try again.", "error");
-  });
-
-  it("includes the organization for an authenticated Team checkout", () => {
+  it("delegates authenticated Team checkout to the shared controller", () => {
     render(<PricingPage isAuthenticated organizationId={42} />);
 
     mocks.selectPlan({ interval: "MONTH", plan: "TEAM" });
 
-    expect(mocks.checkoutMutate).toHaveBeenCalledWith({
-      interval: "MONTH",
-      organizationId: 42,
-      plan: "TEAM",
-    });
+    expect(mocks.checkoutOptions).toEqual({ organizationId: 42, returnTo: "/pricing" });
+    expect(mocks.startCheckout).toHaveBeenCalledWith({ interval: "MONTH", plan: "TEAM" });
   });
 
-  it("keeps the existing organization bootstrap URL when Team has no organization", () => {
+  it("delegates Team bootstrap to the shared controller", () => {
     render(<PricingPage isAuthenticated />);
 
     mocks.selectPlan({ interval: "YEAR", plan: "TEAM" });
 
-    expect(mocks.push).toHaveBeenCalledWith("/settings/organizations/new?returnTo=%2Fpricing&interval=YEAR");
-    expect(mocks.checkoutMutate).not.toHaveBeenCalled();
+    expect(mocks.startCheckout).toHaveBeenCalledWith({ interval: "YEAR", plan: "TEAM" });
+    expect(mocks.push).not.toHaveBeenCalled();
   });
 });
