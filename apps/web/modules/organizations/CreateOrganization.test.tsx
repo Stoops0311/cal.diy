@@ -82,6 +82,14 @@ beforeEach(() => {
 });
 
 describe("CreateOrganizationForm", () => {
+  it("accepts onboarding-specific submit copy", () => {
+    const view = render(
+      <CreateOrganizationForm isPending={false} onSubmit={vi.fn()} submitLabel="Create team and continue ›" />
+    );
+
+    expect(view.getByRole("button", { name: "Create team and continue ›" })).toBeVisible();
+  });
+
   it("derives a stable slug and submits the provisional organization", () => {
     const onSubmit = vi.fn();
     const view = render(<CreateOrganizationForm isPending={false} onSubmit={onSubmit} />);

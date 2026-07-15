@@ -17,6 +17,7 @@ type OrganizationInput = { name: string; slug: string };
 type CreateOrganizationFormProps = {
   isPending: boolean;
   onSubmit(input: OrganizationInput): void;
+  submitLabel?: string;
 };
 type CreateOrganizationProps = {
   checkoutInterval?: BillingIntervalType;
@@ -43,7 +44,7 @@ function safeReturnTo(value: string | undefined): string {
   return normalizeRelativePath(value ?? "") ?? "/settings/billing";
 }
 
-function CreateOrganizationForm({ isPending, onSubmit }: CreateOrganizationFormProps) {
+function CreateOrganizationForm({ isPending, onSubmit, submitLabel }: CreateOrganizationFormProps) {
   const { t } = useLocale();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -51,7 +52,8 @@ function CreateOrganizationForm({ isPending, onSubmit }: CreateOrganizationFormP
 
   return (
     <form
-      className="space-y-5"
+      aria-label={submitLabel}
+      className="space-y-5 motion-reduce:[&_button]:transition-none [@media(pointer:coarse)]:[&_button]:min-h-11 [@media(pointer:coarse)]:[&_input]:min-h-11"
       onSubmit={(event) => {
         event.preventDefault();
         const normalizedName = name.trim();
@@ -86,7 +88,7 @@ function CreateOrganizationForm({ isPending, onSubmit }: CreateOrganizationFormP
         value={slug}
       />
       <Button className="w-full justify-center sm:w-auto" loading={isPending} type="submit">
-        {t("organization_bootstrap_create")}
+        {submitLabel ?? t("organization_bootstrap_create")}
       </Button>
     </form>
   );
