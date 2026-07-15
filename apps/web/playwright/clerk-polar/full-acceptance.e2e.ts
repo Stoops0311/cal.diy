@@ -32,17 +32,27 @@ const primaryPassword = `Conv!${suffix}Pass2026`;
 const primaryResetPassword = `Reset!${suffix}Pass2026`;
 const migratedEmail = `convenio+clerk_test_migrated_${suffix}@gmail.com`;
 const migratedPassword = `Migrated!${suffix}Pass2026`;
+const teamMemberEmail = `convenio+clerk_test_member_${suffix}@gmail.com`;
+const teamMemberPassword = `Member!${suffix}Pass2026`;
 const primaryUsername = `conv_${suffix}_primary`;
 const migratedUsername = `conv_${suffix}_migrated`;
+const teamMemberUsername = `conv_${suffix}_member`;
 const organizationName = `Convenio E2E ${suffix}`;
 const organizationSlug = `convenio-e2e-${suffix}`;
 const manifest: FixtureManifest = createFixtureManifest(runTag);
 const execFileAsync = promisify(execFile);
 let migratedFixturePromise: Promise<{ clerkUserId: string; localUserId: number }> | undefined;
+let teamMemberFixturePromise: Promise<string> | undefined;
 let organizationFixtureId: number | undefined;
 
 type BrowserClerkUser = {
   createTOTP(): Promise<{ secret?: string }>;
+  getOrganizationInvitations(): Promise<{
+    data: Array<{
+      accept(): Promise<unknown>;
+      publicOrganizationData: { id: string };
+    }>;
+  }>;
   verifyTOTP(input: { code: string }): Promise<unknown>;
 };
 
@@ -221,13 +231,23 @@ async function tagPolarCustomer(externalCustomerId: string): Promise<void> {
 }
 
 async function selectPolarCombobox(page: Page, value: string): Promise<void> {
-  const combobox = page.getByRole("combobox").first();
+  const comboboxes = page.getByRole("combobox");
+  const labels = await comboboxes.evaluateAll((elements) =>
+    elements.map((element) => (element as HTMLElement).innerText.trim())
+  );
+  const acceptedLabels =
+    value === "United States" ? new Set(["Country", "United States"]) : new Set(["State", "California"]);
+  const index = labels.findIndex((label) => acceptedLabels.has(label));
+  if (index < 0 && value === "United States") return;
+  expect(index, `Polar checkout comboboxes: ${labels.join(", ")}`).toBeGreaterThanOrEqual(0);
+  const combobox = comboboxes.nth(index);
   await combobox.focus();
   await combobox.press("Enter");
   await page
     .getByRole("option", { name: value, exact: true })
     .evaluate((option: HTMLElement) => option.click());
-  await expect(combobox).toContainText(value, { timeout: 5_000 });
+  if (value === "United States") return;
+  await expect(page.getByRole("combobox").filter({ hasText: value })).toBeVisible({ timeout: 5_000 });
 }
 
 async function completePolarCardCheckout(page: Page, externalCustomerId: string): Promise<void> {
@@ -253,28 +273,45 @@ async function completePolarCardCheckout(page: Page, externalCustomerId: string)
   await payment.getByRole("textbox", { name: "Card number" }).fill("4242424242424242");
   await payment.getByRole("textbox", { name: "Expiration date MM / YY" }).fill("12/34");
   await payment.getByRole("textbox", { name: "Security code" }).fill("123");
+  const businessName = page.getByRole("textbox", { name: "Business name" });
+  if (await businessName.isVisible().catch(() => false)) await businessName.fill(organizationName);
 
-  const submit = page.getByRole("button", { name: "Start trial", exact: true });
+  const submit = page.getByRole("button", { name: /^(Start trial|Subscribe now)$/ }).last();
   await expect(submit).toBeEnabled();
+  const confirmationsBeforeSubmit = mutations.filter(({ path }) => path.endsWith("/confirm")).length;
   await submit.click();
   await expect
-    .poll(() => mutations.some(({ path }) => path.endsWith("/confirm")), { timeout: 20_000 })
+    .poll(
+      () =>
+        mutations.filter(({ path }) => path.endsWith("/confirm")).length > confirmationsBeforeSubmit ||
+        checkoutReturn.test(page.url()),
+      { timeout: 20_000 }
+    )
     .toBe(true)
     .catch(() => null);
-  if (!mutations.some(({ path }) => path.endsWith("/confirm")) && !checkoutReturn.test(page.url())) {
-    const settledSubmit = page.getByRole("button", { name: "Start trial", exact: true });
+  if (
+    mutations.filter(({ path }) => path.endsWith("/confirm")).length === confirmationsBeforeSubmit &&
+    !checkoutReturn.test(page.url())
+  ) {
+    const settledSubmit = page.getByRole("button", { name: /^(Start trial|Subscribe now)$/ }).last();
     await expect(settledSubmit).toBeEnabled({ timeout: 20_000 });
     await settledSubmit.click();
   }
-  const subscribeNow = page.getByRole("button", { name: "Subscribe now", exact: true });
-  await Promise.race([
-    page.waitForURL(checkoutReturn, { timeout: 45_000 }),
-    subscribeNow.waitFor({ state: "visible", timeout: 45_000 }),
-  ]).catch(() => null);
-  if (await subscribeNow.isVisible().catch(() => false)) {
+  await expect
+    .poll(
+      () =>
+        mutations.filter(({ path }) => path.endsWith("/confirm")).length > confirmationsBeforeSubmit ||
+        checkoutReturn.test(page.url()),
+      { timeout: 20_000 }
+    )
+    .toBe(true);
+  const latestConfirmation = mutations.filter(({ path }) => path.endsWith("/confirm")).at(-1);
+  if (latestConfirmation?.status === 403) {
+    const subscribeNow = page.getByRole("button", { name: "Subscribe now", exact: true });
+    await expect(subscribeNow).toBeEnabled({ timeout: 45_000 });
     await subscribeNow.click();
-    await page.waitForURL(checkoutReturn, { timeout: 45_000 }).catch(() => null);
   }
+  await page.waitForURL(checkoutReturn, { timeout: 60_000 }).catch(() => null);
   const confirmationSucceeded = mutations.some(
     ({ path, status }) => path.endsWith("/confirm") && status >= 200 && status < 300
   );
@@ -301,6 +338,15 @@ async function registerPersonalProjection(userId: number): Promise<void> {
     select: { id: true },
   });
   if (!subscription) throw new Error("Polar subscription projection is missing");
+  await registerFixture(manifest, { id: subscription.id, kind: "local_projection" });
+}
+
+async function registerOrganizationProjection(organizationId: number): Promise<void> {
+  const subscription = await prisma.billingSubscription.findUnique({
+    where: { organizationId },
+    select: { id: true },
+  });
+  if (!subscription) throw new Error("Polar organization subscription projection is missing");
   await registerFixture(manifest, { id: subscription.id, kind: "local_projection" });
 }
 
@@ -466,6 +512,114 @@ async function createMigratedBcryptFixture(): Promise<{ clerkUserId: string; loc
 function migratedBcryptFixture(): Promise<{ clerkUserId: string; localUserId: number }> {
   migratedFixturePromise ??= createMigratedBcryptFixture();
   return migratedFixturePromise;
+}
+
+async function createTeamMemberFixture(): Promise<string> {
+  const user = await clerk.users.createUser({
+    emailAddress: [teamMemberEmail],
+    firstName: "Convenio",
+    lastName: "Team Member",
+    password: teamMemberPassword,
+    publicMetadata: taggedMetadata(runTag),
+    username: teamMemberUsername,
+  });
+  await registerFixture(manifest, { id: user.id, kind: "clerk_user" });
+  return user.id;
+}
+
+function teamMemberFixture(): Promise<string> {
+  teamMemberFixturePromise ??= createTeamMemberFixture();
+  return teamMemberFixturePromise;
+}
+
+async function acceptOrganizationInvitation(page: Page, clerkOrganizationId: string): Promise<void> {
+  const accepted = await page.evaluate(async (organizationId) => {
+    const user = (window as Window & { Clerk?: BrowserClerk }).Clerk?.user;
+    if (!user) throw new Error("Clerk browser user is unavailable");
+    const invitations = await user.getOrganizationInvitations();
+    const invitation = invitations.data.find(
+      ({ publicOrganizationData }) => publicOrganizationData.id === organizationId
+    );
+    if (!invitation) return false;
+    await invitation.accept();
+    return true;
+  }, clerkOrganizationId);
+  expect(accepted).toBe(true);
+}
+
+async function verifyTeamMembershipLifecycle(
+  page: Page,
+  organizationId: number,
+  clerkOrganizationId: string
+): Promise<void> {
+  await teamMemberFixture();
+  const invitation = await callTRPC(
+    page,
+    "organizations/invite",
+    { email: teamMemberEmail, organizationId, role: "MEMBER" },
+    "POST"
+  );
+  expect(invitation.status).toBe(200);
+
+  await signOut(page);
+  await signInWithPassword(page, teamMemberEmail, teamMemberPassword);
+  const member = await tagAndRegisterMappedUser(teamMemberEmail);
+  await acceptOrganizationInvitation(page, clerkOrganizationId);
+
+  await expect
+    .poll(async () => {
+      const membership = await prisma.membership.findUnique({
+        where: { userId_teamId: { teamId: organizationId, userId: member.localUserId } },
+        select: { accepted: true, role: true },
+      });
+      const projection = await prisma.billingSubscription.findUnique({
+        where: { organizationId },
+        select: { seatCount: true },
+      });
+      return `${membership?.accepted}:${membership?.role}:${projection?.seatCount}`;
+    })
+    .toBe("true:MEMBER:2");
+
+  await signOut(page);
+  await signInWithPassword(page, migratedEmail, migratedPassword);
+  const promoted = await callTRPC(
+    page,
+    "organizations/changeRole",
+    { memberUserId: member.localUserId, organizationId, role: "ADMIN" },
+    "POST"
+  );
+  expect(promoted.status).toBe(200);
+  await expect
+    .poll(() =>
+      prisma.membership
+        .findUnique({
+          where: { userId_teamId: { teamId: organizationId, userId: member.localUserId } },
+          select: { role: true },
+        })
+        .then((membership) => membership?.role)
+    )
+    .toBe("ADMIN");
+
+  const removed = await callTRPC(
+    page,
+    "organizations/removeMember",
+    { memberUserId: member.localUserId, organizationId },
+    "POST"
+  );
+  expect(removed.status).toBe(200);
+  await expect
+    .poll(async () => {
+      const membership = await prisma.membership.findUnique({
+        where: { userId_teamId: { teamId: organizationId, userId: member.localUserId } },
+        select: { accepted: true },
+      });
+      const projection = await prisma.billingSubscription.findUnique({
+        where: { organizationId },
+        select: { seatCount: true },
+      });
+      return `${membership?.accepted}:${projection?.seatCount}`;
+    })
+    .toBe("false:1");
 }
 
 async function tagAndRegisterOrganization(organizationId: number): Promise<string> {
@@ -663,6 +817,77 @@ test("Polar Pro monthly checkout activates a paid projection", async ({ page }) 
   await page.screenshot({
     fullPage: true,
     path: `test-results/clerk-polar/screenshots/${runTag}-polar-pro-active.png`,
+  });
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+});
+
+test("Polar Team monthly checkout bills accepted Clerk members as seats", async ({ page }) => {
+  await setupClerkTestingToken(page);
+  const migrated = await migratedBcryptFixture();
+  await signInWithPassword(page, migratedEmail, migratedPassword);
+  await assertOneLocalUser(migratedEmail, migrated.clerkUserId);
+  const organizationId = await ensureOrganizationFixture(page);
+  const organization = await prisma.team.findUniqueOrThrow({
+    where: { id: organizationId },
+    select: { clerkOrganizationId: true },
+  });
+  if (!organization.clerkOrganizationId) throw new Error("Clerk organization projection is missing");
+
+  const freeProjection = await callTRPC(page, "billing/get", { organizationId }, "GET");
+  expect(freeProjection.status).toBe(200);
+  expect(readTRPCData<{ plan: string }>(freeProjection.body).plan).toBe("FREE");
+
+  const checkout = await callTRPC(
+    page,
+    "billing/createCheckout",
+    { interval: "MONTH", organizationId, plan: "TEAM" },
+    "POST"
+  );
+  expect(checkout.status).toBe(200);
+  const { checkoutUrl } = readTRPCData<{ checkoutUrl: string }>(checkout.body);
+  await page.goto(checkoutUrl, { timeout: 60_000, waitUntil: "domcontentloaded" }).catch((error) => {
+    if (!page.url().startsWith("https://sandbox.polar.sh/checkout/")) throw error;
+  });
+  await expect(page.getByText("Convenio Team — Monthly", { exact: true })).toBeVisible({
+    timeout: 30_000,
+  });
+  await page.screenshot({
+    fullPage: true,
+    path: `test-results/clerk-polar/screenshots/${runTag}-polar-team-checkout.png`,
+  });
+  const externalCustomerId = `org:${organization.clerkOrganizationId}`;
+  await completePolarCardCheckout(page, externalCustomerId);
+  await tagAndRegisterPolarSubscription(externalCustomerId);
+  if (new URL(page.url()).pathname === "/auth/login") {
+    await page.evaluate(() => {
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+    });
+    await page.context().clearCookies();
+    await signInWithPassword(page, migratedEmail, migratedPassword);
+  }
+
+  const reconciled = await callTRPC(page, "billing/reconcile", { organizationId }, "POST");
+  expect(reconciled.status).toBe(200);
+  await expect
+    .poll(
+      async () => {
+        const result = await callTRPC(page, "billing/get", { organizationId }, "GET");
+        if (result.status !== 200) return "ERROR";
+        const projection = readTRPCData<{ plan: string; seatCount: number; status: string }>(result.body);
+        return `${projection.plan}:${projection.seatCount}`;
+      },
+      { timeout: 30_000 }
+    )
+    .toBe("TEAM:1");
+  const paidProjection = await callTRPC(page, "billing/get", { organizationId }, "GET");
+  const paid = readTRPCData<{ status: string }>(paidProjection.body);
+  expect(["ACTIVE", "TRIALING"]).toContain(paid.status);
+  await registerOrganizationProjection(organizationId);
+  await verifyTeamMembershipLifecycle(page, organizationId, organization.clerkOrganizationId);
+  await page.screenshot({
+    fullPage: true,
+    path: `test-results/clerk-polar/screenshots/${runTag}-polar-team-active.png`,
   });
   await page.unrouteAll({ behavior: "ignoreErrors" });
 });
