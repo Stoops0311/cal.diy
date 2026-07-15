@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -42,12 +42,18 @@ vi.mock("@calcom/trpc/react", () => ({
 vi.mock("../../billing/PlanSelector", () => ({
   PlanSelector: (props: {
     onSelectPlan(selection: { interval: "YEAR"; plan: "PRO" | "TEAM" }): void;
+    pendingPlan?: "PRO" | "TEAM";
     visiblePlans: ["PRO" | "TEAM"];
   }) => {
     const plan = props.visiblePlans[0];
+    let label = "Bring in the team ›";
+    if (plan === "PRO") label = "Choose Pro ›";
     return (
-      <button onClick={() => props.onSelectPlan({ interval: "YEAR", plan })} type="button">
-        {plan === "PRO" ? "Choose Pro ›" : "Bring in the team ›"}
+      <button
+        disabled={props.pendingPlan === plan}
+        onClick={() => props.onSelectPlan({ interval: "YEAR", plan })}
+        type="button">
+        {label}
       </button>
     );
   },
@@ -129,6 +135,25 @@ describe("CompletionView", () => {
     render(<CompletionView acceptedOrganizations={[]} userEmail="ada@example.com" />);
     await userEvent.click(screen.getByRole("button", { name: "Keep working free" }));
     expect(mocks.submit).toHaveBeenCalledWith();
+  });
+
+  it("prevents a second paid submit while completion is pending", async () => {
+    let finishCompletion: () => void = () => undefined;
+    mocks.submit.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishCompletion = resolve;
+      })
+    );
+    render(<CompletionView acceptedOrganizations={[]} userEmail="ada@example.com" />);
+    const paidAction = screen.getByRole("button", { name: "Choose Pro ›" });
+
+    await userEvent.click(paidAction);
+    expect(paidAction).toBeDisabled();
+    await userEvent.click(paidAction);
+    expect(mocks.submit).toHaveBeenCalledOnce();
+
+    await act(async () => finishCompletion());
+    expect(paidAction).toBeEnabled();
   });
 
   it.each(["continue", "onboarding_skip_for_now"])("routes calendar %s to this decision", async (action) => {

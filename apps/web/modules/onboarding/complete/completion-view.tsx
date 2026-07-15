@@ -3,14 +3,14 @@
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "@calcom/ui/components/button";
 import { SkeletonText } from "@calcom/ui/components/skeleton";
-import { useEffect, useState } from "react";
+import { type ReactElement, type ReactNode, useEffect, useState } from "react";
 import { type PaidSelection, PlanSelector } from "../../billing/PlanSelector";
 import { usePaidPlanCheckout } from "../../billing/usePaidPlanCheckout";
 import { OnboardingCard } from "../components/OnboardingCard";
 import { OnboardingLayout } from "../components/OnboardingLayout";
 import { useSubmitPersonalOnboarding } from "../hooks/useSubmitPersonalOnboarding";
 import type { AcceptedOrganizationContext } from "../lib/getAcceptedOrganizationContexts";
-import { useOnboardingStore } from "../store/onboarding-store";
+import { type CreatedOrganizationContext, useOnboardingStore } from "../store/onboarding-store";
 
 export function CompletionView({
   acceptedOrganizations,
@@ -18,11 +18,12 @@ export function CompletionView({
 }: {
   acceptedOrganizations: AcceptedOrganizationContext[];
   userEmail: string;
-}) {
+}): ReactElement {
   const { t } = useLocale();
   const intent = useOnboardingStore((state) => state.intent);
   const createdOrganization = useOnboardingStore((state) => state.createdOrganization);
   const [hydrated, setHydrated] = useState(useOnboardingStore.persist.hasHydrated());
+  const [preparingPlan, setPreparingPlan] = useState<PaidSelection["plan"]>();
   const { isSubmitting, submitPersonalOnboarding } = useSubmitPersonalOnboarding();
   const paidCheckout = usePaidPlanCheckout();
 
@@ -41,36 +42,36 @@ export function CompletionView({
   }
 
   const acceptedOrganization = acceptedOrganizations[0] ?? null;
-  const checkoutOrganization =
-    intent === "bring-team" ? createdOrganization : intent === "join-team" ? acceptedOrganization : null;
+  let checkoutOrganization: AcceptedOrganizationContext | CreatedOrganizationContext | null = null;
+  if (intent === "bring-team") checkoutOrganization = createdOrganization;
+  if (intent === "join-team") checkoutOrganization = acceptedOrganization;
   const isMember = intent === "join-team" && acceptedOrganization?.role === "MEMBER";
-  const canManageTeam =
-    intent === "bring-team"
-      ? Boolean(createdOrganization)
-      : intent === "join-team" &&
-        (acceptedOrganization?.role === "OWNER" || acceptedOrganization?.role === "ADMIN");
+  let canManageTeam = false;
+  if (intent === "bring-team") canManageTeam = Boolean(createdOrganization);
+  if (intent === "join-team") {
+    canManageTeam = acceptedOrganization?.role === "OWNER" || acceptedOrganization?.role === "ADMIN";
+  }
   const missingCreatedTeam = intent === "bring-team" && !createdOrganization;
-  const visiblePlan =
-    intent === "bring-team" || (intent === "join-team" && acceptedOrganization) ? "TEAM" : "PRO";
+  let visiblePlan: PaidSelection["plan"] = "PRO";
+  if (intent === "bring-team" || (intent === "join-team" && acceptedOrganization)) visiblePlan = "TEAM";
   const teamName = checkoutOrganization?.name ?? "";
-  const titleKey =
-    intent === "bring-team" && createdOrganization
-      ? "onboarding_complete_bring_title"
-      : intent === "join-team" && acceptedOrganization
-        ? "onboarding_complete_join_title"
-        : intent === "join-team"
-          ? "onboarding_complete_join_missing_title"
-          : "onboarding_complete_solo_title";
-  const descriptionKey =
-    intent === "bring-team" && createdOrganization
-      ? "onboarding_complete_bring_description"
-      : intent === "join-team" && acceptedOrganization
-        ? "onboarding_complete_join_description"
-        : intent === "join-team"
-          ? "onboarding_complete_join_missing_description"
-          : "onboarding_complete_solo_description";
+  let titleKey = "onboarding_complete_solo_title";
+  let descriptionKey = "onboarding_complete_solo_description";
+  if (intent === "join-team" && acceptedOrganization) {
+    titleKey = "onboarding_complete_join_title";
+    descriptionKey = "onboarding_complete_join_description";
+  } else if (intent === "join-team") {
+    titleKey = "onboarding_complete_join_missing_title";
+    descriptionKey = "onboarding_complete_join_missing_description";
+  }
+  if (intent === "bring-team" && createdOrganization) {
+    titleKey = "onboarding_complete_bring_title";
+    descriptionKey = "onboarding_complete_bring_description";
+  }
 
   function selectPaidPlan(selection: PaidSelection): void {
+    if (preparingPlan) return;
+    setPreparingPlan(selection.plan);
     void submitPersonalOnboarding({
       afterComplete: () => {
         if (selection.plan === "TEAM" && checkoutOrganization) {
@@ -79,37 +80,46 @@ export function CompletionView({
         }
         paidCheckout.startCheckout(selection);
       },
-    });
+    }).finally(() => setPreparingPlan(undefined));
+  }
+
+  let planDecision: ReactNode = null;
+  if (isMember && acceptedOrganization) {
+    planDecision = (
+      <p className="rounded-xl border border-subtle bg-subtle p-4 text-emphasis text-sm">
+        {t("onboarding_complete_member_plan", { teamName: acceptedOrganization.name })}
+      </p>
+    );
+  } else if (missingCreatedTeam) {
+    planDecision = (
+      <Button className="w-full justify-center" color="secondary" href="/onboarding/team">
+        {t("onboarding_complete_create_team")}
+      </Button>
+    );
+  } else if (canManageTeam || visiblePlan === "PRO") {
+    let ctaKey = "billing_choose_pro";
+    if (visiblePlan === "TEAM") ctaKey = "billing_choose_team";
+    planDecision = (
+      <PlanSelector
+        ctaKeys={{ [visiblePlan]: ctaKey }}
+        freeHref="/event-types"
+        onSelectPlan={selectPaidPlan}
+        pendingPlan={preparingPlan ?? paidCheckout.pendingPlan}
+        showAllPlans={false}
+        visiblePlans={[visiblePlan]}
+      />
+    );
   }
 
   return (
     <OnboardingLayout currentStep={4} totalSteps={4} userEmail={userEmail}>
       <OnboardingCard footer={null} subtitle={t(descriptionKey)} title={t(titleKey, { teamName })}>
         <div className="motion-reduce:[&_button]:transition-none [@media(pointer:coarse)]:[&_button]:min-h-11">
-          {isMember && acceptedOrganization ? (
-            <p className="border-subtle bg-subtle rounded-xl border p-4 text-sm text-emphasis">
-              {t("onboarding_complete_member_plan", { teamName: acceptedOrganization.name })}
-            </p>
-          ) : missingCreatedTeam ? (
-            <Button className="w-full justify-center" color="secondary" href="/onboarding/team">
-              {t("onboarding_complete_create_team")}
-            </Button>
-          ) : canManageTeam || visiblePlan === "PRO" ? (
-            <PlanSelector
-              ctaKeys={{
-                [visiblePlan]: visiblePlan === "TEAM" ? "billing_choose_team" : "billing_choose_pro",
-              }}
-              freeHref="/event-types"
-              onSelectPlan={selectPaidPlan}
-              pendingPlan={paidCheckout.pendingPlan}
-              showAllPlans={false}
-              visiblePlans={[visiblePlan]}
-            />
-          ) : null}
+          {planDecision}
           <Button
             className="mt-4 w-full justify-center"
             color="secondary"
-            disabled={isSubmitting}
+            disabled={isSubmitting || preparingPlan !== undefined}
             onClick={() => void submitPersonalOnboarding()}>
             {t("billing_keep_working_free")}
           </Button>
