@@ -1,10 +1,10 @@
+import * as os from "node:os";
+import * as path from "node:path";
+import process from "node:process";
+import { WEBAPP_URL } from "@calcom/lib/constants";
 import type { Frame, PlaywrightTestConfig } from "@playwright/test";
 import { devices, expect } from "@playwright/test";
 import dotEnv from "dotenv";
-import * as os from "node:os";
-import * as path from "node:path";
-
-import { WEBAPP_URL } from "@calcom/lib/constants";
 
 dotEnv.config({ path: ".env" });
 
@@ -25,6 +25,7 @@ const headless = !!process.env.CI || !!process.env.PLAYWRIGHT_HEADLESS;
 
 const IS_EMBED_TEST = process.argv.some((a) => a.startsWith("--project=@calcom/embed-core"));
 const IS_EMBED_REACT_TEST = process.argv.some((a) => a.startsWith("--project=@calcom/embed-react"));
+const IS_CLERK_POLAR_TEST = process.argv.some((a) => a.startsWith("--project=@calcom/clerk-polar"));
 
 // Suppress all webServer logs to reduce noise during E2E tests
 const webServer: PlaywrightTestConfig["webServer"] = [
@@ -72,7 +73,7 @@ const DEFAULT_CHROMIUM: NonNullable<PlaywrightTestConfig["projects"]>[number]["u
     cookies: [
       {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore TS definitions for USE are wrong.
+        // @ts-expect-error TS definitions for USE are wrong.
         url: WEBAPP_URL,
         name: "calcom-timezone-dialog",
         expires: -1,
@@ -106,6 +107,7 @@ const config: PlaywrightTestConfig = {
     ["junit", { outputFile: "./test-results/reports/results.xml" }],
   ],
   outputDir: path.join(outputDir, "results"),
+  globalSetup: IS_CLERK_POLAR_TEST ? "./apps/web/playwright/clerk-polar/global.setup.ts" : undefined,
   webServer,
   use: {
     baseURL: process.env.NEXT_PUBLIC_WEBAPP_URL,
@@ -115,6 +117,21 @@ const config: PlaywrightTestConfig = {
   },
   projects: [
     {
+      name: "@calcom/clerk-polar",
+      testDir: "./apps/web/playwright/clerk-polar",
+      testMatch: /full-acceptance\.e2e\.ts/,
+      fullyParallel: false,
+      workers: 1,
+      expect: { timeout: DEFAULT_EXPECT_TIMEOUT },
+      use: {
+        ...DEFAULT_CHROMIUM,
+        screenshot: "only-on-failure",
+        storageState: { cookies: [], origins: [] },
+        trace: "on-first-retry",
+        video: "retain-on-failure",
+      },
+    },
+    {
       name: "@calcom/web",
       testDir: "./apps/web/playwright",
       testMatch: /.*\.e2e\.tsx?/,
@@ -122,7 +139,7 @@ const config: PlaywrightTestConfig = {
         timeout: DEFAULT_EXPECT_TIMEOUT,
       },
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore TS definitions for USE are wrong.
+      // @ts-expect-error TS definitions for USE are wrong.
       use: DEFAULT_CHROMIUM,
     },
     {
@@ -133,7 +150,7 @@ const config: PlaywrightTestConfig = {
         timeout: DEFAULT_EXPECT_TIMEOUT,
       },
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore TS definitions for USE are wrong.
+      // @ts-expect-error TS definitions for USE are wrong.
       use: DEFAULT_CHROMIUM,
     },
     {
@@ -157,7 +174,7 @@ const config: PlaywrightTestConfig = {
       },
       testMatch: /.*\.e2e\.tsx?/,
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore TS definitions for USE are wrong.
+      // @ts-expect-error TS definitions for USE are wrong.
       use: {
         ...DEFAULT_CHROMIUM,
         baseURL: "http://localhost:3101/",
@@ -293,13 +310,13 @@ expect.extend({
     } = await iframe.evaluate(() => {
       return {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
+        //@ts-expect-error
         visibility: window.initialBodyVisibility,
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
+        //@ts-expect-error
         background: window.initialBodyBackground,
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
+        //@ts-expect-error
         initialValuesSet: window.initialValuesSet,
       };
     });
