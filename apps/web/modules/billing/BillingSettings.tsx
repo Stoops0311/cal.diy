@@ -211,7 +211,8 @@ function BillingSettings({
   }, [checkoutId]);
   const intentOrganizationId =
     restoreIntent?.subject?.kind === "organization" ? restoreIntent.subject.organizationId : undefined;
-  const effectiveOrganizationId = organizationId ?? intentOrganizationId;
+  const effectiveOrganizationId =
+    restoreIntent?.subject?.kind === "user" ? undefined : (intentOrganizationId ?? organizationId);
   const subject = useMemo(
     () => (effectiveOrganizationId === undefined ? {} : { organizationId: effectiveOrganizationId }),
     [effectiveOrganizationId]
@@ -295,4 +296,4 @@ function BillingSettings({
   );
 }
 
-export { BillingSettings, BillingSettingsView, projectionSatisfiesIntent };
+export { BillingSettings, BillingSettingsView };

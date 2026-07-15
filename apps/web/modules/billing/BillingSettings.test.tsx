@@ -193,6 +193,19 @@ describe("BillingSettings checkout restoration", () => {
     expect(mocks.replace).toHaveBeenCalledWith("/booking/book_123/logs?upgrade=complete");
   });
 
+  it("uses the stored checkout subject over a conflicting billing-page subject", async () => {
+    mocks.readUpgradeIntent.mockReturnValue(teamIntent);
+
+    render(
+      <BillingSettings checkoutId="checkout_123" initialProjection={freeProjection} organizationId={99} />
+    );
+
+    await waitFor(() => expect(mocks.reconcileMutate).toHaveBeenCalledWith({ organizationId: 41 }));
+    expect(mocks.reconcileMutate).not.toHaveBeenCalledWith({ organizationId: 99 });
+    expect(mocks.queryInput).toEqual({ organizationId: 41 });
+    expect(mocks.queryOptions?.initialData).toBeUndefined();
+  });
+
   it("does not restore from an old active projection before reconciliation succeeds", async () => {
     const proIntent = {
       ...teamIntent,

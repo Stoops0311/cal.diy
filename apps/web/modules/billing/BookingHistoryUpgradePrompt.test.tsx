@@ -46,4 +46,16 @@ describe("BookingHistoryUpgradePrompt", () => {
     fireEvent.click(view.getByRole("button", { name: "Choose Team" }));
     expect(mocks.openUpgradePrompt).toHaveBeenCalledWith(request);
   });
+
+  it("encodes reserved route characters without changing the resume booking UID", async () => {
+    render(<BookingHistoryUpgradePrompt bookingUid="book/123 ?" />);
+
+    await waitFor(() =>
+      expect(mocks.openUpgradePrompt).toHaveBeenCalledWith({
+        ...request,
+        returnTo: "/booking/book%2F123%20%3F/logs",
+        resume: { kind: "openBookingAudit", bookingUid: "book/123 ?" },
+      })
+    );
+  });
 });
