@@ -2,7 +2,7 @@ import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
 import { prisma } from "@calcom/prisma";
 import type { BillingSubscription } from "@calcom/prisma/client";
-import type { BillingStatus } from "@calcom/prisma/enums";
+import type { BillingInterval, BillingStatus, PlanKey } from "@calcom/prisma/enums";
 import { type PolarEnvironment, resolveConfiguredPolarProduct } from "./PolarClient";
 
 type PolarCustomerStateSnapshot = {
@@ -14,11 +14,11 @@ type PolarCustomerStateSnapshot = {
   effectiveAt: Date;
   eventId: string;
   externalCustomerId: string;
-  productId: string;
+  productId: string | null;
   productMetadata: Record<string, unknown>;
   seats: number;
   status: "active" | "canceled" | "past_due" | "trialing" | "unpaid";
-  subscriptionId: string;
+  subscriptionId: string | null;
 };
 
 type BillingSubject =
@@ -44,29 +44,45 @@ class PolarSubscriptionProjectionService {
     snapshot: PolarCustomerStateSnapshot
   ): Promise<{ applied: boolean; subscription: BillingSubscription }> {
     const subject = await this.resolveSubject(snapshot.externalCustomerId);
-    let product: ReturnType<typeof resolveConfiguredPolarProduct>;
-    try {
-      product = resolveConfiguredPolarProduct(snapshot.productId, snapshot.productMetadata, this.environment);
-    } catch {
-      throw projectionConflict("Polar product configuration does not match the customer state");
-    }
+    const planBenefits = snapshot.activeBenefits.filter(
+      (benefit) => benefit === "convenio-pro" || benefit === "convenio-team"
+    );
+    if (planBenefits.length > 1) throw projectionConflict("Polar customer has conflicting plan benefits");
 
-    if (product.plan === "PRO" && subject.type !== "USER") {
-      throw projectionConflict("Pro subscriptions require a user subject");
+    let plan: PlanKey = "FREE";
+    let interval: BillingInterval | null = null;
+    let status: BillingStatus = "NONE";
+    let seatCount = 1;
+    if (planBenefits.length === 1) {
+      if (!snapshot.productId) throw projectionConflict("A paid Polar state requires a product");
+      let product: ReturnType<typeof resolveConfiguredPolarProduct>;
+      try {
+        product = resolveConfiguredPolarProduct(
+          snapshot.productId,
+          snapshot.productMetadata,
+          this.environment
+        );
+      } catch {
+        throw projectionConflict("Polar product configuration does not match the customer state");
+      }
+      const expectedBenefit = product.plan === "PRO" ? "convenio-pro" : "convenio-team";
+      if (planBenefits[0] !== expectedBenefit) {
+        throw projectionConflict("Polar benefit does not match the configured product");
+      }
+      if (product.plan === "PRO" && subject.type !== "USER") {
+        throw projectionConflict("Pro subscriptions require a user subject");
+      }
+      if (product.plan === "TEAM" && subject.type !== "ORGANIZATION") {
+        throw projectionConflict("Team subscriptions require an organization subject");
+      }
+      if (product.plan === "TEAM" && (snapshot.seats < 1 || snapshot.seats > 50)) {
+        throw projectionConflict("Team seats must be between one and fifty");
+      }
+      plan = product.plan;
+      interval = product.interval;
+      status = statusMap[snapshot.status];
+      if (product.plan === "TEAM") seatCount = snapshot.seats;
     }
-    if (product.plan === "TEAM" && subject.type !== "ORGANIZATION") {
-      throw projectionConflict("Team subscriptions require an organization subject");
-    }
-    if (product.plan === "TEAM" && (snapshot.seats < 1 || snapshot.seats > 50)) {
-      throw projectionConflict("Team seats must be between one and fifty");
-    }
-
-    const expectedBenefit = product.plan === "PRO" ? "convenio-pro" : "convenio-team";
-    const paidBenefitActive = snapshot.activeBenefits.includes(expectedBenefit);
-    const plan = paidBenefitActive ? product.plan : "FREE";
-    const interval = paidBenefitActive ? product.interval : null;
-    const status = paidBenefitActive ? statusMap[snapshot.status] : "NONE";
-    const seatCount = paidBenefitActive && product.plan === "TEAM" ? snapshot.seats : 1;
 
     return prisma.$transaction(async (tx) => {
       const existing = await tx.billingSubscription.findUnique({

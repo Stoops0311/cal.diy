@@ -215,7 +215,9 @@ describe("PolarSubscriptionProjectionService", () => {
       snapshot({
         activeBenefits: [],
         externalCustomerId: `user:${user.clerkUserId}`,
+        productId: null,
         status: "unpaid",
+        subscriptionId: null,
       })
     );
 
