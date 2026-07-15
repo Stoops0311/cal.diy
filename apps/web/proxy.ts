@@ -138,8 +138,23 @@ function isClerkProtectedRequest(req: NextRequest): boolean {
   );
 }
 
+function isClerkProtectedPageRequest(req: NextRequest): boolean {
+  const path = req.nextUrl.pathname;
+  return protectedPagePrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+}
+
+function getClerkSignInUrl(req: NextRequest): string {
+  const signInUrl = new URL("/auth/login", req.url);
+  signInUrl.searchParams.set("callbackUrl", `${req.nextUrl.pathname}${req.nextUrl.search}`);
+  return signInUrl.toString();
+}
+
 const clerkProxy = clerkMiddleware(async (auth, req) => {
-  if (isClerkProtectedRequest(req)) await auth.protect();
+  if (isClerkProtectedPageRequest(req)) {
+    await auth.protect({ unauthenticatedUrl: getClerkSignInUrl(req) });
+  } else if (isClerkProtectedRequest(req)) {
+    await auth.protect();
+  }
   return baseProxy(req);
 });
 

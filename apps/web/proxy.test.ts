@@ -173,7 +173,19 @@ describe("Middleware Integration Tests", () => {
 
       await callProxy(createTestRequest({ url: `${WEBAPP_URL}/event-types` }));
 
-      expect(clerkProtect).toHaveBeenCalledOnce();
+      expect(clerkProtect).toHaveBeenCalledWith({
+        unauthenticatedUrl: `${WEBAPP_URL}/auth/login?callbackUrl=%2Fevent-types`,
+      });
+    });
+
+    it("preserves the protected page query in the local sign-in callback", async () => {
+      vi.stubEnv("AUTH_PROVIDER", "clerk");
+
+      await callProxy(createTestRequest({ url: `${WEBAPP_URL}/settings/billing?checkout_id=checkout_1` }));
+
+      expect(clerkProtect).toHaveBeenCalledWith({
+        unauthenticatedUrl: `${WEBAPP_URL}/auth/login?callbackUrl=%2Fsettings%2Fbilling%3Fcheckout_id%3Dcheckout_1`,
+      });
     });
 
     it.each([
