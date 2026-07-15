@@ -1,9 +1,9 @@
 # Clerk and Polar sandbox acceptance ledger
 
-Last audited: 2026-07-15 14:04 UTC  
-Branch: `codex/clerk-polar`  
-Playwright run: `convenio-e2e-20260715T133950Z-7b97fbbc`  
-Report: `test-results/reports/playwright-html-report/index.html`
+- Last audited: 2026-07-15 14:20 UTC
+- Branch: `codex/clerk-polar`
+- Playwright run: `convenio-e2e-20260715T133950Z-7b97fbbc`
+- Report: `test-results/reports/playwright-html-report/index.html`
 
 This ledger distinguishes direct end-to-end evidence from unit/integration evidence. A requirement is
 accepted only when every behavior named by the design has current direct evidence. Partial and missing
@@ -48,6 +48,12 @@ excluded.
 - Strict web type check: 3/3 tasks successful.
 - Reconciliation: `yarn clerk-polar:reconcile --dry-run` returned
   `{"driftCount":0,"status":"clean","subjectCount":0}` after tagged cleanup.
+- Rollback rehearsal: one migrated active user authenticated in Clerk and then, after a real server
+  restart with both provider switches set to NextAuth, authenticated with the unchanged password as the
+  same numeric local user and retained the same event-type owner ID. The locked fixture was denied in
+  both modes; NextAuth verification passed in 16.2 seconds.
+- Rollback cleanup: a second cleanup of `convenio-e2e-20260715T140925Z-94bc5e68` returned
+  `removed: 0, skipped: 4`; Clerk and local prefix audits both returned zero.
 - Secret-pattern scan of the committed teardown/webhook diff: no Clerk, Polar, Stripe, or webhook
   secret value pattern found.
 
