@@ -4,6 +4,7 @@ export type AllowedAuthMethod =
   | "OAUTH_CLIENT_CREDENTIALS"
   | "API_KEY"
   | "ACCESS_TOKEN"
+  | "CLERK"
   | "NEXT_AUTH"
   | "THIRD_PARTY_ACCESS_TOKEN";
 

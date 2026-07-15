@@ -1,6 +1,7 @@
 import { logLevels } from "@/lib/logger";
 
 export type Environment = {
+  AUTH_PROVIDER: "clerk" | "nextauth";
   NODE_ENV: "development" | "production";
   API_PORT: string;
   API_URL: string;

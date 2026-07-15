@@ -1,25 +1,23 @@
-import { sha256Hash, isApiKey, stripApiKey } from "@/lib/api-key";
+import { INVALID_ACCESS_TOKEN, X_CAL_CLIENT_ID, X_CAL_SECRET_KEY } from "@calcom/platform-constants";
+import { Injectable, InternalServerErrorException, Logger, UnauthorizedException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { PassportStrategy } from "@nestjs/passport";
+import type { Request } from "express";
+import { getToken } from "next-auth/jwt";
+import type { AllowedAuthMethod } from "../../decorators/api-auth-guard-only-allow.decorator";
+import { isApiKey, sha256Hash, stripApiKey } from "@/lib/api-key";
 import { AuthMethods } from "@/lib/enums/auth-methods";
 import { isOriginAllowed } from "@/lib/is-origin-allowed/is-origin-allowed";
 import { BaseStrategy } from "@/lib/passport/strategies/types";
 import { ApiKeysRepository } from "@/modules/api-keys/api-keys-repository";
+import { ClerkStrategy } from "@/modules/auth/strategies/clerk/clerk.strategy";
 import { MembershipsRepository } from "@/modules/memberships/memberships.repository";
 import { OAuthClientRepository } from "@/modules/oauth-clients/oauth-client.repository";
 import { OAuthFlowService } from "@/modules/oauth-clients/services/oauth-flow.service";
 import { TokensRepository } from "@/modules/tokens/tokens.repository";
 import { TokensService } from "@/modules/tokens/tokens.service";
 import { UsersService } from "@/modules/users/services/users.service";
-import { UserWithProfile, UsersRepository } from "@/modules/users/users.repository";
-import { Injectable, InternalServerErrorException, UnauthorizedException } from "@nestjs/common";
-import { Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { PassportStrategy } from "@nestjs/passport";
-import type { Request } from "express";
-import { getToken } from "next-auth/jwt";
-
-import { INVALID_ACCESS_TOKEN, X_CAL_CLIENT_ID, X_CAL_SECRET_KEY } from "@calcom/platform-constants";
-
-import type { AllowedAuthMethod } from "../../decorators/api-auth-guard-only-allow.decorator";
+import { UsersRepository, UserWithProfile } from "@/modules/users/users.repository";
 
 export type ApiAuthGuardUser = UserWithProfile & { isSystemAdmin: boolean };
 export type ApiAuthGuardRequest = Request & {
@@ -34,6 +32,14 @@ export const ONLY_CLIENT_ID_PROVIDED_MESSAGE = `Only '${X_CAL_CLIENT_ID}' header
 
 export const ONLY_CLIENT_SECRET_PROVIDED_MESSAGE = `Only '${X_CAL_SECRET_KEY}' header provided. Please also provide '${X_CAL_CLIENT_ID}' header or Auth bearer token as 'Authentication' header`;
 
+export function getApiBrowserAuthProvider(config: Pick<ConfigService, "get">): "clerk" | "nextauth" {
+  const provider = config.get<string>("auth.provider") ?? "nextauth";
+  if (provider !== "clerk" && provider !== "nextauth") {
+    throw new Error("AUTH_PROVIDER must be nextauth or clerk");
+  }
+  return provider;
+}
+
 @Injectable()
 export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") {
   private readonly logger = new Logger("ApiAuthStrategy");
@@ -47,7 +53,8 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
     private readonly apiKeyRepository: ApiKeysRepository,
     private readonly oauthRepository: OAuthClientRepository,
     private readonly usersService: UsersService,
-    private readonly membershipsRepository: MembershipsRepository
+    private readonly membershipsRepository: MembershipsRepository,
+    private readonly clerkStrategy: ClerkStrategy
   ) {
     super();
   }
@@ -66,6 +73,8 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
       const apiKeyAllowed = noSpecificAuthExpected || allowedMethods.includes("API_KEY");
       const accessTokenAllowed = noSpecificAuthExpected || allowedMethods.includes("ACCESS_TOKEN");
       const nextAuthAllowed = noSpecificAuthExpected || allowedMethods.includes("NEXT_AUTH");
+      const clerkAllowed =
+        noSpecificAuthExpected || allowedMethods.includes("CLERK") || allowedMethods.includes("NEXT_AUTH");
       const thirdPartyAccessTokenAllowed =
         noSpecificAuthExpected || allowedMethods.includes("THIRD_PARTY_ACCESS_TOKEN");
 
@@ -100,6 +109,9 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
                 return this.success(this.getSuccessUser(result.data));
               }
             }
+            if (getApiBrowserAuthProvider(this.config) === "clerk" && clerkAllowed) {
+              return await this.authenticateClerk(request);
+            }
             // token was not third party token, rethrow error from authenticateBearerToken
             if (err instanceof Error) {
               return this.error(err);
@@ -107,14 +119,27 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
           }
         }
 
+        if (getApiBrowserAuthProvider(this.config) === "clerk" && clerkAllowed) {
+          return await this.authenticateClerk(request);
+        }
+
         throw new UnauthorizedException(`ApiAuthStrategy - Invalid Bearer token`);
       }
 
-      const nextAuthSecret = this.config.get("next.authSecret", { infer: true });
-      const nextAuthToken = await getToken({ req: request, secret: nextAuthSecret });
-      if (nextAuthToken && nextAuthAllowed) {
-        request.authMethod = AuthMethods["NEXT_AUTH"];
-        return await this.authenticateNextAuth(nextAuthToken, request);
+      const browserAuthProvider = getApiBrowserAuthProvider(this.config);
+      const clerkCookie = request.cookies?.__session;
+      if (browserAuthProvider === "clerk" && clerkAllowed && typeof clerkCookie === "string") {
+        return await this.authenticateClerk(request);
+      }
+
+      let nextAuthToken = null;
+      if (browserAuthProvider === "nextauth") {
+        const nextAuthSecret = this.config.get("next.authSecret", { infer: true });
+        nextAuthToken = await getToken({ req: request, secret: nextAuthSecret });
+        if (nextAuthToken && nextAuthAllowed) {
+          request.authMethod = AuthMethods["NEXT_AUTH"];
+          return await this.authenticateNextAuth(nextAuthToken, request);
+        }
       }
 
       const noAuthProvided = !oAuthClientId && !oAuthClientSecret && !bearerToken && !nextAuthToken;
@@ -153,6 +178,12 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
 
   async authenticateNextAuth(token: { email?: string | null }, request: ApiAuthGuardRequest) {
     const user = await this.nextAuthStrategy(token, request);
+    return this.success(this.getSuccessUser(user));
+  }
+
+  async authenticateClerk(request: ApiAuthGuardRequest) {
+    const user = await this.clerkStrategy.validate(request);
+    request.authMethod = AuthMethods.CLERK;
     return this.success(this.getSuccessUser(user));
   }
 

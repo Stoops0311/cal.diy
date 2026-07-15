@@ -12,6 +12,9 @@ const loadConfig = (): AppConfig => {
   }
 
   return {
+    auth: {
+      provider: getEnv("AUTH_PROVIDER", "nextauth"),
+    },
     env: {
       type: env,
     },

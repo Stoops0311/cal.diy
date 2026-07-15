@@ -1,4 +1,7 @@
 export type AppConfig = {
+  auth: {
+    provider: "clerk" | "nextauth";
+  };
   env: {
     type: "production" | "development";
   };
