@@ -7,6 +7,9 @@ export type Environment = {
   DATABASE_READ_URL: string;
   DATABASE_WRITE_URL: string;
   NEXTAUTH_SECRET: string;
+  CLERK_AUTHORIZED_PARTIES: string;
+  CLERK_JWT_KEY: string;
+  CLERK_SECRET_KEY: string;
   DATABASE_URL: string;
   JWT_SECRET: string;
   SENTRY_DSN: string;

@@ -23,6 +23,11 @@ export type AppConfig = {
   next: {
     authSecret: string;
   };
+  clerk: {
+    authorizedParties: string[];
+    jwtKey: string;
+    secretKey: string;
+  };
   stripe: {
     apiKey: string;
     webhookSecret: string;

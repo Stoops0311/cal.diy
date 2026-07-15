@@ -1967,6 +1967,7 @@ __metadata:
     "@calcom/platform-types": "workspace:*"
     "@calcom/platform-utils": "workspace:*"
     "@calcom/prisma": "workspace:*"
+    "@clerk/backend": "npm:^3.11.5"
     "@golevelup/ts-jest": "npm:0.4.0"
     "@microsoft/microsoft-graph-types-beta": "npm:0.42.0-preview"
     "@nest-lab/throttler-storage-redis": "npm:1.0.0"

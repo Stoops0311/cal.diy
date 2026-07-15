@@ -1,10 +1,11 @@
-import { getEnv } from "@/env";
 import type { AppConfig } from "./type";
+import { getEnv } from "@/env";
 
 const loadConfig = (): AppConfig => {
   const env = getEnv("NODE_ENV", "development");
   const apiPort = Number(getEnv("API_PORT", "5555"));
   const apiUrl = getEnv("API_URL", "http://localhost");
+  const webAppUrl = getEnv("WEB_APP_URL", "https://app.cal.com");
   let portSuffix = "";
   if (process.env.API_PORT && env === "development") {
     portSuffix = `:${apiPort}`;
@@ -35,6 +36,14 @@ const loadConfig = (): AppConfig => {
     next: {
       authSecret: getEnv("NEXTAUTH_SECRET"),
     },
+    clerk: {
+      authorizedParties: getEnv("CLERK_AUTHORIZED_PARTIES", webAppUrl)
+        .split(",")
+        .map((party) => party.trim())
+        .filter(Boolean),
+      jwtKey: getEnv("CLERK_JWT_KEY", ""),
+      secretKey: getEnv("CLERK_SECRET_KEY", ""),
+    },
     stripe: {
       apiKey: getEnv("STRIPE_API_KEY"),
       webhookSecret: getEnv("STRIPE_WEBHOOK_SECRET"),
@@ -42,7 +51,7 @@ const loadConfig = (): AppConfig => {
       isTeamBillingEnabled: getEnv("IS_TEAM_BILLING_ENABLED", true),
     },
     app: {
-      baseUrl: getEnv("WEB_APP_URL", "https://app.cal.com"),
+      baseUrl: webAppUrl,
     },
     e2e: getEnv("IS_E2E", "false") === "true",
     enableSlotsWorkers: getEnv("ENABLE_SLOTS_WORKERS", "true") === "true",
