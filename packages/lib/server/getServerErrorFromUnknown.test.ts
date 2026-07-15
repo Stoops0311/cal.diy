@@ -19,12 +19,16 @@ const test400Codes = [
   ErrorCode.BookerLimitExceededReschedule,
   ErrorCode.ChargeCardFailure,
   ErrorCode.CollectCardFailure,
+  ErrorCode.ClerkExternalIdInvalid,
 ];
+
+const test403Codes = [ErrorCode.ClerkEmailUnverified, ErrorCode.LocalAccountLocked];
 
 const test404Codes = [
   ErrorCode.EventTypeNotFound,
   ErrorCode.BookingNotFound,
   ErrorCode.RestrictionScheduleNotFound,
+  ErrorCode.PolarSubjectNotFound,
 ];
 
 const test409Codes = [
@@ -36,6 +40,14 @@ const test409Codes = [
   ErrorCode.NotEnoughAvailableSeats,
   ErrorCode.BookingConflict,
   ErrorCode.PaymentCreationFailure,
+  ErrorCode.ClerkIdentityAmbiguous,
+  ErrorCode.UsernameUnavailable,
+  ErrorCode.ClerkOrganizationOwnerRequired,
+  ErrorCode.ClerkMemberLocalUserMissing,
+  ErrorCode.ClerkOrganizationConflict,
+  ErrorCode.ClerkWebhookPayloadConflict,
+  ErrorCode.PolarProjectionConflict,
+  ErrorCode.PolarWebhookPayloadConflict,
 ];
 
 describe("getServerErrorFromUnknown", () => {
@@ -246,6 +258,14 @@ test400Codes.forEach((errorCode) => {
     const error = new ErrorWithCode(errorCode, `Test message for ${errorCode}`);
     const result = getServerErrorFromUnknown(error);
     expect(result.statusCode).toBe(400);
+  });
+});
+
+test403Codes.forEach((errorCode) => {
+  test(`${errorCode} should return 403 Forbidden`, () => {
+    const error = new ErrorWithCode(errorCode, `Test message for ${errorCode}`);
+    const result = getServerErrorFromUnknown(error);
+    expect(result.statusCode).toBe(403);
   });
 });
 

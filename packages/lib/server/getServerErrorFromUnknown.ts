@@ -143,6 +143,8 @@ export function getHttpStatusCodeFromErrorCode(errorCode: string): number {
     case ErrorCode.Forbidden:
     case ErrorCode.EntitlementRequired:
     case ErrorCode.EntitlementLimitExceeded:
+    case ErrorCode.ClerkEmailUnverified:
+    case ErrorCode.LocalAccountLocked:
       return 403;
     case ErrorCode.NotFound:
       return 404;
@@ -164,6 +166,7 @@ export function getHttpStatusCodeFromErrorCode(errorCode: string): number {
     case ErrorCode.RequestBodyInvalid:
     case ErrorCode.ChargeCardFailure:
     case ErrorCode.CollectCardFailure:
+    case ErrorCode.ClerkExternalIdInvalid:
       return 400;
     // 409 Conflict
     case ErrorCode.NoAvailableUsersFound:
@@ -174,11 +177,20 @@ export function getHttpStatusCodeFromErrorCode(errorCode: string): number {
     case ErrorCode.NotEnoughAvailableSeats:
     case ErrorCode.BookingConflict:
     case ErrorCode.PaymentCreationFailure:
+    case ErrorCode.ClerkIdentityAmbiguous:
+    case ErrorCode.UsernameUnavailable:
+    case ErrorCode.ClerkOrganizationOwnerRequired:
+    case ErrorCode.ClerkMemberLocalUserMissing:
+    case ErrorCode.ClerkOrganizationConflict:
+    case ErrorCode.ClerkWebhookPayloadConflict:
+    case ErrorCode.PolarProjectionConflict:
+    case ErrorCode.PolarWebhookPayloadConflict:
       return 409;
     // 404 Not Found
     case ErrorCode.EventTypeNotFound:
     case ErrorCode.BookingNotFound:
     case ErrorCode.RestrictionScheduleNotFound:
+    case ErrorCode.PolarSubjectNotFound:
       return 404;
     case ErrorCode.UnableToSubscribeToThePlatform:
     case ErrorCode.UpdatingOauthClientError:
