@@ -1,5 +1,7 @@
 import { getDefaultLocations } from "@calcom/app-store/_utils/getDefaultLocations";
 import { DailyLocationType } from "@calcom/app-store/constants";
+import { assertEntitled, assertWithinLimit } from "@calcom/features/billing/lib/entitlements";
+import { EntitlementService } from "@calcom/features/billing/services/EntitlementService";
 import { EventTypeRepository } from "@calcom/features/eventtypes/repositories/eventTypeRepository";
 import type { PrismaClient } from "@calcom/prisma";
 import { Prisma } from "@calcom/prisma/client";
@@ -12,9 +14,15 @@ import type { TCreateInputSchema } from "./create.schema";
 
 class PermissionCheckService {
   constructor(_prisma?: unknown) {}
-  async checkPermission(..._args: unknown[]) { return true; }
-  async hasPermission(..._args: unknown[]) { return true; }
-  async getTeamIdsWithPermission(..._args: unknown[]): Promise<number[]> { return []; }
+  async checkPermission(..._args: unknown[]) {
+    return true;
+  }
+  async hasPermission(..._args: unknown[]) {
+    return true;
+  }
+  async getTeamIdsWithPermission(..._args: unknown[]): Promise<number[]> {
+    return [];
+  }
 }
 
 type EventTypeLocation = z.infer<typeof eventTypeLocations>[number];
@@ -39,10 +47,18 @@ type CreateOptions = {
     user: User;
     prisma: PrismaClient;
   };
+  dependencies?: CreateEventTypeDependencies;
   input: TCreateInputSchema;
 };
 
-export const createHandler = async ({ ctx, input }: CreateOptions) => {
+type CreateEventTypeDependencies = {
+  create(options: Omit<CreateOptions, "dependencies">): Promise<{
+    eventType: Awaited<ReturnType<EventTypeRepository["create"]>>;
+  }>;
+  entitlements: Pick<EntitlementService, "forOrganization" | "forUser">;
+};
+
+const createEventType = async ({ ctx, input }: Omit<CreateOptions, "dependencies">) => {
   const {
     schedulingType,
     teamId,
@@ -165,3 +181,27 @@ export const createHandler = async ({ ctx, input }: CreateOptions) => {
     throw new TRPCError({ code: "BAD_REQUEST" });
   }
 };
+
+const defaultDependencies: CreateEventTypeDependencies = {
+  create: createEventType,
+  entitlements: new EntitlementService(),
+};
+
+export const createHandler = async ({ ctx, dependencies = defaultDependencies, input }: CreateOptions) => {
+  if (input.teamId) {
+    const entitlements = await dependencies.entitlements.forOrganization(input.teamId);
+    assertEntitled(entitlements, "canCreateTeamEvents");
+    if (input.schedulingType === SchedulingType.COLLECTIVE) {
+      assertEntitled(entitlements, "canUseCollectiveScheduling");
+    }
+    if (input.schedulingType === SchedulingType.ROUND_ROBIN) {
+      assertEntitled(entitlements, "canUseRoundRobinScheduling");
+    }
+  } else if (!input.hidden) {
+    const entitlements = await dependencies.entitlements.forUser(ctx.user.id);
+    assertWithinLimit(entitlements, "activePersonalEventTypes", entitlements.usage.activePersonalEventTypes);
+  }
+  return dependencies.create({ ctx, input });
+};
+
+export type { CreateEventTypeDependencies };
