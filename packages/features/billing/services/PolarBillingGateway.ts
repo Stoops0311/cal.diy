@@ -49,7 +49,10 @@ function subscriptionStatus(status: string): PolarCustomerStateSnapshot["status"
 class PolarSdkBillingGateway implements PolarBillingGateway {
   private readonly client;
 
-  constructor(private readonly environment: PolarEnvironment) {
+  constructor(
+    private readonly environment: PolarEnvironment,
+    private readonly now: () => Date = () => new Date()
+  ) {
     this.client = getPolarClient(environment);
   }
 
@@ -152,7 +155,7 @@ class PolarSdkBillingGateway implements PolarBillingGateway {
     if (subscription && subscription.customer.externalId !== externalCustomerId) {
       throw new Error("Polar subscription ownership mismatch");
     }
-    const effectiveAt = subscription?.modifiedAt ?? state.modifiedAt ?? state.createdAt;
+    const effectiveAt = subscription?.modifiedAt ?? this.now();
     return {
       activeBenefits: resolveConfiguredPolarBenefits(
         state.grantedBenefits.map(({ benefitId }) => benefitId),

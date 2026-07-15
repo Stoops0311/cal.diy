@@ -4,9 +4,11 @@ import {
   type PolarCustomerStateSnapshot,
   PolarSubscriptionProjectionService,
 } from "./PolarSubscriptionProjectionService";
+import { type PolarWebhookEvent, PolarWebhookService } from "./PolarWebhookService";
 
 const createdUserIds: number[] = [];
 const createdOrganizationIds: number[] = [];
+const webhookEventIds: string[] = [];
 
 const polarEnvironment = {
   POLAR_ACCESS_TOKEN: "polar_test_token",
@@ -68,6 +70,11 @@ describe("BillingSubscription persistence", () => {
     }
     if (createdOrganizationIds.length > 0) {
       await prisma.team.deleteMany({ where: { id: { in: createdOrganizationIds.splice(0) } } });
+    }
+    if (webhookEventIds.length > 0) {
+      await prisma.externalWebhookEvent.deleteMany({
+        where: { externalEventId: { in: webhookEventIds.splice(0) }, provider: "POLAR" },
+      });
     }
   });
 
@@ -233,13 +240,81 @@ describe("PolarSubscriptionProjectionService", () => {
     expect(result.subscription.status).toBe("ACTIVE");
   });
 
+  it("preserves reconciled provider state when a delayed older webhook arrives", async () => {
+    const user = await createMappedUser();
+    const externalCustomerId = `user:${user.clerkUserId}`;
+    const reconciledAt = new Date("2026-07-15T13:00:00.000Z");
+    const delayedAt = new Date("2026-07-15T12:00:00.000Z");
+    const eventId = `delayed_webhook_${crypto.randomUUID()}`;
+    webhookEventIds.push(eventId);
+
+    await service.projectCustomerState(
+      snapshot({
+        cancelAtPeriodEnd: true,
+        effectiveAt: reconciledAt,
+        externalCustomerId,
+        status: "canceled",
+      })
+    );
+
+    const webhook = new PolarWebhookService({
+      environment: polarEnvironment,
+      projection: service,
+      subscriptionSource: { getSubscription: async () => ({ externalCustomerId, id: "unused", seats: 1 }) },
+    });
+    const delayedEvent: PolarWebhookEvent = {
+      data: {
+        activeSubscriptions: [
+          {
+            cancelAtPeriodEnd: false,
+            currentPeriodEnd: new Date("2026-08-15T12:00:00.000Z"),
+            currentPeriodStart: new Date("2026-07-15T12:00:00.000Z"),
+            id: "subscription_delayed",
+            metadata: { billing_interval: "MONTH", plan_key: "PRO" },
+            modifiedAt: delayedAt,
+            productId: "product_pro_month",
+            status: "active",
+          },
+        ],
+        customerId: `customer_${user.id}`,
+        deletedAt: null,
+        externalCustomerId,
+        grantedBenefitIds: ["benefit_pro"],
+        modifiedAt: delayedAt,
+        type: "individual",
+      },
+      timestamp: delayedAt,
+      type: "customer.state_changed",
+    };
+
+    await expect(
+      webhook.process({ event: delayedEvent, eventId, rawBody: `delayed:${eventId}` })
+    ).resolves.toBe("processed");
+
+    await expect(
+      prisma.billingSubscription.findUniqueOrThrow({
+        where: { subjectKey: `user:${user.id}` },
+        select: { cancelAtPeriodEnd: true, latestEffectiveAt: true, status: true },
+      })
+    ).resolves.toEqual({
+      cancelAtPeriodEnd: true,
+      latestEffectiveAt: reconciledAt,
+      status: "CANCELED",
+    });
+  });
+
   it("downgrades to Free when the paid benefit is revoked", async () => {
     const user = await createMappedUser();
+    const externalCustomerId = `user:${user.clerkUserId}`;
+    await service.projectCustomerState(
+      snapshot({ effectiveAt: new Date("2026-07-15T12:00:00.000Z"), externalCustomerId })
+    );
 
     const result = await service.projectCustomerState(
       snapshot({
         activeBenefits: [],
-        externalCustomerId: `user:${user.clerkUserId}`,
+        effectiveAt: new Date("2026-07-15T13:00:00.000Z"),
+        externalCustomerId,
         productId: null,
         status: "unpaid",
         subscriptionId: null,

@@ -116,13 +116,15 @@ class PolarWebhookService {
     const activeBenefits = resolveConfiguredPolarBenefits(data.grantedBenefitIds, this.environment);
     const subscription = data.activeSubscriptions[0];
     if (!subscription) {
+      const effectiveAt =
+        data.modifiedAt && data.modifiedAt > event.timestamp ? data.modifiedAt : event.timestamp;
       return {
         activeBenefits,
         cancelAtPeriodEnd: false,
         currentPeriodEnd: null,
         currentPeriodStart: null,
         customerId: data.customerId,
-        effectiveAt: data.modifiedAt ?? event.timestamp,
+        effectiveAt,
         eventId,
         externalCustomerId: data.externalCustomerId,
         productId: null,

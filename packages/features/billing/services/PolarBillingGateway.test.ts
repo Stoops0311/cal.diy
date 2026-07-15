@@ -255,4 +255,23 @@ describe("PolarSdkBillingGateway", () => {
       subscriptionId: "subscription_1",
     });
   });
+
+  it("timestamps a subscription-free reconciliation when the state is observed", async () => {
+    const observedAt = new Date("2026-07-15T13:00:00.000Z");
+    client.customers.getStateExternal.mockResolvedValue({
+      ...customerState(),
+      activeSubscriptions: [],
+      grantedBenefits: [],
+      modifiedAt: new Date("2026-07-15T11:30:00.000Z"),
+    });
+    const gateway = new PolarSdkBillingGateway(environment, () => observedAt);
+
+    await expect(gateway.getCustomerState("user:user_clerk")).resolves.toMatchObject({
+      activeBenefits: [],
+      effectiveAt: observedAt,
+      productId: null,
+      status: "unpaid",
+      subscriptionId: null,
+    });
+  });
 });

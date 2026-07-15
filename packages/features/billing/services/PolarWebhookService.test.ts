@@ -103,6 +103,29 @@ describe("PolarWebhookService", () => {
     });
   });
 
+  it("uses the delivery timestamp for a newer subscription-free state", async () => {
+    const test = setup();
+    const eventId = `event_${crypto.randomUUID()}`;
+    const event = customerStateEvent();
+    if (!event.data) throw new Error("Expected customer state data");
+    event.timestamp = new Date("2026-07-15T13:00:00.000Z");
+    event.data.activeSubscriptions = [];
+    event.data.grantedBenefitIds = [];
+    event.data.modifiedAt = new Date("2026-07-15T11:30:00.000Z");
+
+    await expect(process(test.service, eventId, event)).resolves.toBe("processed");
+
+    expect(test.projectCustomerState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activeBenefits: [],
+        effectiveAt: event.timestamp,
+        productId: null,
+        status: "unpaid",
+        subscriptionId: null,
+      })
+    );
+  });
+
   it("loads authoritative Team seats instead of trusting checkout metadata", async () => {
     const test = setup();
     const eventId = `event_${crypto.randomUUID()}`;
