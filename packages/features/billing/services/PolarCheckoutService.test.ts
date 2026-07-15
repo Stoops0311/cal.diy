@@ -57,6 +57,7 @@ function setup() {
     getSubscription: vi.fn().mockResolvedValue({
       externalCustomerId: userSubject.externalCustomerId,
       id: "subscription_1",
+      seats: null,
     }),
     updateSubscription: vi.fn().mockResolvedValue(undefined),
   };
@@ -212,6 +213,7 @@ describe("PolarCheckoutService", () => {
     ctx.gateway.getSubscription.mockResolvedValue({
       externalCustomerId: "user:someone_else",
       id: "subscription_1",
+      seats: null,
     });
 
     await expect(ctx.service.cancelAtPeriodEnd(7, {})).rejects.toMatchObject({ code: ErrorCode.Forbidden });

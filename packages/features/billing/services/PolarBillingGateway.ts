@@ -1,0 +1,125 @@
+import { getPolarClient, type PolarEnvironment, resolveConfiguredPolarBenefits } from "./PolarClient";
+import type { PolarCustomerStateSnapshot } from "./PolarSubscriptionProjectionService";
+
+type PolarCheckoutInput = {
+  allowTrial: boolean;
+  customerEmail: string;
+  customerName: string | null;
+  externalCustomerId: string;
+  isBusinessCustomer?: boolean;
+  maxSeats?: number;
+  metadata: Record<string, string | number | boolean>;
+  minSeats?: number;
+  products: string[];
+  returnUrl: string;
+  seats?: number;
+  successUrl: string;
+};
+type PolarSubscriptionUpdate = { cancelAtPeriodEnd: boolean } | { productId: string } | { seats: number };
+type PolarBillingGateway = {
+  createCheckout(input: PolarCheckoutInput): Promise<{ url: string }>;
+  createCustomerSession(input: {
+    externalCustomerId: string;
+    returnUrl: string;
+  }): Promise<{ customerPortalUrl: string }>;
+  getCustomerState(externalCustomerId: string): Promise<PolarCustomerStateSnapshot>;
+  getSubscription(
+    id: string
+  ): Promise<{ externalCustomerId: string | null; id: string; seats: number | null }>;
+  updateSubscription(input: {
+    id: string;
+    idempotencyKey: string;
+    update: PolarSubscriptionUpdate;
+  }): Promise<void>;
+};
+
+function subscriptionStatus(status: string): PolarCustomerStateSnapshot["status"] {
+  if (
+    status === "active" ||
+    status === "canceled" ||
+    status === "past_due" ||
+    status === "trialing" ||
+    status === "unpaid"
+  ) {
+    return status;
+  }
+  throw new Error("Polar returned an unsupported subscription status");
+}
+
+class PolarSdkBillingGateway implements PolarBillingGateway {
+  private readonly client;
+
+  constructor(private readonly environment: PolarEnvironment) {
+    this.client = getPolarClient(environment);
+  }
+
+  async createCheckout(input: PolarCheckoutInput): Promise<{ url: string }> {
+    return this.client.checkouts.create(input);
+  }
+
+  async createCustomerSession(input: {
+    externalCustomerId: string;
+    returnUrl: string;
+  }): Promise<{ customerPortalUrl: string }> {
+    return this.client.customerSessions.create(input);
+  }
+
+  async getSubscription(
+    id: string
+  ): Promise<{ externalCustomerId: string | null; id: string; seats: number | null }> {
+    const subscription = await this.client.subscriptions.get({ id });
+    return {
+      externalCustomerId: subscription.customer.externalId ?? null,
+      id: subscription.id,
+      seats: subscription.seats ?? null,
+    };
+  }
+
+  async updateSubscription(input: {
+    id: string;
+    idempotencyKey: string;
+    update: PolarSubscriptionUpdate;
+  }): Promise<void> {
+    await this.client.subscriptions.update(
+      { id: input.id, subscriptionUpdate: input.update },
+      { headers: { "Idempotency-Key": input.idempotencyKey } }
+    );
+  }
+
+  async getCustomerState(externalCustomerId: string): Promise<PolarCustomerStateSnapshot> {
+    const state = await this.client.customers.getStateExternal({ externalId: externalCustomerId });
+    if (state.externalId !== externalCustomerId) {
+      throw new Error("Polar customer ownership mismatch");
+    }
+    if (state.activeSubscriptions.length > 1) {
+      throw new Error("Polar returned multiple active subscriptions");
+    }
+    const active = state.activeSubscriptions[0];
+    const subscription = active ? await this.client.subscriptions.get({ id: active.id }) : null;
+    if (subscription && subscription.customer.externalId !== externalCustomerId) {
+      throw new Error("Polar subscription ownership mismatch");
+    }
+    const effectiveAt = subscription?.modifiedAt ?? state.modifiedAt ?? state.createdAt;
+    return {
+      activeBenefits: resolveConfiguredPolarBenefits(
+        state.grantedBenefits.map(({ benefitId }) => benefitId),
+        this.environment
+      ),
+      cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd ?? false,
+      currentPeriodEnd: subscription?.currentPeriodEnd ?? null,
+      currentPeriodStart: subscription?.currentPeriodStart ?? null,
+      customerId: state.id,
+      effectiveAt,
+      eventId: `reconcile:${state.id}:${effectiveAt.toISOString()}`,
+      externalCustomerId,
+      productId: subscription?.productId ?? null,
+      productMetadata: subscription?.product.metadata ?? {},
+      seats: subscription?.seats ?? 1,
+      status: subscription ? subscriptionStatus(subscription.status) : "unpaid",
+      subscriptionId: subscription?.id ?? null,
+    };
+  }
+}
+
+export { PolarSdkBillingGateway };
+export type { PolarBillingGateway, PolarCheckoutInput, PolarSubscriptionUpdate };
