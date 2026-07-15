@@ -46,6 +46,7 @@ describe("event type update entitlements", () => {
     ],
     [{ id: 1, price: 1_000 }, "canUseBookingPayments"],
     [{ beforeEventBuffer: 15, id: 1 }, "canUseAdvancedEvents"],
+    [{ id: 1, maxActiveBookingsPerBooker: 1 }, "canUseAdvancedEvents"],
   ])("blocks Free paid-only updates for %s", (input, capability) => {
     expect(() => assertEventTypeUpdateEntitled(evaluation(PlanKey.FREE), personalTarget, input)).toThrowError(
       expect.objectContaining({
@@ -85,7 +86,18 @@ describe("event type update entitlements", () => {
     ).toThrowError(expect.objectContaining({ code: ErrorCode.EntitlementRequired }));
   });
 
-  it("rejects a direct mutation before the existing update pipeline", async () => {
+  it.each([
+    [
+      { recurringEvent: { count: 2, dtstart: new Date(), freq: 1, interval: 1, tzid: "UTC" } },
+      "canUseRecurringEvents",
+    ],
+    [{ multiplePrivateLinks: ["private"] }, "canUsePrivateLinks"],
+    [{ successRedirectUrl: "https://example.com/done" }, "canUseCustomRedirects"],
+    [{ customInputs: [{ label: "Company", required: false, type: "text" }] }, "canUseCustomBookingFields"],
+    [{ price: 1_000 }, "canUseBookingPayments"],
+    [{ beforeEventBuffer: 15 }, "canUseAdvancedEvents"],
+    [{ maxActiveBookingsPerBooker: 1 }, "canUseAdvancedEvents"],
+  ])("rejects a direct authenticated Free update with %s before the existing update pipeline", async (paidInput, capability) => {
     const dependencies: UpdateEntitlementDependencies = {
       entitlements: {
         forOrganization: vi.fn().mockResolvedValue(evaluation(PlanKey.FREE)),
@@ -109,8 +121,11 @@ describe("event type update entitlements", () => {
           },
         },
         dependencies,
-        input: { id: 1, successRedirectUrl: "https://example.com/done" },
+        input: { id: 1, ...paidInput },
       })
-    ).rejects.toMatchObject({ code: ErrorCode.EntitlementRequired });
+    ).rejects.toMatchObject({
+      code: ErrorCode.EntitlementRequired,
+      data: expect.objectContaining({ capability }),
+    });
   });
 });

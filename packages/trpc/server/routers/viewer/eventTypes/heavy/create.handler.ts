@@ -187,6 +187,19 @@ const defaultDependencies: CreateEventTypeDependencies = {
   entitlements: new EntitlementService(),
 };
 
+function hasPaidEventSettings(input: TCreateInputSchema): boolean {
+  return input.beforeEventBuffer !== undefined || input.afterEventBuffer !== undefined;
+}
+
+function assertPaidEventSettingsEntitled(
+  entitlements: Awaited<ReturnType<EntitlementService["forUser"]>>,
+  input: TCreateInputSchema
+): void {
+  if (hasPaidEventSettings(input)) {
+    assertEntitled(entitlements, "canUseAdvancedEvents");
+  }
+}
+
 export const createHandler = async ({ ctx, dependencies = defaultDependencies, input }: CreateOptions) => {
   if (input.teamId) {
     const entitlements = await dependencies.entitlements.forOrganization(input.teamId);
@@ -197,9 +210,17 @@ export const createHandler = async ({ ctx, dependencies = defaultDependencies, i
     if (input.schedulingType === SchedulingType.ROUND_ROBIN) {
       assertEntitled(entitlements, "canUseRoundRobinScheduling");
     }
-  } else if (!input.hidden) {
+    assertPaidEventSettingsEntitled(entitlements, input);
+  } else if (!input.hidden || hasPaidEventSettings(input)) {
     const entitlements = await dependencies.entitlements.forUser(ctx.user.id);
-    assertWithinLimit(entitlements, "activePersonalEventTypes", entitlements.usage.activePersonalEventTypes);
+    if (!input.hidden) {
+      assertWithinLimit(
+        entitlements,
+        "activePersonalEventTypes",
+        entitlements.usage.activePersonalEventTypes
+      );
+    }
+    assertPaidEventSettingsEntitled(entitlements, input);
   }
   return dependencies.create({ ctx, input });
 };

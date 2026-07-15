@@ -110,7 +110,8 @@ function assertEventTypeUpdateEntitled(
     input.durationLimits ||
     input.seatsPerTimeSlot ||
     input.beforeEventBuffer ||
-    input.afterEventBuffer
+    input.afterEventBuffer ||
+    input.maxActiveBookingsPerBooker
   ) {
     assertEntitled(entitlements, "canUseAdvancedEvents");
   }

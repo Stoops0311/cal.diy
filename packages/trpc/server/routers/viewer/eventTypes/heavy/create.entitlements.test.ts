@@ -75,6 +75,21 @@ describe("event type creation entitlements", () => {
     expect(test.create).toHaveBeenCalled();
   });
 
+  it.each([
+    { beforeEventBuffer: 15 },
+    { afterEventBuffer: 15 },
+  ])("blocks a direct authenticated Free creation with %s before writing", async (paidInput) => {
+    const test = setup(evaluation(PlanKey.FREE, 0));
+
+    await expect(
+      createHandler({ ctx, dependencies: test.dependencies, input: { ...input, ...paidInput } })
+    ).rejects.toMatchObject({
+      code: ErrorCode.EntitlementRequired,
+      data: expect.objectContaining({ capability: "canUseAdvancedEvents" }),
+    });
+    expect(test.create).not.toHaveBeenCalled();
+  });
+
   it("requires Team for shared round-robin event types", async () => {
     const test = setup(evaluation(PlanKey.PRO, 0), evaluation(PlanKey.PRO, 0));
 
