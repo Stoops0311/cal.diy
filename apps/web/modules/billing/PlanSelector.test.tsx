@@ -3,8 +3,17 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@calcom/lib/hooks/useLocale", () => ({
   useLocale: () => ({
-    t: (key: string, values?: Record<string, string>) =>
-      values ? key + ":" + Object.values(values).join(":") : key,
+    t: (key: string, values?: Record<string, string>) => {
+      const translated =
+        {
+          billing_price_cadence_member_monthly: "Per accepted member, billed monthly",
+          billing_price_cadence_member_yearly: "Per accepted member, billed yearly",
+          billing_price_cadence_monthly: "Billed monthly",
+          billing_price_cadence_yearly: "Billed yearly",
+          billing_weekly_member_equivalent: "{{price}} per accepted member per week when billed yearly",
+        }[key] ?? key;
+      return values ? translated.replace("{{price}}", values.price) : translated;
+    },
   }),
 }));
 
@@ -20,9 +29,23 @@ describe("PlanSelector", () => {
     );
     expect(view.getByText("$96")).toBeInTheDocument();
     expect(view.getByText("$144")).toBeInTheDocument();
+    expect(view.getByText("Billed yearly")).toBeInTheDocument();
+    expect(view.getByText("Per accepted member, billed yearly")).toBeInTheDocument();
+    expect(view.getByText("$2.77 per accepted member per week when billed yearly")).toBeInTheDocument();
     expect(view.getByRole("heading", { name: "billing_plan_pro" })).toBeInTheDocument();
     expect(view.getByRole("heading", { name: "billing_plan_team" })).toBeInTheDocument();
     expect(view.queryByRole("heading", { name: "billing_plan_free" })).not.toBeInTheDocument();
+  });
+
+  it("labels monthly prices and the accepted-member scope from the catalog", () => {
+    const view = render(<PlanSelector freeHref="/event-types" onSelectPlan={vi.fn()} />);
+
+    fireEvent.click(view.getByRole("button", { name: "billing_interval_monthly" }));
+
+    expect(view.getByText("$10")).toBeInTheDocument();
+    expect(view.getByText("$15")).toBeInTheDocument();
+    expect(view.getByText("Billed monthly")).toBeInTheDocument();
+    expect(view.getByText("Per accepted member, billed monthly")).toBeInTheDocument();
   });
 
   it("reveals Free through View all plans", () => {

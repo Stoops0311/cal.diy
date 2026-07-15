@@ -21,13 +21,19 @@ test.describe("Convenio marketing layout", () => {
   });
 
   test("pricing uses the marketing shell and yearly-first hierarchy", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/pricing");
 
     await expect(page.locator(".cv-header")).toBeVisible();
-    await expect(page.getByRole("banner").getByRole("link", { name: "Pricing" })).toHaveAttribute(
-      "aria-current",
-      "page"
-    );
+    const pricingLink = page.getByRole("banner").getByRole("link", { name: "Pricing" });
+    await expect(pricingLink).toHaveAttribute("aria-current", "page");
+    await expect(pricingLink).toBeInViewport();
+    await expect
+      .poll(async () => {
+        const box = await page.getByRole("banner").boundingBox();
+        return box ? box.x + box.width : Number.POSITIVE_INFINITY;
+      })
+      .toBeLessThanOrEqual(390);
     await expect(page.getByRole("heading", { name: "Pro" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Team" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Free" })).toHaveCount(0);

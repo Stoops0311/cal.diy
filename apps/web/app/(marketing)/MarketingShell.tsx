@@ -79,7 +79,7 @@ export function MarketingHeader({
           </Link>
           <Link
             href="/pricing"
-            className="cv-nav-link"
+            className="cv-nav-link cv-nav-link--pricing"
             aria-current={current === "pricing" ? "page" : undefined}>
             {copy.pricing}
           </Link>

@@ -40,6 +40,11 @@ function Pricing({ isAuthenticated, onSelectPlan, pendingPlan }: PricingProps) {
     <div className="cv-root">
       <MarketingHeader copy={copy} current="pricing" />
       <main className="cv-container">
+        <section className="cv-page-hero">
+          <span className="cv-eyebrow">{t("billing_pricing_eyebrow")}</span>
+          <h1 className="cv-display">{t("billing_pricing_title")}</h1>
+          <p className="cv-body">{t("billing_pricing_description")}</p>
+        </section>
         <PlanSelector freeHref="/signup" onSelectPlan={onSelectPlan} pendingPlan={pendingPlan} />
       </main>
       <MarketingFooter copy={copy} />

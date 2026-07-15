@@ -90,6 +90,14 @@ html.dark .cv-root {
   max-width: 34em;
 }
 
+.cv-pricing-fonts .font-cal {
+  font-family: var(--font-cv-display, var(--font-sans, system-ui));
+}
+
+.cv-pricing-fonts .font-mono {
+  font-family: var(--font-cv-mono, monospace);
+}
+
 /* ---------- header / footer ---------- */
 
 .cv-header {
@@ -454,5 +462,17 @@ html.dark .cv-root {
 @media (max-width: 640px) {
   .cv-container {
     padding-inline: 20px;
+  }
+
+  .cv-header-inner .cv-nav {
+    gap: 10px;
+  }
+
+  .cv-header-inner .cv-nav-link:not(.cv-nav-link--pricing) {
+    display: none;
+  }
+
+  .cv-header-inner .cv-pill {
+    padding-inline: 12px;
   }
 }

@@ -4,12 +4,23 @@ import type { PaidSelection } from "./PlanSelector";
 
 const mocks = vi.hoisted(() => ({
   checkoutMutate: vi.fn(),
+  checkoutOnError: () => {},
   push: vi.fn(),
   selectPlan: (_selection: PaidSelection) => {},
+  showToast: vi.fn(),
 }));
 
 vi.mock("@calcom/lib/hooks/useLocale", () => ({
-  useLocale: () => ({ t: (key: string) => key }),
+  useLocale: () => ({
+    t: (key: string) =>
+      ({
+        billing_checkout_error: "Payment did not open. Try again.",
+        billing_pricing_description:
+          "Choose the way you schedule now. Convenio keeps the handoff to payment brief, then brings you back to the work.",
+        billing_pricing_eyebrow: "PLANS FOR THE WORK",
+        billing_pricing_title: "One calendar. Or every calendar in the room.",
+      })[key] ?? key,
+  }),
 }));
 
 vi.mock("@calcom/trpc/react", () => ({
@@ -17,15 +28,22 @@ vi.mock("@calcom/trpc/react", () => ({
     viewer: {
       billing: {
         createCheckout: {
-          useMutation: () => ({
-            isPending: false,
-            mutate: mocks.checkoutMutate,
-            variables: undefined,
-          }),
+          useMutation: (options: { onError(): void }) => {
+            mocks.checkoutOnError = options.onError;
+            return {
+              isPending: false,
+              mutate: mocks.checkoutMutate,
+              variables: undefined,
+            };
+          },
         },
       },
     },
   },
+}));
+
+vi.mock("@calcom/ui/components/toast", () => ({
+  showToast: mocks.showToast,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -55,6 +73,7 @@ describe("Pricing", () => {
   beforeEach(() => {
     mocks.checkoutMutate.mockClear();
     mocks.push.mockClear();
+    mocks.showToast.mockClear();
     localStorage.clear();
   });
 
@@ -63,6 +82,15 @@ describe("Pricing", () => {
 
     expect(view.getByTestId("marketing-header")).toBeInTheDocument();
     expect(view.getByTestId("plan-selector")).toHaveAttribute("data-free-href", "/signup");
+    expect(view.getByText("PLANS FOR THE WORK")).toBeInTheDocument();
+    expect(
+      view.getByRole("heading", { name: "One calendar. Or every calendar in the room." })
+    ).toBeInTheDocument();
+    expect(
+      view.getByText(
+        "Choose the way you schedule now. Convenio keeps the handoff to payment brief, then brings you back to the work."
+      )
+    ).toBeInTheDocument();
   });
 
   it("renders the native shell for an authenticated visitor", () => {
@@ -88,6 +116,14 @@ describe("Pricing", () => {
     mocks.selectPlan({ interval: "YEAR", plan: "PRO" });
 
     expect(mocks.checkoutMutate).toHaveBeenCalledWith({ interval: "YEAR", plan: "PRO" });
+  });
+
+  it("keeps checkout errors on the pricing surface with Convenio copy", () => {
+    render(<PricingPage isAuthenticated />);
+
+    mocks.checkoutOnError();
+
+    expect(mocks.showToast).toHaveBeenCalledWith("Payment did not open. Try again.", "error");
   });
 
   it("includes the organization for an authenticated Team checkout", () => {

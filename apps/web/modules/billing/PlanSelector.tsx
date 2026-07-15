@@ -58,6 +58,22 @@ function formatPrice(amountInCents: number): string {
   }).format(amountInCents / 100);
 }
 
+function getCadenceKey(price: {
+  interval: BillingIntervalType;
+  perAcceptedMember: boolean;
+}):
+  | "billing_price_cadence_member_yearly"
+  | "billing_price_cadence_member_monthly"
+  | "billing_price_cadence_yearly"
+  | "billing_price_cadence_monthly" {
+  if (price.perAcceptedMember) {
+    if (price.interval === "YEAR") return "billing_price_cadence_member_yearly";
+    return "billing_price_cadence_member_monthly";
+  }
+  if (price.interval === "YEAR") return "billing_price_cadence_yearly";
+  return "billing_price_cadence_monthly";
+}
+
 export function PlanSelector({ freeHref, onSelectPlan, pendingPlan }: PlanSelectorProps): React.ReactElement {
   const { t } = useLocale();
   const [interval, setInterval] = useState<BillingIntervalType>("YEAR");
@@ -87,7 +103,8 @@ export function PlanSelector({ freeHref, onSelectPlan, pendingPlan }: PlanSelect
 
       <div className="grid gap-5 md:grid-cols-2">
         {paidPlans.map((plan) => {
-          const amountInCents = PAID_PLAN_CATALOG[plan.plan].prices[interval].amountInCents;
+          const price = PAID_PLAN_CATALOG[plan.plan].prices[interval];
+          const cadenceKey = getCadenceKey(price);
 
           return (
             <article
@@ -99,13 +116,19 @@ export function PlanSelector({ freeHref, onSelectPlan, pendingPlan }: PlanSelect
 
               <div className="border-subtle mt-6 border-y py-5">
                 <p className="font-mono text-4xl font-semibold tracking-tight">
-                  {formatPrice(amountInCents)}
+                  {formatPrice(price.amountInCents)}
                 </p>
-                {interval === "YEAR" ? (
+                <p className="text-subtle mt-2 text-xs">{t(cadenceKey)}</p>
+                {price.interval === "YEAR" ? (
                   <p className="text-subtle mt-2 text-xs">
-                    {t("billing_weekly_equivalent", {
-                      price: formatPrice(Math.round(amountInCents / 52)),
-                    })}
+                    {t(
+                      price.perAcceptedMember
+                        ? "billing_weekly_member_equivalent"
+                        : "billing_weekly_equivalent",
+                      {
+                        price: formatPrice(Math.round(price.amountInCents / 52)),
+                      }
+                    )}
                   </p>
                 ) : null}
               </div>
