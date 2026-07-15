@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getAuthProvider, getClerkBackendClient } from "./clerkClient";
+import { getAuthProvider, getClerkBackendClient, getClientAuthProvider } from "./clerkClient";
 
 describe("getAuthProvider", () => {
   it.each(["nextauth", "clerk"] as const)("accepts %s", (provider) => {
@@ -14,6 +14,16 @@ describe("getAuthProvider", () => {
     expect(() => getAuthProvider({ AUTH_PROVIDER: "other" })).toThrow(
       "AUTH_PROVIDER must be nextauth or clerk"
     );
+  });
+});
+
+describe("getClientAuthProvider", () => {
+  it("uses the public provider setting", () => {
+    expect(getClientAuthProvider({ NEXT_PUBLIC_AUTH_PROVIDER: "clerk" })).toBe("clerk");
+  });
+
+  it("does not expose or inherit the server-only provider setting", () => {
+    expect(getClientAuthProvider({ AUTH_PROVIDER: "clerk" })).toBe("nextauth");
   });
 });
 

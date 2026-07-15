@@ -15,6 +15,10 @@ function getAuthProvider(env: AuthEnvironment = process.env): AuthProvider {
   return provider;
 }
 
+function getClientAuthProvider(env: AuthEnvironment = process.env): AuthProvider {
+  return getAuthProvider({ AUTH_PROVIDER: env.NEXT_PUBLIC_AUTH_PROVIDER });
+}
+
 function getClerkBackendClient(env: AuthEnvironment = process.env): ClerkClient {
   const secretKey = env.CLERK_SECRET_KEY;
 
@@ -25,5 +29,5 @@ function getClerkBackendClient(env: AuthEnvironment = process.env): ClerkClient 
   return createClerkClient({ secretKey });
 }
 
-export { getAuthProvider, getClerkBackendClient };
+export { getAuthProvider, getClerkBackendClient, getClientAuthProvider };
 export type { AuthProvider };
