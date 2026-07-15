@@ -1,5 +1,6 @@
 "use client";
 
+import { useCurrentAuthActions } from "@calcom/features/auth/lib/useCurrentAuthActions";
 import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import SectionBottomActions from "@calcom/features/settings/SectionBottomActions";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -13,7 +14,6 @@ import { Button } from "@calcom/ui/components/button";
 import { Form, PasswordField, Select, SettingsToggle } from "@calcom/ui/components/form";
 import { SkeletonButton, SkeletonContainer, SkeletonText } from "@calcom/ui/components/skeleton";
 import { showToast } from "@calcom/ui/components/toast";
-import { signOut } from "next-auth/react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -46,6 +46,7 @@ const SkeletonLoader = () => {
 };
 
 const PasswordView = ({ user }: PasswordViewProps) => {
+  const { signOut } = useCurrentAuthActions();
   const { data } = useSession();
   const { t } = useLocale();
   const utils = trpc.useUtils();
@@ -96,7 +97,7 @@ const PasswordView = ({ user }: PasswordViewProps) => {
       so this a workaround to hide the banner after updating the password.
       discussion: https://github.com/nextauthjs/next-auth/discussions/4229
       */
-        signOut({ callbackUrl: "/auth/login" });
+        signOut({ redirectUrl: "/auth/login" });
       }
     },
     onError: (error) => {

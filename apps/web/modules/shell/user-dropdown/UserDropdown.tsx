@@ -1,3 +1,4 @@
+import { useCurrentAuthActions } from "@calcom/features/auth/lib/useCurrentAuthActions";
 import { ROADMAP } from "@calcom/lib/constants";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import useMeQuery from "@calcom/trpc/react/hooks/useMeQuery";
@@ -24,7 +25,6 @@ import {
   UserIcon,
 } from "@coss/ui/icons";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
 import type { MouseEvent } from "react";
 import { useEffect, useState } from "react";
 
@@ -49,6 +49,7 @@ interface UserDropdownProps {
 }
 
 export function UserDropdown({ small }: UserDropdownProps) {
+  const { signOut } = useCurrentAuthActions();
   const { t } = useLocale();
   const { data: user, isPending } = useMeQuery();
 
@@ -190,7 +191,7 @@ export function UserDropdown({ small }: UserDropdownProps) {
           <MenuItem
             variant="destructive"
             onClick={() => {
-              signOut({ callbackUrl: "/auth/logout" });
+              signOut({ redirectUrl: "/auth/logout" });
             }}>
             <LogOutIcon />
             {t("sign_out")}

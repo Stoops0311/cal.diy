@@ -1,11 +1,10 @@
 "use client";
 
-import { signOut } from "next-auth/react";
-import type { ReactNode } from "react";
-
+import { useCurrentAuthActions } from "@calcom/features/auth/lib/useCurrentAuthActions";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "@calcom/ui/components/button";
 import { Logo } from "@calcom/ui/components/logo";
+import type { ReactNode } from "react";
 
 type OnboardingLayoutProps = {
   userEmail: string;
@@ -14,10 +13,11 @@ type OnboardingLayoutProps = {
 };
 
 export const OnboardingLayout = ({ userEmail, currentStep, children }: OnboardingLayoutProps) => {
+  const { signOut } = useCurrentAuthActions();
   const { t } = useLocale();
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: "/auth/logout" });
+    signOut({ redirectUrl: "/auth/logout" });
   };
 
   return (

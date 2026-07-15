@@ -2,6 +2,7 @@
 
 import process from "node:process";
 import { ErrorCode } from "@calcom/features/auth/lib/ErrorCode";
+import { useCurrentAuthActions } from "@calcom/features/auth/lib/useCurrentAuthActions";
 import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import SettingsHeader from "@calcom/features/settings/appDir/SettingsHeader";
@@ -36,7 +37,6 @@ import type { TRPCClientErrorLike } from "@trpc/client";
 import { revalidateSettingsProfile } from "app/cache/path/settings/my-account";
 // eslint-disable-next-line no-restricted-imports
 import { get, pick } from "lodash";
-import { signOut } from "next-auth/react";
 import type React from "react";
 import type { BaseSyntheticEvent } from "react";
 import { useRef, useState } from "react";
@@ -68,6 +68,7 @@ type Props = {
 };
 
 const ProfileView = ({ user }: Props) => {
+  const { signOut } = useCurrentAuthActions();
   const { t } = useLocale();
   const utils = trpc.useUtils();
   const session = useSession();
@@ -148,9 +149,9 @@ const ProfileView = ({ user }: Props) => {
 
     setHasDeleteErrors(false); // dismiss any open errors
     if (process.env.NEXT_PUBLIC_WEBAPP_URL === "https://app.cal.com") {
-      signOut({ callbackUrl: "/auth/logout?survey=true" });
+      signOut({ redirectUrl: "/auth/logout?survey=true" });
     } else {
-      signOut({ callbackUrl: "/auth/logout" });
+      signOut({ redirectUrl: "/auth/logout" });
     }
   };
 
