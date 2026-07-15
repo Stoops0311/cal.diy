@@ -224,6 +224,7 @@ Expected: three tests PASS; Biome exits 0.
 **Files:**
 - Modify: apps/web/modules/billing/Pricing.tsx
 - Modify: apps/web/modules/billing/Pricing.test.tsx
+- Modify: apps/web/app/(marketing)/MarketingShell.tsx
 
 **Interfaces:**
 - Consumes: PlanSelector, PaidSelection, MarketingHeader, MarketingFooter, getMarketingShellCopy, Shell, and viewer.billing.createCheckout.
@@ -281,6 +282,10 @@ Expected: FAIL because public/app wrappers and onboarding redirect persistence d
 
 Delete the local plan catalog, static price map, interval state, blue/cyan decoration, and card rendering from Pricing.tsx. Import PlanSelector and PaidSelection from ./PlanSelector.
 
+Widen MarketingHeader's current prop in apps/web/app/(marketing)/MarketingShell.tsx before adding its first pricing consumer:
+
+    current?: "products" | "manifesto" | "pricing";
+
 Authenticated rendering must be:
 
     <Shell
@@ -323,13 +328,13 @@ Keep checkout success exactly as a browser assignment to the returned checkoutUr
 - [ ] **Step 4: Run component tests and Biome**
 
     TZ=UTC yarn test apps/web/modules/billing/PlanSelector.test.tsx apps/web/modules/billing/Pricing.test.tsx
-    yarn biome check --write apps/web/modules/billing/Pricing.tsx apps/web/modules/billing/Pricing.test.tsx
+    yarn biome check --write apps/web/modules/billing/Pricing.tsx apps/web/modules/billing/Pricing.test.tsx 'apps/web/app/(marketing)/MarketingShell.tsx'
 
 Expected: all tests PASS; Biome exits 0.
 
 - [ ] **Step 5: Commit Task 2**
 
-    git add apps/web/modules/billing/Pricing.tsx apps/web/modules/billing/Pricing.test.tsx
+    git add apps/web/modules/billing/Pricing.tsx apps/web/modules/billing/Pricing.test.tsx 'apps/web/app/(marketing)/MarketingShell.tsx'
     git commit -m "feat(billing): theme public and in-app pricing"
 
 ### Task 3: Marketing stylesheet and pricing navigation
@@ -383,10 +388,6 @@ The stylesheet remains scoped under .cv-root and therefore does not restyle auth
 - [ ] **Step 4: Add Pricing to the shared marketing shell**
 
 Add pricing: t("pricing") to getMarketingShellCopy.
-
-Change the current union to:
-
-    current?: "products" | "manifesto" | "pricing";
 
 Add this link after Products in MarketingHeader:
 
