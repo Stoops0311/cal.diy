@@ -1,10 +1,12 @@
 import { createHash } from "node:crypto";
 import { getClerkBackendClient } from "@calcom/features/auth/lib/clerkClient";
+import { PolarSeatService } from "@calcom/features/billing/services/PolarSeatService";
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
 import { prisma } from "@calcom/prisma";
 import { Prisma } from "@calcom/prisma/client";
 import { type ClerkOrganizationSnapshot, ClerkOrganizationSyncService } from "./ClerkOrganizationSyncService";
+import type { OrganizationSeatBillingPort } from "./OrganizationSeatBillingPort";
 
 type ClerkWebhookEvent = {
   data: {
@@ -29,6 +31,12 @@ type ClerkOrganizationSource = {
 
 type ClerkOrganizationReconciler = Pick<ClerkOrganizationSyncService, "reconcileOrganization">;
 
+type ClerkOrganizationState = { acceptedSeats: number; organizationId: number } | null;
+
+type ClerkOrganizationRepository = {
+  getOrganizationState(clerkOrganizationId: string): Promise<ClerkOrganizationState>;
+};
+
 type ClerkWebhookClaim = {
   effectiveAt: Date | null;
   eventId: string;
@@ -44,8 +52,10 @@ type ClerkWebhookEventStore = {
 
 type ClerkWebhookServiceDependencies = {
   eventStore?: ClerkWebhookEventStore;
+  organizationRepository: ClerkOrganizationRepository;
   organizationSource: ClerkOrganizationSource;
   reconciler: ClerkOrganizationReconciler;
+  seatBilling: OrganizationSeatBillingPort;
 };
 
 function payloadHash(rawBody: string): string {
@@ -169,15 +179,34 @@ class ClerkBackendOrganizationSource implements ClerkOrganizationSource {
   }
 }
 
+class PrismaClerkOrganizationRepository implements ClerkOrganizationRepository {
+  async getOrganizationState(clerkOrganizationId: string): Promise<ClerkOrganizationState> {
+    const organization = await prisma.team.findUnique({
+      where: { clerkOrganizationId },
+      select: {
+        id: true,
+        members: { where: { accepted: true }, select: { id: true } },
+      },
+    });
+    if (!organization) return null;
+    return { acceptedSeats: organization.members.length, organizationId: organization.id };
+  }
+}
+
 class ClerkWebhookService {
   private readonly eventStore: ClerkWebhookEventStore;
+  private readonly organizationRepository: ClerkOrganizationRepository;
   private readonly organizationSource: ClerkOrganizationSource;
   private readonly reconciler: ClerkOrganizationReconciler;
+  private readonly seatBilling: OrganizationSeatBillingPort;
 
   constructor(dependencies?: ClerkWebhookServiceDependencies) {
     this.eventStore = dependencies?.eventStore ?? new PrismaClerkWebhookEventStore();
+    this.organizationRepository =
+      dependencies?.organizationRepository ?? new PrismaClerkOrganizationRepository();
     this.organizationSource = dependencies?.organizationSource ?? new ClerkBackendOrganizationSource();
     this.reconciler = dependencies?.reconciler ?? new ClerkOrganizationSyncService();
+    this.seatBilling = dependencies?.seatBilling ?? new PolarSeatService();
   }
 
   async process(input: ClerkWebhookInput): Promise<ClerkWebhookResult> {
@@ -208,6 +237,16 @@ class ClerkWebhookService {
         };
       } else {
         snapshot = await this.organizationSource.getSnapshot(id);
+      }
+      if (input.event.type.startsWith("organizationMembership.")) {
+        const organization = await this.organizationRepository.getOrganizationState(id);
+        const desiredSeats = snapshot.memberships.filter(({ active }) => active).length;
+        if (organization && organization.acceptedSeats !== desiredSeats) {
+          await this.seatBilling.syncAcceptedSeats({
+            desiredSeats,
+            organizationId: organization.organizationId,
+          });
+        }
       }
       await this.reconciler.reconcileOrganization(snapshot);
       await this.eventStore.markSucceeded(input.eventId);

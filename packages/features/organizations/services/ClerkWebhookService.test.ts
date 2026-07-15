@@ -19,10 +19,16 @@ function organizationEvent(
   };
 }
 
-function membershipEvent(organizationId: string): ClerkWebhookEvent {
+function membershipEvent(
+  organizationId: string,
+  type:
+    | "organizationMembership.created"
+    | "organizationMembership.deleted"
+    | "organizationMembership.updated" = "organizationMembership.updated"
+): ClerkWebhookEvent {
   return {
     data: { id: `orgmem_${crypto.randomUUID()}`, organization: { id: organizationId } },
-    type: "organizationMembership.updated",
+    type,
   };
 }
 
@@ -39,11 +45,22 @@ function dependencies() {
   const reconcileOrganization = vi
     .fn()
     .mockResolvedValue({ acceptedSeats: 1, archived: false, organizationId: 1 });
+  const getOrganizationState = vi.fn().mockResolvedValue({ acceptedSeats: 1, organizationId: 1 });
+  const syncAcceptedSeats = vi.fn().mockResolvedValue(undefined);
   const value: ClerkWebhookServiceDependencies = {
+    organizationRepository: { getOrganizationState },
     organizationSource: { getSnapshot },
     reconciler: { reconcileOrganization },
+    seatBilling: { syncAcceptedSeats },
   };
-  return { getSnapshot, organizationSnapshot, reconcileOrganization, value };
+  return {
+    getOrganizationState,
+    getSnapshot,
+    organizationSnapshot,
+    reconcileOrganization,
+    syncAcceptedSeats,
+    value,
+  };
 }
 
 async function process(
@@ -165,5 +182,78 @@ describe("ClerkWebhookService", () => {
     await process(service, eventId, membershipEvent(deps.organizationSnapshot.id));
 
     expect(deps.getSnapshot).toHaveBeenCalledWith(deps.organizationSnapshot.id);
+  });
+
+  it("updates Polar seats before reconciling an accepted membership", async () => {
+    const deps = dependencies();
+    deps.organizationSnapshot.memberships.push({
+      active: true,
+      clerkUserId: "user_member",
+      role: "org:member",
+    });
+    const service = new ClerkWebhookService(deps.value);
+    const eventId = `evt_${crypto.randomUUID()}`;
+
+    await process(
+      service,
+      eventId,
+      membershipEvent(deps.organizationSnapshot.id, "organizationMembership.created")
+    );
+
+    expect(deps.syncAcceptedSeats).toHaveBeenCalledWith({ desiredSeats: 2, organizationId: 1 });
+    expect(deps.syncAcceptedSeats.mock.invocationCallOrder[0]).toBeLessThan(
+      deps.reconcileOrganization.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY
+    );
+  });
+
+  it("does not accept the membership locally when Polar rejects the seat increase", async () => {
+    const deps = dependencies();
+    deps.organizationSnapshot.memberships.push({
+      active: true,
+      clerkUserId: "user_member",
+      role: "org:member",
+    });
+    deps.syncAcceptedSeats.mockRejectedValue(new Error("provider unavailable"));
+    const service = new ClerkWebhookService(deps.value);
+    const eventId = `evt_${crypto.randomUUID()}`;
+
+    await expect(
+      process(
+        service,
+        eventId,
+        membershipEvent(deps.organizationSnapshot.id, "organizationMembership.created")
+      )
+    ).rejects.toThrow("provider unavailable");
+
+    expect(deps.reconcileOrganization).not.toHaveBeenCalled();
+  });
+
+  it("decreases Polar seats before reconciling a removed membership", async () => {
+    const deps = dependencies();
+    deps.getOrganizationState.mockResolvedValue({ acceptedSeats: 2, organizationId: 1 });
+    const service = new ClerkWebhookService(deps.value);
+    const eventId = `evt_${crypto.randomUUID()}`;
+
+    await process(
+      service,
+      eventId,
+      membershipEvent(deps.organizationSnapshot.id, "organizationMembership.deleted")
+    );
+
+    expect(deps.syncAcceptedSeats).toHaveBeenCalledWith({ desiredSeats: 1, organizationId: 1 });
+    expect(deps.syncAcceptedSeats.mock.invocationCallOrder[0]).toBeLessThan(
+      deps.reconcileOrganization.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY
+    );
+  });
+
+  it("does not write Polar when a membership role changes without changing seat count", async () => {
+    const deps = dependencies();
+    const service = new ClerkWebhookService(deps.value);
+    const eventId = `evt_${crypto.randomUUID()}`;
+
+    await process(service, eventId, membershipEvent(deps.organizationSnapshot.id));
+
+    expect(deps.syncAcceptedSeats).not.toHaveBeenCalled();
+    expect(deps.reconcileOrganization).toHaveBeenCalledWith(deps.organizationSnapshot);
   });
 });
