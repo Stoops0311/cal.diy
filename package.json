@@ -61,6 +61,7 @@
     "lint": "turbo lint",
     "postinstall": "husky install && turbo run post-install",
     "polar:provision-sandbox": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/provision-polar-sandbox.ts",
+    "clerk-polar:e2e-cleanup": "node --experimental-strip-types --env-file=apps/web/.env.local scripts/cleanup-clerk-polar-e2e.ts",
     "pre-commit": "lint-staged",
     "predev": "echo 'Checking env files'",
     "prisma": "yarn workspace @calcom/prisma prisma",
