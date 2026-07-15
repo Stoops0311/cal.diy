@@ -90,6 +90,33 @@ describe("CreateOrganizationForm", () => {
     expect(view.getByRole("button", { name: "Create team and continue ›" })).toBeVisible();
   });
 
+  it("keeps the pending action named and stops its spinner for reduced motion", () => {
+    const view = render(
+      <CreateOrganizationForm isPending onSubmit={vi.fn()} submitLabel="Create team and continue ›" />
+    );
+
+    const action = view.getByRole("button", { name: "Create team and continue ›" });
+    expect(action).toBeDisabled();
+    expect(action).toHaveAttribute("aria-label", "Create team and continue ›");
+    expect(action.querySelector("svg")).toBeInTheDocument();
+    expect(action).toHaveClass("motion-reduce:[&_svg]:animate-none");
+  });
+
+  it("ignores a repeated form submission after creation becomes pending", () => {
+    const onSubmit = vi.fn();
+    const view = render(<CreateOrganizationForm isPending={false} onSubmit={onSubmit} />);
+    fireEvent.change(view.getByLabelText("organization_name"), { target: { value: "Acme Labs" } });
+    const form = view.container.querySelector("form");
+    expect(form).not.toBeNull();
+    fireEvent.submit(form as HTMLFormElement);
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+
+    view.rerender(<CreateOrganizationForm isPending onSubmit={onSubmit} />);
+    fireEvent.submit(form as HTMLFormElement);
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
   it("derives a stable slug and submits the provisional organization", () => {
     const onSubmit = vi.fn();
     const view = render(<CreateOrganizationForm isPending={false} onSubmit={onSubmit} />);

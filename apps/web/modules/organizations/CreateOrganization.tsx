@@ -49,13 +49,15 @@ function CreateOrganizationForm({ isPending, onSubmit, submitLabel }: CreateOrga
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
+  const actionLabel = submitLabel ?? t("organization_bootstrap_create");
 
   return (
     <form
-      aria-label={submitLabel}
+      aria-label={actionLabel}
       className="space-y-5 motion-reduce:[&_button]:transition-none [@media(pointer:coarse)]:[&_button]:min-h-11 [@media(pointer:coarse)]:[&_input]:min-h-11"
       onSubmit={(event) => {
         event.preventDefault();
+        if (isPending) return;
         const normalizedName = name.trim();
         const normalizedSlug = slugify(slug);
         if (!normalizedName || !normalizedSlug) return;
@@ -87,8 +89,12 @@ function CreateOrganizationForm({ isPending, onSubmit, submitLabel }: CreateOrga
         required
         value={slug}
       />
-      <Button className="w-full justify-center sm:w-auto" loading={isPending} type="submit">
-        {submitLabel ?? t("organization_bootstrap_create")}
+      <Button
+        aria-label={actionLabel}
+        className="w-full justify-center sm:w-auto motion-reduce:[&_svg]:animate-none"
+        loading={isPending}
+        type="submit">
+        {actionLabel}
       </Button>
     </form>
   );
