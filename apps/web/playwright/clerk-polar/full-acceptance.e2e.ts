@@ -39,6 +39,7 @@ const organizationSlug = `convenio-e2e-${suffix}`;
 const manifest: FixtureManifest = createFixtureManifest(runTag);
 const execFileAsync = promisify(execFile);
 let migratedFixturePromise: Promise<{ clerkUserId: string; localUserId: number }> | undefined;
+let organizationFixtureId: number | undefined;
 
 type BrowserClerkUser = {
   createTOTP(): Promise<{ secret?: string }>;
@@ -164,7 +165,11 @@ async function signInWithPassword(
   password: string,
   totpSecret?: string
 ): Promise<void> {
-  await page.goto("/auth/login", { timeout: 60_000, waitUntil: "domcontentloaded" });
+  await page
+    .goto("/auth/login", { timeout: 60_000, waitUntil: "domcontentloaded" })
+    .catch((error: unknown) => {
+      if (!page.url().includes("/auth/login")) throw error;
+    });
   await page.getByRole("textbox", { name: "Email address" }).fill(email);
   await page.locator('input[name="password"]').fill(password);
   const clientTrustCodeSent = page
@@ -297,6 +302,22 @@ async function registerPersonalProjection(userId: number): Promise<void> {
   });
   if (!subscription) throw new Error("Polar subscription projection is missing");
   await registerFixture(manifest, { id: subscription.id, kind: "local_projection" });
+}
+
+async function ensureOrganizationFixture(page: Page): Promise<number> {
+  if (organizationFixtureId !== undefined) return organizationFixtureId;
+  const created = await callTRPC(
+    page,
+    "organizations/create",
+    { name: organizationName, slug: organizationSlug },
+    "POST"
+  );
+  expect(created.status).toBe(200);
+  const { organizationId } = readTRPCData<{ organizationId: number }>(created.body);
+  expect(organizationId).toBeGreaterThan(0);
+  await tagAndRegisterOrganization(organizationId);
+  organizationFixtureId = organizationId;
+  return organizationId;
 }
 
 async function resetPasswordByEmail(page: Page): Promise<void> {
@@ -524,16 +545,7 @@ test("authenticated organization endpoints create a Free projection and enforce 
   await signInWithPassword(page, migratedEmail, migratedPassword);
   await assertOneLocalUser(migratedEmail, migrated.clerkUserId);
 
-  const created = await callTRPC(
-    page,
-    "organizations/create",
-    { name: organizationName, slug: organizationSlug },
-    "POST"
-  );
-  expect(created.status).toBe(200);
-  const { organizationId } = readTRPCData<{ organizationId: number }>(created.body);
-  expect(organizationId).toBeGreaterThan(0);
-  await tagAndRegisterOrganization(organizationId);
+  const organizationId = await ensureOrganizationFixture(page);
 
   const projected = await callTRPC(page, "organizations/get", { organizationId }, "GET");
   expect(projected.status).toBe(200);
@@ -544,6 +556,44 @@ test("authenticated organization endpoints create a Free projection and enforce 
     "POST"
   );
   expect(deniedInvite.status).toBe(403);
+});
+
+test("all configured Polar products open the expected sandbox checkout", async ({ page }) => {
+  await setupClerkTestingToken(page);
+  const migrated = await migratedBcryptFixture();
+  await signInWithPassword(page, migratedEmail, migratedPassword);
+  await assertOneLocalUser(migratedEmail, migrated.clerkUserId);
+  const organizationId = await ensureOrganizationFixture(page);
+
+  const products = [
+    { input: { interval: "YEAR", plan: "PRO" }, title: "Convenio Pro — Annual" },
+    {
+      input: { interval: "MONTH", organizationId, plan: "TEAM" },
+      title: "Convenio Team — Monthly",
+    },
+    {
+      input: { interval: "YEAR", organizationId, plan: "TEAM" },
+      title: "Convenio Team — Annual",
+    },
+  ] as const;
+  const checkouts: Array<{ title: string; url: string }> = [];
+  for (const product of products) {
+    const result = await callTRPC(page, "billing/createCheckout", product.input, "POST");
+    expect(result.status).toBe(200);
+    const { checkoutUrl } = readTRPCData<{ checkoutUrl: string }>(result.body);
+    checkouts.push({ title: product.title, url: checkoutUrl });
+  }
+
+  for (const checkout of checkouts) {
+    await page
+      .goto(checkout.url, { timeout: 60_000, waitUntil: "domcontentloaded" })
+      .catch((error: unknown) => {
+        if (!page.url().startsWith("https://sandbox.polar.sh/checkout/")) throw error;
+      });
+    await expect(page).toHaveURL(/https:\/\/sandbox\.polar\.sh\/checkout\//);
+    await expect(page.getByText(checkout.title, { exact: true })).toBeVisible({ timeout: 30_000 });
+  }
+  await page.unrouteAll({ behavior: "ignoreErrors" });
 });
 
 test("Polar Pro monthly checkout activates a paid projection", async ({ page }) => {
@@ -559,7 +609,9 @@ test("Polar Pro monthly checkout activates a paid projection", async ({ page }) 
   const checkout = await callTRPC(page, "billing/createCheckout", { interval: "MONTH", plan: "PRO" }, "POST");
   expect(checkout.status).toBe(200);
   const { checkoutUrl } = readTRPCData<{ checkoutUrl: string }>(checkout.body);
-  await page.goto(checkoutUrl, { timeout: 60_000, waitUntil: "domcontentloaded" });
+  await page.goto(checkoutUrl, { timeout: 60_000, waitUntil: "domcontentloaded" }).catch((error: unknown) => {
+    if (!page.url().startsWith("https://sandbox.polar.sh/checkout/")) throw error;
+  });
   await expect(page).toHaveURL(/https:\/\/sandbox\.polar\.sh\/checkout\//);
   await page.screenshot({
     fullPage: true,
