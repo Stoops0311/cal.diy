@@ -8,6 +8,7 @@ import { ErrorBoundary } from "@calcom/ui/components/errorBoundary";
 import { SkeletonText } from "@calcom/ui/components/skeleton";
 import { useRedirectToLoginIfUnauthenticated } from "@calcom/web/modules/auth/hooks/useRedirectToLoginIfUnauthenticated";
 import { useRedirectToOnboardingIfNeeded } from "@calcom/web/modules/auth/hooks/useRedirectToOnboardingIfNeeded";
+import { BillingStatusWidget } from "@calcom/web/modules/billing/BillingStatusWidget";
 import { UpgradePromptProvider } from "@calcom/web/modules/billing/UpgradePromptProvider";
 import { useFormbricks } from "@calcom/web/modules/formbricks/hooks/useFormbricks";
 import { useRouter } from "next/navigation";
@@ -22,7 +23,9 @@ import { DynamicModals } from "./DynamicModals";
 import { KBarContent, KBarRoot } from "./Kbar";
 import { useAppTheme } from "./useAppTheme";
 
-const Layout = (props: LayoutProps) => {
+type InternalLayoutProps = LayoutProps & { billingStatus?: ReactNode };
+
+const Layout = (props: InternalLayoutProps) => {
   const { banners, bannersHeight } = useBanners();
 
   useFormbricks();
@@ -110,7 +113,7 @@ export default function Shell(props: LayoutProps) {
   return !props.isPublic ? (
     <UpgradePromptProvider>
       <KBarWrapper withKBar>
-        <Layout {...props} />
+        <Layout {...props} billingStatus={<BillingStatusWidget />} />
       </KBarWrapper>
     </UpgradePromptProvider>
   ) : (
@@ -196,7 +199,11 @@ export function ShellMain(props: LayoutProps) {
   );
 }
 
-function MainContainer({ TopNavContainer: TopNavContainerProp = null, ...props }: LayoutProps) {
+function MainContainer({
+  TopNavContainer: TopNavContainerProp = null,
+  billingStatus,
+  ...props
+}: InternalLayoutProps) {
   return (
     <main className="bg-default relative z-0 flex-1 focus:outline-none">
       {TopNavContainerProp}
@@ -205,6 +212,7 @@ function MainContainer({ TopNavContainer: TopNavContainerProp = null, ...props }
         <ErrorBoundary>
           {!props.withoutMain ? <ShellMain {...props}>{props.children}</ShellMain> : props.children}
         </ErrorBoundary>
+        {billingStatus}
       </div>
     </main>
   );
