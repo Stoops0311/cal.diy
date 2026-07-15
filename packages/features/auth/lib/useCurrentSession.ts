@@ -1,7 +1,8 @@
+import process from "node:process";
 import { useAuth } from "@clerk/nextjs";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
-import { getClientAuthProvider } from "./authProvider";
+import { getClientAuthProvider } from "./clientAuthProvider";
 import type { ConvenioSession } from "./currentSession";
 
 type CurrentSessionStatus = "authenticated" | "loading" | "unauthenticated";
@@ -72,7 +73,9 @@ function useLegacyCurrentSession(): CurrentSessionHookResult {
 }
 
 let useProviderSession: () => CurrentSessionHookResult = useLegacyCurrentSession;
-if (getClientAuthProvider() === "clerk") useProviderSession = useClerkCurrentSession;
+if (getClientAuthProvider(process.env.NEXT_PUBLIC_AUTH_PROVIDER) === "clerk") {
+  useProviderSession = useClerkCurrentSession;
+}
 
 function useCurrentSession(): CurrentSessionHookResult {
   return useProviderSession();

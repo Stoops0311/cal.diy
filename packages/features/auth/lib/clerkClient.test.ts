@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getAuthProvider, getClerkBackendClient, getClientAuthProvider } from "./clerkClient";
+import { getAuthProvider, getClerkBackendClient } from "./clerkClient";
+import { getClientAuthProvider } from "./clientAuthProvider";
 
 describe("getAuthProvider", () => {
   it.each(["nextauth", "clerk"] as const)("accepts %s", (provider) => {
@@ -19,16 +20,22 @@ describe("getAuthProvider", () => {
 
 describe("getClientAuthProvider", () => {
   it("uses the public provider setting", () => {
-    expect(getClientAuthProvider({ NEXT_PUBLIC_AUTH_PROVIDER: "clerk" })).toBe("clerk");
+    expect(getClientAuthProvider("clerk")).toBe("clerk");
   });
 
-  it("does not expose or inherit the server-only provider setting", () => {
-    expect(getClientAuthProvider({ AUTH_PROVIDER: "clerk" })).toBe("nextauth");
+  it("defaults to the legacy provider", () => {
+    expect(getClientAuthProvider(undefined)).toBe("nextauth");
   });
 });
 
 describe("getClerkBackendClient", () => {
   it("requires the server-only secret key", () => {
     expect(() => getClerkBackendClient({})).toThrow("CLERK_SECRET_KEY is required when Clerk is enabled");
+  });
+
+  it("requires a publishable key for request verification", () => {
+    expect(() => getClerkBackendClient({ CLERK_SECRET_KEY: "secret" })).toThrow(
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is required when Clerk is enabled"
+    );
   });
 });

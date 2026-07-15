@@ -1,5 +1,5 @@
 import type { IncomingMessage } from "node:http";
-import { getClientAuthProvider } from "@calcom/features/auth/lib/authProvider";
+import { getClientAuthProvider } from "@calcom/features/auth/lib/clientAuthProvider";
 import { trpc } from "@calcom/trpc/react";
 import { WebPushProvider } from "@calcom/web/modules/notifications/components/WebPushContext";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -10,6 +10,7 @@ import type { ComponentType, ReactNode } from "react";
 import CacheProvider from "react-inlinesvg/provider";
 
 import "../styles/globals.css";
+import process from "node:process";
 
 const ClerkProviderCompat = ClerkProvider as unknown as ComponentType<{ children: ReactNode }>;
 
@@ -24,7 +25,9 @@ function MyApp(props: AppProps) {
     </WebPushProvider>
   );
 
-  if (getClientAuthProvider() === "clerk") return <ClerkProviderCompat>{content}</ClerkProviderCompat>;
+  if (getClientAuthProvider(process.env.NEXT_PUBLIC_AUTH_PROVIDER) === "clerk") {
+    return <ClerkProviderCompat>{content}</ClerkProviderCompat>;
+  }
   return <SessionProvider session={pageProps.session ?? undefined}>{content}</SessionProvider>;
 }
 

@@ -11,9 +11,5 @@ function getAuthProvider(env: AuthEnvironment = process.env): AuthProvider {
   return provider;
 }
 
-function getClientAuthProvider(env: AuthEnvironment = process.env): AuthProvider {
-  return getAuthProvider({ AUTH_PROVIDER: env.NEXT_PUBLIC_AUTH_PROVIDER });
-}
-
-export { getAuthProvider, getClientAuthProvider };
+export { getAuthProvider };
 export type { AuthProvider };

@@ -1,6 +1,7 @@
 "use client";
 
-import { getClientAuthProvider } from "@calcom/features/auth/lib/authProvider";
+import process from "node:process";
+import { getClientAuthProvider } from "@calcom/features/auth/lib/clientAuthProvider";
 import { NotificationSoundHandler } from "@calcom/web/components/notification-sound-handler";
 import { WebPushProvider } from "@calcom/web/modules/notifications/components/WebPushContext";
 import { ToastProvider } from "@coss/ui/components/toast";
@@ -32,7 +33,11 @@ export function Providers({ isEmbed, children, country }: ProvidersProps) {
 
   return (
     <GeoProvider country={country}>
-      {getClientAuthProvider() === "clerk" ? content : <SessionProvider>{content}</SessionProvider>}
+      {getClientAuthProvider(process.env.NEXT_PUBLIC_AUTH_PROVIDER) === "clerk" ? (
+        content
+      ) : (
+        <SessionProvider>{content}</SessionProvider>
+      )}
     </GeoProvider>
   );
 }
