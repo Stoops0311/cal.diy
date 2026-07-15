@@ -8,6 +8,7 @@ export function getMarketingShellCopy(t: MarketingTranslate) {
     mainNavigation: t("main_navigation"),
     footerNavigation: t("footer_navigation"),
     product: t("marketing_product"),
+    pricing: t("pricing"),
     manifesto: t("marketing_manifesto"),
     signIn: t("sign_in"),
     getStarted: t("get_started"),
@@ -77,6 +78,12 @@ export function MarketingHeader({
             {copy.product}
           </Link>
           <Link
+            href="/pricing"
+            className="cv-nav-link"
+            aria-current={current === "pricing" ? "page" : undefined}>
+            {copy.pricing}
+          </Link>
+          <Link
             href="/manifesto"
             className="cv-nav-link"
             aria-current={current === "manifesto" ? "page" : undefined}>
@@ -109,6 +116,9 @@ export function MarketingFooter({ copy }: { copy: MarketingShellCopy }) {
           <nav className="cv-nav" aria-label={copy.footerNavigation}>
             <Link href="/products" className="cv-nav-link">
               {copy.product}
+            </Link>
+            <Link href="/pricing" className="cv-nav-link">
+              {copy.pricing}
             </Link>
             <Link href="/manifesto" className="cv-nav-link">
               {copy.manifesto}

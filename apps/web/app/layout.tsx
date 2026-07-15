@@ -11,6 +11,7 @@ import Script from "next/script";
 import type React from "react";
 
 import "../styles/globals.css";
+import "./(marketing)/marketing.css";
 import process from "node:process";
 import { AppRouterI18nProvider } from "./AppRouterI18nProvider";
 import { Providers } from "./providers";

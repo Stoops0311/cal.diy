@@ -19,4 +19,15 @@ test.describe("Convenio marketing layout", () => {
     await expect(headline).toBeVisible();
     await expect.poll(async () => (await headline.boundingBox())?.x ?? 0).toBeGreaterThanOrEqual(24);
   });
+
+  test("pricing uses the marketing shell and yearly-first hierarchy", async ({ page }) => {
+    await page.goto("/pricing");
+
+    await expect(page.locator(".cv-header")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Pricing" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("heading", { name: "Pro" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Team" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Free" })).toHaveCount(0);
+    await expect(page.getByText("$96")).toBeVisible();
+  });
 });
