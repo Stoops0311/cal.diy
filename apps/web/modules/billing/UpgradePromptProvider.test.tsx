@@ -36,25 +36,6 @@ vi.mock("@calcom/lib/hooks/useLocale", () => ({
   }),
 }));
 
-vi.mock("./PlanSelector", () => ({
-  PlanSelector: (props: {
-    ctaKeys?: Record<string, string>;
-    onSelectPlan(selection: { interval: "YEAR"; plan: "TEAM" }): void;
-    showAllPlans?: boolean;
-    visiblePlans?: readonly string[];
-  }) => (
-    <button
-      data-cta-key={props.ctaKeys?.TEAM}
-      data-show-all-plans={String(props.showAllPlans)}
-      data-testid="plan-selector"
-      data-visible-plans={props.visiblePlans?.join(",")}
-      onClick={() => props.onSelectPlan({ interval: "YEAR", plan: "TEAM" })}
-      type="button">
-      choose
-    </button>
-  ),
-}));
-
 vi.mock("./upgradeIntent", () => ({ saveUpgradeIntent: mocks.saveUpgradeIntent }));
 
 vi.mock("./usePaidPlanCheckout", () => ({
@@ -104,9 +85,10 @@ describe("UpgradePromptProvider", () => {
     expect(
       view.getByText("Keep the decisions behind every booking visible to the people responsible for it.")
     ).toBeInTheDocument();
-    expect(view.getByTestId("plan-selector")).toHaveAttribute("data-visible-plans", "TEAM");
-    expect(view.getByTestId("plan-selector")).toHaveAttribute("data-show-all-plans", "false");
-    expect(view.getByTestId("plan-selector")).toHaveAttribute("data-cta-key", "billing_upgrade_choose_team");
+    expect(view.getByRole("heading", { name: "TEAM" })).toBeInTheDocument();
+    expect(view.queryByRole("heading", { name: "billing_plan_pro" })).not.toBeInTheDocument();
+    expect(view.queryByRole("button", { name: "billing_view_all_plans" })).not.toBeInTheDocument();
+    expect(view.getByRole("button", { name: "billing_upgrade_choose_team" })).toBeInTheDocument();
 
     fireEvent.click(view.getByRole("button", { name: "Not now" }));
     expect(view.queryByText("Booking history belongs in Team.")).not.toBeInTheDocument();
@@ -124,7 +106,7 @@ describe("UpgradePromptProvider", () => {
     );
 
     fireEvent.click(view.getByRole("button", { name: "open" }));
-    fireEvent.click(view.getByTestId("plan-selector"));
+    fireEvent.click(view.getByRole("button", { name: "billing_upgrade_choose_team" }));
 
     expect(mocks.checkoutOptions?.organizationId).toBe(41);
     expect(mocks.saveUpgradeIntent).toHaveBeenCalledWith(
@@ -151,7 +133,7 @@ describe("UpgradePromptProvider", () => {
     );
 
     fireEvent.click(view.getByRole("button", { name: "open" }));
-    fireEvent.click(view.getByTestId("plan-selector"));
+    fireEvent.click(view.getByRole("button", { name: "billing_upgrade_choose_team" }));
 
     expect(mocks.checkoutOptions?.organizationId).toBeUndefined();
     expect(mocks.saveUpgradeIntent).toHaveBeenCalledWith(expect.any(Object), { subject: undefined });
@@ -171,5 +153,29 @@ describe("UpgradePromptProvider", () => {
 
     await waitFor(() => expect(view.queryByRole("dialog")).not.toBeInTheDocument());
     await waitFor(() => expect(opener).toHaveFocus());
+  });
+
+  it("scopes 44px coarse-pointer targets to every interactive prompt control", () => {
+    const view = render(
+      <UpgradePromptProvider>
+        <Harness />
+      </UpgradePromptProvider>
+    );
+    fireEvent.click(view.getByRole("button", { name: "open" }));
+
+    const dialog = view.getByRole("dialog");
+    expect(dialog).toHaveClass(
+      "[@media(pointer:coarse)]:[&_button]:min-h-11",
+      "[@media(pointer:coarse)]:[&_button]:min-w-11"
+    );
+    const controls = [
+      view.getByRole("button", { name: "billing_interval_monthly" }),
+      view.getByRole("button", { name: "billing_interval_yearly" }),
+      view.getByRole("button", { name: "billing_upgrade_choose_team" }),
+      view.getByRole("button", { name: "Not now" }),
+      view.getByRole("button", { name: "Close" }),
+    ];
+    for (const control of controls) expect(dialog).toContainElement(control);
+    expect(controls[0]).toHaveClass("min-h-10");
   });
 });

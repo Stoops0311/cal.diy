@@ -80,6 +80,7 @@ export function UpgradePromptProvider({ children }: { children: React.ReactNode 
       {children}
       <Sheet open={prompt !== null} onOpenChange={(open) => !open && setPrompt(null)}>
         <SheetContent
+          className="[@media(pointer:coarse)]:[&_button]:min-h-11 [@media(pointer:coarse)]:[&_button]:min-w-11"
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             promptTriggerRef.current?.focus();
