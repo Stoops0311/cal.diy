@@ -20,14 +20,19 @@ function BillingStatusWidget(): ReactElement {
     return (
       <aside
         aria-label={t("billing_status_widget_loading")}
+        aria-live="polite"
         className="mt-6 min-h-24 rounded-xl border border-subtle bg-subtle motion-safe:animate-pulse"
+        role="status"
       />
     );
   }
 
   if (query.isError || !query.data) {
     return (
-      <aside className="mt-6 flex min-h-24 items-center justify-between gap-4 rounded-xl border border-subtle bg-default p-4">
+      <aside
+        aria-live="polite"
+        className="mt-6 flex min-h-24 items-center justify-between gap-4 rounded-xl border border-subtle bg-default p-4"
+        role="status">
         <p className="text-sm text-subtle">{t("billing_status_widget_unavailable")}</p>
         <Button
           className="[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
@@ -52,7 +57,10 @@ function BillingStatusWidget(): ReactElement {
   }
 
   return (
-    <aside className="mt-6 flex min-h-24 flex-col justify-between gap-4 rounded-xl border border-subtle bg-default p-4 sm:flex-row sm:items-center">
+    <aside
+      aria-live="polite"
+      className="mt-6 flex min-h-24 flex-col justify-between gap-4 rounded-xl border border-subtle bg-default p-4 sm:flex-row sm:items-center"
+      role="status">
       <div>
         <p className="font-mono text-[11px] text-subtle uppercase tracking-[0.18em]">
           {t("billing_status_widget_eyebrow")}

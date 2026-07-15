@@ -70,6 +70,38 @@ beforeEach(() => {
 });
 
 describe("BillingStatusWidget", () => {
+  it("keeps one polite status region while the query state changes", () => {
+    const view = render(<BillingStatusWidget />);
+    const region = view.getByRole("status");
+
+    expect(region).toHaveAttribute("aria-live", "polite");
+    expect(region).toHaveAccessibleName("billing_status_widget_loading");
+    expect(view.getAllByRole("status")).toHaveLength(1);
+
+    mocks.isPending = false;
+    mocks.isError = true;
+    view.rerender(<BillingStatusWidget />);
+
+    expect(view.getByRole("status")).toBe(region);
+    expect(region).toHaveTextContent("billing_status_widget_unavailable");
+    expect(view.getAllByRole("status")).toHaveLength(1);
+
+    mocks.isError = false;
+    mocks.data = {
+      canManageBilling: true,
+      plan: "FREE",
+      seats: null,
+      status: "NONE",
+      subject: { id: 7, type: "USER" },
+    };
+    view.rerender(<BillingStatusWidget />);
+
+    expect(view.getByRole("status")).toBe(region);
+    expect(region).toHaveTextContent("billing_status_widget_eyebrow");
+    expect(region).toHaveTextContent("billing_plan_free");
+    expect(view.getAllByRole("status")).toHaveLength(1);
+  });
+
   it("shows a quiet fixed-height skeleton while loading", () => {
     const view = render(<BillingStatusWidget />);
 
