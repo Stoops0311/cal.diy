@@ -253,26 +253,38 @@ async function selectPolarCombobox(page: Page, value: string): Promise<void> {
 async function completePolarCardCheckout(page: Page, externalCustomerId: string): Promise<void> {
   const checkoutReturn = /http:\/\/localhost:3000\/(?:settings\/billing\?checkout_id=|auth\/login)/;
   const mutations: Array<{ host: string; method: string; path: string; status: number }> = [];
+  const failedMutations: Array<{ body: string; path: string; status: number }> = [];
   const browserErrors: string[] = [];
-  page.on("response", (response) => {
+  page.on("response", async (response) => {
     const method = response.request().method();
     if (method === "GET" || method === "OPTIONS") return;
     const url = new URL(response.url());
     if (!url.hostname.endsWith("polar.sh") && !url.hostname.endsWith("stripe.com")) return;
     mutations.push({ host: url.hostname, method, path: url.pathname, status: response.status() });
+    if (response.status() >= 400) {
+      failedMutations.push({
+        body: (await response.text().catch(() => "unavailable")).slice(0, 500),
+        path: url.pathname,
+        status: response.status(),
+      });
+    }
   });
   page.on("pageerror", (error) => browserErrors.push(error.message));
 
   await selectPolarCombobox(page, "United States");
-  await page.getByRole("textbox", { name: "Street address" }).fill("510 Townsend St");
-  await page.getByRole("textbox", { name: "Postal code" }).fill("94103");
-  await page.getByRole("textbox", { name: "City" }).fill("San Francisco");
-  await selectPolarCombobox(page, "California");
-
   const payment = page.frameLocator("iframe").first();
   await payment.getByRole("textbox", { name: "Card number" }).fill("4242424242424242");
   await payment.getByRole("textbox", { name: "Expiration date MM / YY" }).fill("12/34");
   await payment.getByRole("textbox", { name: "Security code" }).fill("123");
+  const cardholderName = page.getByRole("textbox", { name: "Cardholder name" });
+  if (await cardholderName.isVisible().catch(() => false)) await cardholderName.fill("Convenio E2E User");
+  const streetAddress = page.getByRole("textbox", { name: "Street address" });
+  if (await streetAddress.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await streetAddress.fill("510 Townsend St");
+    await page.getByRole("textbox", { name: "Postal code" }).fill("94103");
+    await page.getByRole("textbox", { name: "City" }).fill("San Francisco");
+    await selectPolarCombobox(page, "California");
+  }
   const businessName = page.getByRole("textbox", { name: "Business name" });
   if (await businessName.isVisible().catch(() => false)) await businessName.fill(organizationName);
 
@@ -309,6 +321,7 @@ async function completePolarCardCheckout(page: Page, externalCustomerId: string)
   if (latestConfirmation?.status === 403) {
     const subscribeNow = page.getByRole("button", { name: "Subscribe now", exact: true });
     await expect(subscribeNow).toBeEnabled({ timeout: 45_000 });
+    await page.waitForTimeout(10_000);
     await subscribeNow.click();
   }
   await page.waitForURL(checkoutReturn, { timeout: 60_000 }).catch(() => null);
@@ -317,7 +330,7 @@ async function completePolarCardCheckout(page: Page, externalCustomerId: string)
   );
   if (!checkoutReturn.test(page.url()) || !confirmationSucceeded) {
     throw new Error(
-      `Polar checkout did not redirect. Mutations: ${JSON.stringify(mutations)}. Browser errors: ${JSON.stringify(browserErrors)}`
+      `Polar checkout did not redirect. Mutations: ${JSON.stringify(mutations)}. Failures: ${JSON.stringify(failedMutations)}. Browser errors: ${JSON.stringify(browserErrors)}`
     );
   }
   await expect(page).toHaveURL(checkoutReturn);
@@ -683,6 +696,44 @@ async function verifyCancellationRetention(page: Page, organizationId: number): 
   expect(retainedInvite.status).toBe(200);
 }
 
+async function verifyProApiKeyEntitlement(page: Page, userId: number): Promise<void> {
+  const created = await callTRPC(page, "apiKeys/create", { neverExpires: true, note: runTag }, "POST");
+  expect(created.status).toBe(200);
+  expect(readTRPCData<string>(created.body)).toMatch(/^cal_/);
+
+  const apiKey = await prisma.apiKey.findFirstOrThrow({
+    where: { note: runTag, userId },
+    select: { id: true },
+  });
+  const deleted = await callTRPC(page, "apiKeys/delete", { id: apiKey.id }, "POST");
+  expect(deleted.status).toBe(200);
+  await expect(prisma.apiKey.findUnique({ where: { id: apiKey.id } })).resolves.toBeNull();
+}
+
+async function verifyPaidSubjectIsolation(page: Page, organizationId: number): Promise<void> {
+  const personal = await callTRPC(page, "billing/get", {}, "GET");
+  const organization = await callTRPC(page, "billing/get", { organizationId }, "GET");
+  expect(personal.status).toBe(200);
+  expect(organization.status).toBe(200);
+  expect(readTRPCData<{ plan: string }>(personal.body).plan).toBe("PRO");
+  expect(readTRPCData<{ plan: string }>(organization.body).plan).toBe("TEAM");
+
+  const teamWithoutOrganization = await callTRPC(
+    page,
+    "billing/changePlan",
+    { interval: "MONTH", plan: "TEAM" },
+    "POST"
+  );
+  const proForOrganization = await callTRPC(
+    page,
+    "billing/changePlan",
+    { interval: "MONTH", organizationId, plan: "PRO" },
+    "POST"
+  );
+  expect(teamWithoutOrganization.status).toBe(400);
+  expect(proForOrganization.status).toBe(400);
+}
+
 async function tagAndRegisterOrganization(organizationId: number): Promise<string> {
   const organization = await prisma.team.findUnique({
     where: { id: organizationId },
@@ -746,6 +797,7 @@ test.afterEach(async ({ page }) => {
 });
 
 test.afterAll(async () => {
+  await prisma.apiKey.deleteMany({ where: { note: runTag } });
   await execFileAsync("yarn", ["clerk-polar:e2e-cleanup", `--run-tag=${runTag}`], {
     cwd: process.cwd(),
     env: process.env,
@@ -798,6 +850,12 @@ test("all configured Polar products open the expected sandbox checkout", async (
     const { checkoutUrl } = readTRPCData<{ checkoutUrl: string }>(result.body);
     checkouts.push({ title: product.title, url: checkoutUrl });
   }
+  const organization = await prisma.team.findUniqueOrThrow({
+    where: { id: organizationId },
+    select: { clerkOrganizationId: true },
+  });
+  if (!organization.clerkOrganizationId) throw new Error("Clerk organization projection is missing");
+  await tagPolarCustomer(`org:${organization.clerkOrganizationId}`);
 
   for (const checkout of checkouts) {
     await page
@@ -875,6 +933,7 @@ test("Polar Pro monthly checkout activates a paid projection", async ({ page }) 
     new Date(paid.currentPeriodStart).getTime()
   );
   await registerPersonalProjection(migrated.localUserId);
+  await verifyProApiKeyEntitlement(page, migrated.localUserId);
   await page.screenshot({
     fullPage: true,
     path: `test-results/clerk-polar/screenshots/${runTag}-polar-pro-active.png`,
@@ -947,6 +1006,7 @@ test("Polar Team monthly checkout bills accepted Clerk members as seats", async 
   await registerOrganizationProjection(organizationId);
   await verifyPolarCustomerPortal(page, organizationId);
   await verifyTeamMembershipLifecycle(page, organizationId, organization.clerkOrganizationId);
+  await verifyPaidSubjectIsolation(page, organizationId);
   await verifyCancellationRetention(page, organizationId);
   await page.screenshot({
     fullPage: true,
@@ -994,6 +1054,15 @@ test("Clerk and Polar full acceptance story", async ({ page, request }) => {
   await test.step("migrated bcrypt user signs in with the unchanged password", async () => {
     const migrated = await migratedBcryptFixture();
     await signOut(page);
+    await signInWithPassword(page, migratedEmail, migratedPassword);
+    await assertOneLocalUser(migratedEmail, migrated.clerkUserId);
+  });
+
+  await test.step("Google and Microsoft sign-in are enabled without changing local identity ownership", async () => {
+    await signOut(page);
+    await expect(page.getByRole("button", { name: /Sign in with Google/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Sign in with Microsoft/i })).toBeVisible();
+    const migrated = await migratedBcryptFixture();
     await signInWithPassword(page, migratedEmail, migratedPassword);
     await assertOneLocalUser(migratedEmail, migrated.clerkUserId);
   });

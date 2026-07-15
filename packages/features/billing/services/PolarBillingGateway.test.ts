@@ -4,7 +4,7 @@ const { client } = vi.hoisted(() => ({
   client: {
     checkouts: { create: vi.fn() },
     customerSessions: { create: vi.fn() },
-    customers: { getExternal: vi.fn(), getStateExternal: vi.fn() },
+    customers: { create: vi.fn(), getExternal: vi.fn(), getStateExternal: vi.fn() },
     members: { listMembers: vi.fn() },
     subscriptions: { get: vi.fn(), update: vi.fn() },
   },
@@ -62,10 +62,91 @@ describe("PolarSdkBillingGateway", () => {
       customerPortalUrl: "https://sandbox.polar.sh/purchases/session",
     });
     client.customers.getExternal.mockResolvedValue({ type: "individual" });
+    client.customers.create.mockResolvedValue({ id: "customer_team", type: "team" });
     client.customers.getStateExternal.mockResolvedValue(customerState());
     client.members.listMembers.mockResolvedValue({ result: { items: [] } });
     client.subscriptions.get.mockResolvedValue(subscription());
     client.subscriptions.update.mockResolvedValue(undefined);
+  });
+
+  it("binds a team checkout to its existing customer instead of matching the owner email", async () => {
+    client.customers.getExternal.mockResolvedValue({ id: "customer_team", type: "team" });
+    const gateway = new PolarSdkBillingGateway(environment);
+    const input = {
+      allowTrial: true,
+      customerEmail: "owner@example.com",
+      customerName: "Acme",
+      externalCustomerId: "org:org_clerk",
+      isBusinessCustomer: true,
+      metadata: { plan_key: "TEAM" },
+      products: ["product_team_month"],
+      returnUrl: "https://app.example.com/pricing",
+      successUrl: "https://app.example.com/settings/billing",
+    };
+
+    await gateway.createCheckout(input);
+
+    expect(client.customers.create).not.toHaveBeenCalled();
+    expect(client.checkouts.create).toHaveBeenCalledWith({
+      allowTrial: true,
+      customerId: "customer_team",
+      isBusinessCustomer: true,
+      metadata: { plan_key: "TEAM" },
+      products: ["product_team_month"],
+      returnUrl: "https://app.example.com/pricing",
+      successUrl: "https://app.example.com/settings/billing",
+    });
+  });
+
+  it("creates a team customer with an owner before opening its first checkout", async () => {
+    const notFound = new Error("missing");
+    notFound.name = "ResourceNotFound";
+    client.customers.getExternal.mockRejectedValueOnce(notFound);
+    const gateway = new PolarSdkBillingGateway(environment);
+
+    await gateway.createCheckout({
+      allowTrial: true,
+      customerEmail: "owner@example.com",
+      customerName: "Acme",
+      externalCustomerId: "org:org_clerk",
+      isBusinessCustomer: true,
+      metadata: { plan_key: "TEAM" },
+      products: ["product_team_month"],
+      returnUrl: "https://app.example.com/pricing",
+      successUrl: "https://app.example.com/settings/billing",
+    });
+
+    expect(client.customers.create).toHaveBeenCalledWith({
+      externalId: "org:org_clerk",
+      metadata: { plan_key: "TEAM" },
+      name: "Acme",
+      owner: { email: "owner@example.com", name: "Acme" },
+      type: "team",
+    });
+    expect(client.checkouts.create).toHaveBeenCalledWith(
+      expect.objectContaining({ customerId: "customer_team" })
+    );
+  });
+
+  it("does not turn Polar authorization failures into customer creation attempts", async () => {
+    client.customers.getExternal.mockRejectedValue(new Error("forbidden"));
+    const gateway = new PolarSdkBillingGateway(environment);
+
+    await expect(
+      gateway.createCheckout({
+        allowTrial: true,
+        customerEmail: "owner@example.com",
+        customerName: "Acme",
+        externalCustomerId: "org:org_clerk",
+        isBusinessCustomer: true,
+        metadata: { plan_key: "TEAM" },
+        products: ["product_team_month"],
+        returnUrl: "https://app.example.com/pricing",
+        successUrl: "https://app.example.com/settings/billing",
+      })
+    ).rejects.toThrow("forbidden");
+    expect(client.customers.create).not.toHaveBeenCalled();
+    expect(client.checkouts.create).not.toHaveBeenCalled();
   });
 
   it("creates an individual customer session without a member", async () => {

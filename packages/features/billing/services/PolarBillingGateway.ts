@@ -54,7 +54,48 @@ class PolarSdkBillingGateway implements PolarBillingGateway {
   }
 
   async createCheckout(input: PolarCheckoutInput): Promise<{ url: string }> {
+    if (input.isBusinessCustomer) {
+      const customer = await this.getOrCreateTeamCustomer(input);
+      return this.client.checkouts.create({
+        allowTrial: input.allowTrial,
+        customerId: customer.id,
+        isBusinessCustomer: true,
+        maxSeats: input.maxSeats,
+        metadata: input.metadata,
+        minSeats: input.minSeats,
+        products: input.products,
+        returnUrl: input.returnUrl,
+        seats: input.seats,
+        successUrl: input.successUrl,
+      });
+    }
     return this.client.checkouts.create(input);
+  }
+
+  private async getOrCreateTeamCustomer(input: PolarCheckoutInput): Promise<{ id: string }> {
+    let customer: Awaited<ReturnType<typeof this.client.customers.getExternal>>;
+    try {
+      customer = await this.client.customers.getExternal({ externalId: input.externalCustomerId });
+    } catch (error) {
+      if (!(error instanceof Error) || error.name !== "ResourceNotFound") throw error;
+      try {
+        customer = await this.client.customers.create({
+          externalId: input.externalCustomerId,
+          metadata: input.metadata,
+          name: input.customerName,
+          owner: { email: input.customerEmail, name: input.customerName },
+          type: "team",
+        });
+      } catch (createError) {
+        try {
+          customer = await this.client.customers.getExternal({ externalId: input.externalCustomerId });
+        } catch {
+          throw createError;
+        }
+      }
+    }
+    if (customer.type !== "team") throw new Error("Polar customer type mismatch");
+    return customer;
   }
 
   async createCustomerSession(input: {
