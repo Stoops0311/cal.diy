@@ -1,5 +1,5 @@
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { WEBAPP_URL } from "@calcom/lib/constants";
-import { useSession } from "next-auth/react";
 import { useBottomNavItems } from "../useBottomNavItems";
 import type { NavigationItemType } from "./NavigationItem";
 

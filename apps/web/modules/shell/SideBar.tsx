@@ -1,3 +1,4 @@
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { ENABLE_PROFILE_SWITCHER, IS_VISUAL_REGRESSION_TESTING, WEBAPP_URL } from "@calcom/lib/constants";
 import { getPlaceholderAvatar } from "@calcom/lib/defaultAvatarImage";
 import { useIsStandalone } from "@calcom/lib/hooks/useIsStandalone";
@@ -13,7 +14,6 @@ import { Tooltip } from "@calcom/ui/components/tooltip";
 import { ArrowLeftIcon, ArrowRightIcon } from "@coss/ui/icons";
 import Link from "next/link";
 import type { User as UserAuth } from "next-auth";
-import { useSession } from "next-auth/react";
 import { KBarTrigger } from "./Kbar";
 import { Navigation } from "./navigation/Navigation";
 import { useBottomNavItems } from "./useBottomNavItems";

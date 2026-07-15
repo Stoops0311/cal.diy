@@ -1,3 +1,4 @@
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { ENABLE_PROFILE_SWITCHER } from "@calcom/lib/constants";
 import { useRefreshData } from "@calcom/lib/hooks/useRefreshData";
 import { trpc } from "@calcom/trpc/react";
@@ -12,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@calcom/ui/components/dropdown";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "@coss/ui/icons";
-import { useSession } from "next-auth/react";
 import { useState } from "react";
 
 export function ProfileDropdown() {
