@@ -230,7 +230,9 @@ function PricingPage({
       return;
     }
     if (organizationId === undefined) {
-      router.push("/settings/organizations/new?returnTo=/pricing");
+      router.push(
+        `/settings/organizations/new?returnTo=${encodeURIComponent("/pricing")}&interval=${selection.interval}`
+      );
       return;
     }
     checkout.mutate({ ...selection, organizationId });
