@@ -61,7 +61,19 @@ class PolarSdkBillingGateway implements PolarBillingGateway {
     externalCustomerId: string;
     returnUrl: string;
   }): Promise<{ customerPortalUrl: string }> {
-    return this.client.customerSessions.create(input);
+    const customer = await this.client.customers.getExternal({ externalId: input.externalCustomerId });
+    if (customer.type === "individual") return this.client.customerSessions.create(input);
+
+    const members = await this.client.members.listMembers({
+      externalCustomerId: input.externalCustomerId,
+      limit: 2,
+      role: "owner",
+    });
+    if (members.result.items.length !== 1) throw new Error("Polar team customer owner mismatch");
+    return this.client.customerSessions.create({
+      ...input,
+      memberId: members.result.items[0].id,
+    });
   }
 
   async getSubscription(

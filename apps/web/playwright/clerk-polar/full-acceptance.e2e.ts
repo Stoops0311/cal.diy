@@ -622,6 +622,67 @@ async function verifyTeamMembershipLifecycle(
     .toBe("false:1");
 }
 
+async function verifyPolarCustomerPortal(page: Page, organizationId: number): Promise<void> {
+  const session = await callTRPC(page, "billing/createPortalSession", { organizationId }, "POST");
+  expect(session.status).toBe(200);
+  const { portalUrl } = readTRPCData<{ portalUrl: string }>(session.body);
+  await page.goto(portalUrl, { timeout: 60_000, waitUntil: "domcontentloaded" }).catch((error) => {
+    if (!page.url().startsWith("https://sandbox.polar.sh/")) throw error;
+  });
+  await expect(page).toHaveURL(/https:\/\/sandbox\.polar\.sh\//);
+  const portal = page.locator("body");
+  await expect(portal).toContainText("Convenio Team — Monthly", { timeout: 30_000 });
+  const portalText = await portal.innerText();
+  expect(portalText).toMatch(/Subscription|Plan/i);
+  expect(portalText).toMatch(/Payment|Visa|4242/i);
+  expect(portalText).toMatch(/Invoice|Order|Receipt|Billing/i);
+  await page.screenshot({
+    fullPage: true,
+    path: `test-results/clerk-polar/screenshots/${runTag}-polar-customer-portal.png`,
+  });
+
+  await page.evaluate(() => {
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+  });
+  await page.context().clearCookies();
+  await signInWithPassword(page, migratedEmail, migratedPassword);
+}
+
+async function verifyCancellationRetention(page: Page, organizationId: number): Promise<void> {
+  const beforeResult = await callTRPC(page, "billing/get", { organizationId }, "GET");
+  const before = readTRPCData<{ currentPeriodEnd: string; plan: string }>(beforeResult.body);
+  expect(before.plan).toBe("TEAM");
+
+  const cancellation = await callTRPC(page, "billing/cancelAtPeriodEnd", { organizationId }, "POST");
+  expect(cancellation.status).toBe(200);
+  await expect
+    .poll(async () => {
+      const result = await callTRPC(page, "billing/get", { organizationId }, "GET");
+      if (result.status !== 200) return null;
+      return readTRPCData<{ cancelAtPeriodEnd: boolean }>(result.body).cancelAtPeriodEnd;
+    })
+    .toBe(true);
+  const retainedResult = await callTRPC(page, "billing/get", { organizationId }, "GET");
+  const retained = readTRPCData<{
+    cancelAtPeriodEnd: boolean;
+    currentPeriodEnd: string;
+    plan: string;
+    status: string;
+  }>(retainedResult.body);
+  expect(retained).toMatchObject({ cancelAtPeriodEnd: true, plan: "TEAM" });
+  expect(["ACTIVE", "TRIALING"]).toContain(retained.status);
+  expect(retained.currentPeriodEnd).toBe(before.currentPeriodEnd);
+
+  const retainedInvite = await callTRPC(
+    page,
+    "organizations/invite",
+    { email: `retained+${suffix}@gmail.com`, organizationId, role: "MEMBER" },
+    "POST"
+  );
+  expect(retainedInvite.status).toBe(200);
+}
+
 async function tagAndRegisterOrganization(organizationId: number): Promise<string> {
   const organization = await prisma.team.findUnique({
     where: { id: organizationId },
@@ -884,7 +945,9 @@ test("Polar Team monthly checkout bills accepted Clerk members as seats", async 
   const paid = readTRPCData<{ status: string }>(paidProjection.body);
   expect(["ACTIVE", "TRIALING"]).toContain(paid.status);
   await registerOrganizationProjection(organizationId);
+  await verifyPolarCustomerPortal(page, organizationId);
   await verifyTeamMembershipLifecycle(page, organizationId, organization.clerkOrganizationId);
+  await verifyCancellationRetention(page, organizationId);
   await page.screenshot({
     fullPage: true,
     path: `test-results/clerk-polar/screenshots/${runTag}-polar-team-active.png`,
