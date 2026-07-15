@@ -6,6 +6,9 @@
   "authors": "Cal.com, Inc.",
   "version": "1.0.0",
   "main": "index.ts",
+  "scripts": {
+    "clerk:import-users": "tsx scripts/runClerkUserImport.ts"
+  },
   "dependencies": {
     "@calcom/dayjs": "workspace:*",
     "@calcom/i18n": "workspace:*",
