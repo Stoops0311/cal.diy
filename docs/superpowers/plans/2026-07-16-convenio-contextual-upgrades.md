@@ -494,6 +494,7 @@ export function PlanSelector({
   pendingPlan,
   visiblePlans = ["PRO", "TEAM"],
   showAllPlans = true,
+  ctaKeys,
 }: PlanSelectorProps): React.ReactElement {
 ```
 
@@ -768,7 +769,7 @@ export function BookingHistoryUpgradePrompt({ bookingUid }: { bookingUid: string
         {t("billing_upgrade_booking_audit_description")}
       </p>
       <Button className="mt-5" onClick={open}>
-        <span>{t("billing_choose_team")}</span><span aria-hidden="true">›</span>
+        <span>{t("billing_upgrade_choose_team")}</span><span aria-hidden="true">›</span>
       </Button>
     </section>
   );
