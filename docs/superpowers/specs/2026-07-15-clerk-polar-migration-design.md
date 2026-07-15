@@ -1,6 +1,6 @@
 # Convenio Clerk Authentication and Polar Billing Design
 
-**Status:** Approved design, pending written-spec review.
+**Status:** Approved for implementation on 2026-07-15.
 **Date:** 2026-07-15.
 **Product:** Convenio, the branded Cal.diy scheduling application described in `PRODUCT.md`.
 
