@@ -5,10 +5,9 @@ import classNames from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
 import { RadioAreaGroup } from "@calcom/ui/components/radio";
 import { useRouter } from "next/navigation";
-import { type ReactElement, type ReactNode, useState } from "react";
+import { type ReactElement, type ReactNode, useEffect, useRef, useState } from "react";
 import { OnboardingCard } from "../components/OnboardingCard";
 import { OnboardingLayout } from "../components/OnboardingLayout";
-import { OnboardingContinuationPrompt } from "../components/onboarding-continuation-prompt";
 import type { AcceptedOrganizationContext } from "../lib/getAcceptedOrganizationContexts";
 import { type OnboardingIntent, useOnboardingStore } from "../store/onboarding-store";
 
@@ -45,22 +44,35 @@ export const OnboardingView = ({ acceptedOrganization, userEmail }: OnboardingVi
   const { setIntent } = useOnboardingStore();
   const [selection, setSelection] = useState<OnboardingIntent | null>(null);
   const [showInviteRecovery, setShowInviteRecovery] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
+  const choicesRef = useRef<HTMLDivElement>(null);
+  const recoveryButtonRef = useRef<HTMLButtonElement>(null);
+  const hasShownRecovery = useRef(false);
+
+  useEffect(() => {
+    if (showInviteRecovery) {
+      hasShownRecovery.current = true;
+      recoveryButtonRef.current?.focus();
+      return;
+    }
+    if (!hasShownRecovery.current) return;
+    choicesRef.current?.querySelector<HTMLElement>('[role="radio"][data-state="checked"]')?.focus();
+  }, [showInviteRecovery]);
 
   function handleContinue(): void {
     if (!selection) return;
 
-    setIntent(selection);
-
-    if (selection === "bring-team") {
-      router.push("/onboarding/team");
-      return;
-    }
-
     if (selection === "join-team" && !acceptedOrganization) {
+      setAnnouncement(t("onboarding_invite_recovery_title"));
       setShowInviteRecovery(true);
       return;
     }
 
+    setIntent(selection);
+    if (selection === "bring-team") {
+      router.push("/onboarding/team");
+      return;
+    }
     router.push("/onboarding/personal/settings");
   }
 
@@ -70,6 +82,7 @@ export const OnboardingView = ({ acceptedOrganization, userEmail }: OnboardingVi
   }
 
   function chooseAnotherSetup(): void {
+    setAnnouncement(t("onboarding_intent_title"));
     setShowInviteRecovery(false);
   }
 
@@ -78,7 +91,7 @@ export const OnboardingView = ({ acceptedOrganization, userEmail }: OnboardingVi
       <Button color="minimal" onClick={chooseAnotherSetup}>
         {t("onboarding_choose_another_setup")}
       </Button>
-      <Button color="primary" onClick={continueWithoutAcceptedTeam}>
+      <Button ref={recoveryButtonRef} color="primary" onClick={continueWithoutAcceptedTeam}>
         {t("onboarding_continue_solo")}
       </Button>
     </div>
@@ -109,22 +122,20 @@ export const OnboardingView = ({ acceptedOrganization, userEmail }: OnboardingVi
             </Button>
           </div>
         }>
-        <RadioAreaGroup.Group
-          aria-label={t("onboarding_intent_title")}
-          value={selection ?? undefined}
-          onValueChange={(value: string): void => setSelection(value as OnboardingIntent)}
-          className="flex w-full flex-col gap-2 rounded-[10px]">
-          {intents.map((intent) => {
-            const isSelected = selection === intent.id;
-
-            return (
+        <div ref={choicesRef}>
+          <RadioAreaGroup.Group
+            aria-label={t("onboarding_intent_title")}
+            value={selection ?? undefined}
+            onValueChange={(value: string): void => setSelection(value as OnboardingIntent)}
+            className="flex w-full flex-col gap-2 rounded-[10px]">
+            {intents.map((intent) => (
               <RadioAreaGroup.Item
                 key={intent.id}
                 value={intent.id}
                 aria-label={t(intent.title)}
                 className={classNames(
-                  "min-h-11 border-subtle bg-default motion-reduce:transition-none [@media(pointer:coarse)]:min-h-11",
-                  { "border-emphasis shadow-sm": isSelected }
+                  "min-h-11 border-subtle bg-default focus-within:ring-2 focus-within:ring-emphasis motion-reduce:[&_button]:transition-none [@media(pointer:coarse)]:min-h-11",
+                  { "border-emphasis shadow-sm": selection === intent.id }
                 )}
                 classNames={{
                   container: "flex min-h-11 w-full cursor-pointer flex-col justify-center pr-4",
@@ -132,9 +143,9 @@ export const OnboardingView = ({ acceptedOrganization, userEmail }: OnboardingVi
                 <span className="font-semibold text-emphasis text-sm leading-5">{t(intent.title)}</span>
                 <span className="text-sm text-subtle leading-5">{t(intent.description)}</span>
               </RadioAreaGroup.Item>
-            );
-          })}
-        </RadioAreaGroup.Group>
+            ))}
+          </RadioAreaGroup.Group>
+        </div>
 
         {selection === "join-team" && acceptedOrganization && (
           <div className="rounded-[10px] border border-subtle bg-cal-muted p-4" aria-live="polite">
@@ -150,7 +161,9 @@ export const OnboardingView = ({ acceptedOrganization, userEmail }: OnboardingVi
 
   return (
     <>
-      <OnboardingContinuationPrompt />
+      <p className="sr-only" role="status" aria-live="polite">
+        {announcement}
+      </p>
       <OnboardingLayout userEmail={userEmail}>
         {primaryContent}
 
