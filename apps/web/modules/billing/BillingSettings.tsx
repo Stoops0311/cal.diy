@@ -10,7 +10,10 @@ import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
 import { Icon } from "@calcom/ui/components/icon";
 import { showToast } from "@calcom/ui/components/toast";
-import { useEffect, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { UpgradeIntentV1 } from "./upgradeIntent";
+import { addUpgradeSuccessMarker, consumeUpgradeIntent, readUpgradeIntent } from "./upgradeIntent";
 
 type BillingProjection = RouterOutputs["viewer"]["billing"]["get"];
 type BillingSettingsViewProps = {
@@ -24,6 +27,20 @@ type BillingSettingsViewProps = {
 };
 
 const activeStatuses = new Set(["ACTIVE", "TRIALING", "PAST_DUE"]);
+
+function projectionSatisfiesIntent(projection: BillingProjection, intent: UpgradeIntentV1): boolean {
+  if (!activeStatuses.has(projection.status)) return false;
+  if (!intent.subject) return false;
+  if (intent.subject.kind === "user" && projection.subject.type !== "USER") return false;
+  if (
+    intent.subject.kind === "organization" &&
+    (projection.subject.type !== "ORGANIZATION" || projection.subject.id !== intent.subject.organizationId)
+  ) {
+    return false;
+  }
+  if (intent.requiredPlan === "TEAM") return projection.plan === "TEAM";
+  return projection.plan === "PRO" || projection.plan === "TEAM";
+}
 
 function formatDate(value: Date | null): string | null {
   if (!value) return null;
@@ -183,10 +200,29 @@ function BillingSettings({
   organizationId?: number;
 }) {
   const { t } = useLocale();
+  const router = useRouter();
   const utils = trpc.useUtils();
-  const subject = useMemo(() => (organizationId === undefined ? {} : { organizationId }), [organizationId]);
+  const [restoreIntent, setRestoreIntent] = useState<UpgradeIntentV1 | null>(null);
+  const [intentResolved, setIntentResolved] = useState(!checkoutId);
+  useEffect(() => {
+    if (!checkoutId) return;
+    setRestoreIntent(readUpgradeIntent());
+    setIntentResolved(true);
+  }, [checkoutId]);
+  const intentOrganizationId =
+    restoreIntent?.subject?.kind === "organization" ? restoreIntent.subject.organizationId : undefined;
+  const effectiveOrganizationId = organizationId ?? intentOrganizationId;
+  const subject = useMemo(
+    () => (effectiveOrganizationId === undefined ? {} : { organizationId: effectiveOrganizationId }),
+    [effectiveOrganizationId]
+  );
+  const initialSubjectMatches =
+    initialProjection.subject.type === "ORGANIZATION"
+      ? initialProjection.subject.id === effectiveOrganizationId
+      : effectiveOrganizationId === undefined;
   const query = trpc.viewer.billing.get.useQuery(subject, {
-    initialData: initialProjection,
+    enabled: intentResolved,
+    initialData: initialSubjectMatches ? initialProjection : undefined,
     refetchInterval: ({ state }) => (checkoutId && state.data?.status === "NONE" ? 2_000 : false),
   });
   const reconciledCheckout = useRef<string | undefined>(undefined);
@@ -207,10 +243,28 @@ function BillingSettings({
   });
 
   useEffect(() => {
-    if (!checkoutId || reconciledCheckout.current === checkoutId) return;
+    if (!checkoutId || !intentResolved || reconciledCheckout.current === checkoutId) return;
     reconciledCheckout.current = checkoutId;
     reconcile.mutate(subject);
-  }, [checkoutId, reconcile, subject]);
+  }, [checkoutId, intentResolved, reconcile, subject]);
+
+  const restoredCheckout = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (
+      !checkoutId ||
+      !restoreIntent ||
+      !reconcile.isSuccess ||
+      !query.data ||
+      restoredCheckout.current === checkoutId ||
+      !projectionSatisfiesIntent(query.data, restoreIntent)
+    ) {
+      return;
+    }
+    const consumed = consumeUpgradeIntent();
+    if (!consumed) return;
+    restoredCheckout.current = checkoutId;
+    router.replace(addUpgradeSuccessMarker(consumed.returnTo));
+  }, [checkoutId, query.data, reconcile.isSuccess, restoreIntent, router]);
 
   if (query.isPending) {
     return <div className="bg-subtle h-72 animate-pulse rounded-xl" aria-label={t("loading")} />;
@@ -230,8 +284,8 @@ function BillingSettings({
       onChangeInterval={(interval) => {
         if (query.data.plan === "FREE") return;
         if (query.data.plan === "PRO") changePlan.mutate({ interval, plan: "PRO" });
-        if (query.data.plan === "TEAM" && organizationId !== undefined) {
-          changePlan.mutate({ interval, organizationId, plan: "TEAM" });
+        if (query.data.plan === "TEAM" && effectiveOrganizationId !== undefined) {
+          changePlan.mutate({ interval, organizationId: effectiveOrganizationId, plan: "TEAM" });
         }
       }}
       onOpenPortal={() => portal.mutate(subject)}
@@ -241,4 +295,4 @@ function BillingSettings({
   );
 }
 
-export { BillingSettings, BillingSettingsView };
+export { BillingSettings, BillingSettingsView, projectionSatisfiesIntent };

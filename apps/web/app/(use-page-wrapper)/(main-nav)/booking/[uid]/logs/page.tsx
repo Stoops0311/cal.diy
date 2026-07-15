@@ -4,6 +4,7 @@
 
 import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
 import { EntitlementService } from "@calcom/features/billing/services/EntitlementService";
+import { BookingHistoryUpgradePrompt } from "@calcom/web/modules/billing/BookingHistoryUpgradePrompt";
 import { BookingHistoryPage } from "@calcom/web/modules/booking-audit/components/BookingHistoryPage";
 import { buildLegacyRequest } from "@lib/buildLegacyCtx";
 import type { PageProps } from "app/_types";
@@ -38,7 +39,11 @@ const Page = async ({ params }: PageProps) => {
 
   const entitlements = await new EntitlementService().forUser(session.user.id);
   if (!entitlements.canReadBookingAudit) {
-    redirect("/pricing");
+    return (
+      <ShellMainAppDir heading={t("booking_history")} subtitle={t("booking_history_description")}>
+        <BookingHistoryUpgradePrompt bookingUid={bookingUid} />
+      </ShellMainAppDir>
+    );
   }
 
   return (
