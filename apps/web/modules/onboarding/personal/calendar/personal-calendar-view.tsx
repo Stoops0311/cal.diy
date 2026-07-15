@@ -1,16 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
-
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { OnboardingCard } from "../../components/OnboardingCard";
 import { OnboardingLayout } from "../../components/OnboardingLayout";
 import { OnboardingCalendarBrowserView } from "../../components/onboarding-calendar-browser-view";
-import { useSubmitPersonalOnboarding } from "../../hooks/useSubmitPersonalOnboarding";
 import { InstallableAppCard } from "../_components/InstallableAppCard";
 import { useAppInstallation } from "../_components/useAppInstallation";
 
@@ -22,7 +19,6 @@ export const PersonalCalendarView = ({ userEmail }: PersonalCalendarViewProps) =
   const router = useRouter();
   const { t } = useLocale();
   const { installingAppSlug, setInstallingAppSlug, createInstallHandlers } = useAppInstallation();
-  const { submitPersonalOnboarding, isSubmitting } = useSubmitPersonalOnboarding();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showFadeGradient, setShowFadeGradient] = useState(false);
 
@@ -84,11 +80,11 @@ export const PersonalCalendarView = ({ userEmail }: PersonalCalendarViewProps) =
   }, [queryIntegrations.data?.items]);
 
   const handleContinue = () => {
-    submitPersonalOnboarding();
+    router.push("/onboarding/complete");
   };
 
   const handleSkip = () => {
-    submitPersonalOnboarding();
+    router.push("/onboarding/complete");
   };
 
   const handleBack = () => {
@@ -105,7 +101,7 @@ export const PersonalCalendarView = ({ userEmail }: PersonalCalendarViewProps) =
         floatingFooter={true}
         footer={
           <div className="flex w-full items-center justify-between gap-4">
-            <Button color="minimal" className="rounded-[10px]" onClick={handleBack} disabled={isSubmitting}>
+            <Button color="minimal" className="rounded-[10px]" onClick={handleBack}>
               {t("back")}
             </Button>
             <div className="flex items-center gap-2">
@@ -113,7 +109,7 @@ export const PersonalCalendarView = ({ userEmail }: PersonalCalendarViewProps) =
                 color="minimal"
                 className="rounded-[10px]"
                 onClick={handleSkip}
-                disabled={queryIntegrations.isPending || isSubmitting}>
+                disabled={queryIntegrations.isPending}>
                 {t("onboarding_skip_for_now")}
               </Button>
               <Button
@@ -121,8 +117,7 @@ export const PersonalCalendarView = ({ userEmail }: PersonalCalendarViewProps) =
                 color="primary"
                 className="rounded-[10px]"
                 onClick={handleContinue}
-                loading={isSubmitting}
-                disabled={queryIntegrations.isPending || isSubmitting}>
+                disabled={queryIntegrations.isPending}>
                 {t("continue")}
               </Button>
             </div>
