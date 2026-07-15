@@ -1,9 +1,10 @@
+import { getEntitlements } from "@calcom/features/billing/lib/entitlements";
 import { PolarCheckoutService } from "@calcom/features/billing/services/PolarCheckoutService";
 import { checkRateLimitAndThrowError } from "@calcom/lib/checkRateLimitAndThrowError";
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
 import { prisma } from "@calcom/prisma";
-import type { BillingInterval, BillingStatus, PlanKey } from "@calcom/prisma/enums";
+import type { BillingInterval, BillingStatus, MembershipRole, PlanKey } from "@calcom/prisma/enums";
 
 type BillingProjection = {
   cancelAtPeriodEnd: boolean;
@@ -15,17 +16,41 @@ type BillingProjection = {
   status: BillingStatus;
 };
 
+type OrganizationBillingSummaryState = {
+  acceptedSeats: number;
+  actorRole: MembershipRole;
+  organizationId: number;
+  subscription: BillingProjection | null;
+};
+
+type BillingSummary = {
+  canManageBilling: boolean;
+  plan: PlanKey;
+  seats: { accepted: number; billed: number | null; limit: number } | null;
+  status: BillingStatus;
+  subject: { id: number; type: "USER" } | { id: number; type: "ORGANIZATION" };
+};
+
 type BillingSubjectInput = { organizationId?: number };
 type BillingPlanInput = BillingSubjectInput & {
   interval: BillingInterval;
   plan: Exclude<PlanKey, "FREE">;
 };
-type BillingContext = { user: { id: number } };
+type BillingContext = {
+  user: {
+    id: number;
+    profile?: { organizationId: number | null } | null;
+  };
+};
 type BillingReadRepository = {
   getOrganizationProjection(input: {
     actorUserId: number;
     organizationId: number;
   }): Promise<{ subscription: BillingProjection | null } | null>;
+  getOrganizationSummary(input: {
+    actorUserId: number;
+    organizationId: number;
+  }): Promise<OrganizationBillingSummaryState | null>;
   getUserProjection(userId: number): Promise<BillingProjection | null>;
 };
 type BillingCommands = Pick<
@@ -79,6 +104,38 @@ class PrismaBillingReadRepository implements BillingReadRepository {
     });
     if (!organization) return null;
     return { subscription: organization.billingSubscription };
+  }
+
+  async getOrganizationSummary(input: {
+    actorUserId: number;
+    organizationId: number;
+  }): Promise<OrganizationBillingSummaryState | null> {
+    const organization = await prisma.team.findFirst({
+      where: {
+        archivedAt: null,
+        id: input.organizationId,
+        isOrganization: true,
+        members: { some: { accepted: true, userId: input.actorUserId } },
+      },
+      select: {
+        _count: { select: { members: { where: { accepted: true } } } },
+        billingSubscription: { select: billingProjectionSelect },
+        id: true,
+        members: {
+          where: { accepted: true, userId: input.actorUserId },
+          take: 1,
+          select: { role: true },
+        },
+      },
+    });
+    const actor = organization?.members[0];
+    if (!organization || !actor) return null;
+    return {
+      acceptedSeats: organization._count.members,
+      actorRole: actor.role,
+      organizationId: organization.id,
+      subscription: organization.billingSubscription,
+    };
   }
 }
 
@@ -161,6 +218,50 @@ async function getBillingHandler({
   };
 }
 
+async function summaryBillingHandler({
+  ctx,
+  dependencies = getDefaultDependencies(),
+}: {
+  ctx: BillingContext;
+  dependencies?: BillingHandlerDependencies;
+}): Promise<BillingSummary> {
+  const organizationId = ctx.user.profile?.organizationId ?? null;
+  if (organizationId !== null) {
+    const organization = await dependencies.read.getOrganizationSummary({
+      actorUserId: ctx.user.id,
+      organizationId,
+    });
+    if (organization) {
+      const entitlements = getEntitlements(organization.subscription);
+      const canManageBilling = organization.actorRole === "OWNER" || organization.actorRole === "ADMIN";
+      return {
+        canManageBilling,
+        plan: entitlements.effectivePlan,
+        seats:
+          entitlements.effectivePlan === "TEAM"
+            ? {
+                accepted: organization.acceptedSeats,
+                billed: canManageBilling ? (organization.subscription?.seatCount ?? null) : null,
+                limit: entitlements.limits.acceptedOrganizationMembers,
+              }
+            : null,
+        status: entitlements.subscriptionStatus,
+        subject: { id: organization.organizationId, type: "ORGANIZATION" },
+      };
+    }
+  }
+
+  const subscription = await dependencies.read.getUserProjection(ctx.user.id);
+  const entitlements = getEntitlements(subscription);
+  return {
+    canManageBilling: true,
+    plan: entitlements.effectivePlan,
+    seats: null,
+    status: entitlements.subscriptionStatus,
+    subject: { id: ctx.user.id, type: "USER" },
+  };
+}
+
 async function createCheckoutHandler({
   ctx,
   dependencies = getDefaultDependencies(),
@@ -233,5 +334,6 @@ export {
   createPortalSessionHandler,
   getBillingHandler,
   reconcileBillingHandler,
+  summaryBillingHandler,
 };
-export type { BillingHandlerDependencies };
+export type { BillingHandlerDependencies, BillingSummary };

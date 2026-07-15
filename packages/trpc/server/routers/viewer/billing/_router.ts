@@ -27,6 +27,10 @@ const billingRouter = router({
     const { reconcileBillingHandler } = await import("./billing.handler");
     return reconcileBillingHandler({ ctx, input });
   }),
+  summary: authedProcedure.query(async ({ ctx }) => {
+    const { summaryBillingHandler } = await import("./billing.handler");
+    return summaryBillingHandler({ ctx });
+  }),
 });
 
 export { billingRouter };

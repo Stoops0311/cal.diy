@@ -8,6 +8,7 @@ import {
   createPortalSessionHandler,
   getBillingHandler,
   reconcileBillingHandler,
+  summaryBillingHandler,
 } from "./billing.handler";
 
 function setup() {
@@ -22,6 +23,7 @@ function setup() {
   };
   const read = {
     getOrganizationProjection: vi.fn().mockResolvedValue({ subscription: null }),
+    getOrganizationSummary: vi.fn().mockResolvedValue(null),
     getUserProjection: vi.fn().mockResolvedValue(null),
   };
   const rateLimit = vi.fn().mockResolvedValue(undefined);
@@ -29,7 +31,156 @@ function setup() {
   return { commands, dependencies, rateLimit, read };
 }
 
-const ctx = { user: { id: 7 } };
+const ctx = { user: { id: 7, profile: { organizationId: null } } };
+
+describe("billing summary", () => {
+  it("returns the personal Free summary without a projection", async () => {
+    const test = setup();
+
+    await expect(summaryBillingHandler({ ctx, dependencies: test.dependencies })).resolves.toEqual({
+      canManageBilling: true,
+      plan: "FREE",
+      seats: null,
+      status: "NONE",
+      subject: { id: 7, type: "USER" },
+    });
+  });
+
+  it("uses the effective personal plan from the Polar-backed projection", async () => {
+    const test = setup();
+    test.read.getUserProjection.mockResolvedValue({
+      cancelAtPeriodEnd: false,
+      currentPeriodEnd: new Date("2026-08-15T12:00:00.000Z"),
+      currentPeriodStart: new Date("2026-07-15T12:00:00.000Z"),
+      interval: "MONTH",
+      plan: "PRO",
+      seatCount: 1,
+      status: "ACTIVE",
+    });
+
+    await expect(summaryBillingHandler({ ctx, dependencies: test.dependencies })).resolves.toMatchObject({
+      canManageBilling: true,
+      plan: "PRO",
+      seats: null,
+      status: "ACTIVE",
+      subject: { id: 7, type: "USER" },
+    });
+  });
+
+  it("shows accepted Team usage to an ordinary member without management data", async () => {
+    const test = setup();
+    test.read.getOrganizationSummary.mockResolvedValue({
+      acceptedSeats: 4,
+      actorRole: "MEMBER",
+      organizationId: 41,
+      subscription: {
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: new Date("2026-08-15T12:00:00.000Z"),
+        currentPeriodStart: new Date("2026-07-15T12:00:00.000Z"),
+        interval: "MONTH",
+        plan: "TEAM",
+        seatCount: 4,
+        status: "ACTIVE",
+      },
+    });
+
+    const result = await summaryBillingHandler({
+      ctx: { user: { id: 7, profile: { organizationId: 41 } } },
+      dependencies: test.dependencies,
+    });
+
+    expect(result).toEqual({
+      canManageBilling: false,
+      plan: "TEAM",
+      seats: { accepted: 4, billed: null, limit: 50 },
+      status: "ACTIVE",
+      subject: { id: 41, type: "ORGANIZATION" },
+    });
+    expect(JSON.stringify(result)).not.toMatch(
+      /polar|provider|customer|subscriptionId|productId|credential/i
+    );
+  });
+
+  it.each(["OWNER", "ADMIN"] as const)("allows an accepted %s to manage the plan", async (actorRole) => {
+    const test = setup();
+    test.read.getOrganizationSummary.mockResolvedValue({
+      acceptedSeats: 4,
+      actorRole,
+      organizationId: 41,
+      subscription: {
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: new Date("2026-08-15T12:00:00.000Z"),
+        currentPeriodStart: new Date("2026-07-15T12:00:00.000Z"),
+        interval: "YEAR",
+        plan: "TEAM",
+        seatCount: 5,
+        status: "ACTIVE",
+      },
+    });
+
+    await expect(
+      summaryBillingHandler({
+        ctx: { user: { id: 7, profile: { organizationId: 41 } } },
+        dependencies: test.dependencies,
+      })
+    ).resolves.toMatchObject({
+      canManageBilling: true,
+      seats: { accepted: 4, billed: 5, limit: 50 },
+    });
+  });
+
+  it("falls back to the personal subject when the active organization is stale or unaccepted", async () => {
+    const test = setup();
+    test.read.getOrganizationSummary.mockResolvedValue(null);
+
+    await expect(
+      summaryBillingHandler({
+        ctx: { user: { id: 7, profile: { organizationId: 41 } } },
+        dependencies: test.dependencies,
+      })
+    ).resolves.toMatchObject({
+      canManageBilling: true,
+      plan: "FREE",
+      subject: { id: 7, type: "USER" },
+    });
+    expect(test.read.getOrganizationSummary).toHaveBeenCalledWith({
+      actorUserId: 7,
+      organizationId: 41,
+    });
+    expect(test.read.getUserProjection).toHaveBeenCalledWith(7);
+  });
+
+  it("uses entitlement expiry rules instead of the raw Team plan", async () => {
+    const test = setup();
+    test.read.getOrganizationSummary.mockResolvedValue({
+      acceptedSeats: 4,
+      actorRole: "OWNER",
+      organizationId: 41,
+      subscription: {
+        cancelAtPeriodEnd: true,
+        currentPeriodEnd: new Date("2020-01-01T00:00:00.000Z"),
+        currentPeriodStart: new Date("2019-12-01T00:00:00.000Z"),
+        interval: "MONTH",
+        plan: "TEAM",
+        seatCount: 4,
+        status: "CANCELED",
+      },
+    });
+
+    await expect(
+      summaryBillingHandler({
+        ctx: { user: { id: 7, profile: { organizationId: 41 } } },
+        dependencies: test.dependencies,
+      })
+    ).resolves.toEqual({
+      canManageBilling: true,
+      plan: "FREE",
+      seats: null,
+      status: "CANCELED",
+      subject: { id: 41, type: "ORGANIZATION" },
+    });
+  });
+});
 
 describe("billing handlers", () => {
   it("returns a sanitized Free projection when a personal subscription does not exist", async () => {
