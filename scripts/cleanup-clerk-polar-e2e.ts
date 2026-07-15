@@ -14,6 +14,7 @@ import {
 
 type CleanupArguments = { runTag: string };
 type MetadataRow = { metadata: unknown };
+type LocalOrganizationOwnershipRow = MetadataRow & { clerkOrganizationId: string | null };
 type LocalUserOwnershipRow = MetadataRow & { clerkUserId: string | null };
 
 function parseCleanupArguments(args: string[]): CleanupArguments {
@@ -101,10 +102,25 @@ async function createRuntimeCleanupAdapter(): Promise<FixtureCleanupAdapter> {
           }
         }
         if (reference.kind === "local_organization") {
-          const result = await database.query<MetadataRow>('SELECT metadata FROM "Team" WHERE id = $1', [
-            reference.id,
-          ]);
-          return result.rows[0] ?? null;
+          const result = await database.query<LocalOrganizationOwnershipRow>(
+            'SELECT metadata, "clerkOrganizationId" FROM "Team" WHERE id = $1',
+            [reference.id]
+          );
+          const localOrganization = result.rows[0];
+          if (!localOrganization) return null;
+          if (!localOrganization.clerkOrganizationId) return { metadata: localOrganization.metadata };
+          try {
+            return {
+              metadata: (
+                await clerk.organizations.getOrganization({
+                  organizationId: localOrganization.clerkOrganizationId,
+                })
+              ).publicMetadata,
+            };
+          } catch (error) {
+            if (isMissingProviderObject(error)) return { metadata: localOrganization.metadata };
+            throw error;
+          }
         }
         const result = await database.query<MetadataRow>(
           `SELECT COALESCE(u.metadata, t.metadata) AS metadata
