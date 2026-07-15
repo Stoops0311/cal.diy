@@ -53,6 +53,7 @@ vi.mock("./usePaidPlanCheckout", () => ({
   },
 }));
 
+import { BookingHistoryUpgradePrompt } from "./BookingHistoryUpgradePrompt";
 import { UpgradePromptProvider, useUpgradePrompt } from "./UpgradePromptProvider";
 
 const prompt = {
@@ -196,5 +197,35 @@ describe("UpgradePromptProvider", () => {
 
     await waitFor(() => expect(view.queryByRole("dialog")).not.toBeInTheDocument());
     await waitFor(() => expect(opener).toHaveFocus());
+  });
+
+  it("restores focus to the visible gated action after every auto-open dismissal", async () => {
+    const user = userEvent.setup();
+    const view = render(
+      <UpgradePromptProvider>
+        <BookingHistoryUpgradePrompt bookingUid="book_123" />
+      </UpgradePromptProvider>
+    );
+
+    let dialog = await view.findByRole("dialog");
+    const gatedAction = view.container.querySelector("section button");
+    if (!gatedAction) throw new Error("Expected the gated Team action outside the upgrade Sheet");
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(view.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(gatedAction).toHaveFocus());
+
+    await user.click(gatedAction);
+    dialog = await view.findByRole("dialog");
+    const overlay = dialog.parentElement;
+    if (!overlay) throw new Error("Expected the Sheet overlay");
+    await user.click(overlay);
+    await waitFor(() => expect(view.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(gatedAction).toHaveFocus());
+
+    await user.click(gatedAction);
+    await user.click(await view.findByRole("button", { name: "Not now" }));
+    await waitFor(() => expect(view.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(gatedAction).toHaveFocus());
   });
 });

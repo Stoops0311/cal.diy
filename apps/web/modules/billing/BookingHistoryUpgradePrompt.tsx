@@ -10,7 +10,9 @@ export function BookingHistoryUpgradePrompt({ bookingUid }: { bookingUid: string
   const { t } = useLocale();
   const { openUpgradePrompt } = useUpgradePrompt();
   const opened = useRef(false);
+  const reopenButtonRef = useRef<HTMLAnchorElement | HTMLButtonElement>(null);
   const open = useCallback(() => {
+    reopenButtonRef.current?.focus();
     openUpgradePrompt({
       capability: "bookingAudit",
       featureName: t("booking_history"),
@@ -34,7 +36,7 @@ export function BookingHistoryUpgradePrompt({ bookingUid }: { bookingUid: string
       <p className="mx-auto mt-2 max-w-lg text-sm text-subtle leading-6">
         {t("billing_upgrade_booking_audit_description")}
       </p>
-      <Button className="mt-5" onClick={open}>
+      <Button className="mt-5" onClick={open} ref={reopenButtonRef}>
         <span>{t("billing_upgrade_choose_team")}</span>
         <span aria-hidden="true">›</span>
       </Button>
