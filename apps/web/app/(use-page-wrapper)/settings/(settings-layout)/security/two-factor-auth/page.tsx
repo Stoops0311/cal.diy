@@ -1,8 +1,7 @@
-import { _generateMetadata } from "app/_utils";
-import { getTranslate } from "app/_utils";
-
+import { getAuthProvider } from "@calcom/features/auth/lib/authProvider";
 import SettingsHeader from "@calcom/features/settings/appDir/SettingsHeader";
-
+import { _generateMetadata, getTranslate } from "app/_utils";
+import { ClerkAccountSecurity } from "~/auth/clerk-auth";
 import TwoFactorAuthView from "~/settings/security/two-factor-auth-view";
 
 export const generateMetadata = async () =>
@@ -14,6 +13,8 @@ export const generateMetadata = async () =>
     "/settings/security/two-factor-auth"
   );
 const Page = async () => {
+  if (getAuthProvider() === "clerk") return <ClerkAccountSecurity />;
+
   const t = await getTranslate();
 
   return (

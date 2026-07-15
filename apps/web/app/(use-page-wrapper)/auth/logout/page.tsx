@@ -1,9 +1,9 @@
+import { getAuthProvider } from "@calcom/features/auth/lib/authProvider";
+import { buildLegacyCtx } from "@lib/buildLegacyCtx";
 import type { PageProps } from "app/_types";
 import { _generateMetadata } from "app/_utils";
 import { cookies, headers } from "next/headers";
-
-import { buildLegacyCtx } from "@lib/buildLegacyCtx";
-
+import { ClerkLogout } from "~/auth/clerk-auth";
 import Logout from "~/auth/logout-view";
 
 export const generateMetadata = async () => {
@@ -17,9 +17,12 @@ export const generateMetadata = async () => {
 };
 
 const Page = async ({ params, searchParams }: PageProps) => {
+  const query = await searchParams;
+  if (getAuthProvider() === "clerk") return <ClerkLogout survey={query.survey === "true"} />;
+
   // cookie will be cleared in `/apps/web/proxy.ts`
   const h = await headers();
-  const context = buildLegacyCtx(h, await cookies(), await params, await searchParams);
+  const context = buildLegacyCtx(h, await cookies(), await params, query);
 
   return <Logout query={context.query} />;
 };
