@@ -1,25 +1,29 @@
-import { v4 } from "uuid";
-
+import { assertEntitled } from "@calcom/features/billing/lib/entitlements";
+import { EntitlementService } from "@calcom/features/billing/services/EntitlementService";
 import { updateTriggerForExistingBookings } from "@calcom/features/webhooks/lib/scheduleTrigger";
 import { validateUrlForSSRFSync } from "@calcom/lib/ssrfProtection";
 import { prisma } from "@calcom/prisma";
-import type { Webhook } from "@calcom/prisma/client";
-import type { Prisma } from "@calcom/prisma/client";
+import type { Prisma, Webhook } from "@calcom/prisma/client";
 import { EventTypeMetaDataSchema } from "@calcom/prisma/zod-utils";
 import type { TrpcSessionUser } from "@calcom/trpc/server/types";
-
 import { TRPCError } from "@trpc/server";
-
+import { v4 } from "uuid";
 import type { TCreateInputSchema } from "./create.schema";
 
 type CreateOptions = {
   ctx: {
-    user: NonNullable<TrpcSessionUser>;
+    user: Pick<NonNullable<TrpcSessionUser>, "id" | "role">;
   };
+  dependencies?: WebhookHandlerDependencies;
   input: TCreateInputSchema;
 };
 
-export const createHandler = async ({ ctx, input }: CreateOptions) => {
+type WebhookHandlerDependencies = {
+  create(ctx: CreateOptions["ctx"], input: TCreateInputSchema): Promise<Webhook>;
+  entitlements: Pick<EntitlementService, "forOrganization" | "forUser">;
+};
+
+async function createWebhook(ctx: CreateOptions["ctx"], input: TCreateInputSchema): Promise<Webhook> {
   const { user } = ctx;
 
   const validation = validateUrlForSSRFSync(input.subscriberUrl);
@@ -79,4 +83,19 @@ export const createHandler = async ({ ctx, input }: CreateOptions) => {
   await updateTriggerForExistingBookings(newWebhook, [], newWebhook.eventTriggers);
 
   return newWebhook;
+}
+
+const defaultDependencies: WebhookHandlerDependencies = {
+  create: createWebhook,
+  entitlements: new EntitlementService(),
 };
+
+export const createHandler = async ({ ctx, dependencies = defaultDependencies, input }: CreateOptions) => {
+  const entitlements = input.teamId
+    ? await dependencies.entitlements.forOrganization(input.teamId)
+    : await dependencies.entitlements.forUser(ctx.user.id);
+  assertEntitled(entitlements, "canCreateWebhooks");
+  return dependencies.create(ctx, input);
+};
+
+export type { WebhookHandlerDependencies };

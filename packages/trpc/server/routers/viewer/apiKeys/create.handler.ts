@@ -1,9 +1,10 @@
-import { v4 } from "uuid";
-
+import process from "node:process";
 import { generateUniqueAPIKey } from "@calcom/features/api-keys-legacy/api-keys/lib/apiKeys";
+import { assertEntitled } from "@calcom/features/billing/lib/entitlements";
+import { EntitlementService } from "@calcom/features/billing/services/EntitlementService";
 import prisma from "@calcom/prisma";
 import { MembershipRole } from "@calcom/prisma/enums";
-
+import { v4 } from "uuid";
 import type { TrpcSessionUser } from "../../../types";
 import { checkPermissions } from "./_auth-middleware";
 import type { TCreateInputSchema } from "./create.schema";
@@ -12,10 +13,16 @@ type CreateHandlerOptions = {
   ctx: {
     user: Pick<NonNullable<TrpcSessionUser>, "id">;
   };
+  dependencies?: ApiKeyHandlerDependencies;
   input: TCreateInputSchema;
 };
 
-export const createHandler = async ({ ctx, input }: CreateHandlerOptions) => {
+type ApiKeyHandlerDependencies = {
+  create(ctx: CreateHandlerOptions["ctx"], input: TCreateInputSchema): Promise<string>;
+  entitlements: Pick<EntitlementService, "forOrganization" | "forUser">;
+};
+
+async function createApiKey(ctx: CreateHandlerOptions["ctx"], input: TCreateInputSchema): Promise<string> {
   const [hashedApiKey, apiKey] = generateUniqueAPIKey();
 
   // Here we snap never expires before deleting it so it's not passed to prisma create call.
@@ -42,4 +49,23 @@ export const createHandler = async ({ ctx, input }: CreateHandlerOptions) => {
   const prefixedApiKey = `${apiKeyPrefix}${apiKey}`;
 
   return prefixedApiKey;
+}
+
+const defaultDependencies: ApiKeyHandlerDependencies = {
+  create: createApiKey,
+  entitlements: new EntitlementService(),
 };
+
+export const createHandler = async ({
+  ctx,
+  dependencies = defaultDependencies,
+  input,
+}: CreateHandlerOptions) => {
+  const entitlements = input.teamId
+    ? await dependencies.entitlements.forOrganization(input.teamId)
+    : await dependencies.entitlements.forUser(ctx.user.id);
+  assertEntitled(entitlements, "canCreateApiKeys");
+  return dependencies.create(ctx, input);
+};
+
+export type { ApiKeyHandlerDependencies };
