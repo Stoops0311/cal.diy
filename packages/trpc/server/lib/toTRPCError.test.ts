@@ -1,10 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-
-import { TRPCError } from "@trpc/server";
-
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
-
+import { TRPCError } from "@trpc/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { convertErrorWithCodeToTRPCError } from "./toTRPCError";
 
 describe("convertErrorWithCodeToTRPCError", () => {
@@ -50,6 +47,35 @@ describe("convertErrorWithCodeToTRPCError", () => {
     expect(result).toBeInstanceOf(TRPCError);
     expect((result as TRPCError).code).toBe("BAD_REQUEST");
     expect((result as TRPCError).message).toBe("Invalid input");
+  });
+
+  it("converts an ErrorWithCode shape from a duplicated bundle", () => {
+    const error = {
+      code: ErrorCode.EntitlementRequired,
+      data: { capability: "canInviteOrganizationMembers" },
+      message: "This capability requires a paid plan",
+    };
+
+    const result = convertErrorWithCodeToTRPCError(error);
+
+    expect(result).toBeInstanceOf(TRPCError);
+    expect((result as TRPCError).code).toBe("FORBIDDEN");
+    expect((result as TRPCError).message).toBe("This capability requires a paid plan");
+  });
+
+  it("converts a domain error wrapped by tRPC as internal", () => {
+    const error = new TRPCError({
+      cause: {
+        code: ErrorCode.EntitlementRequired,
+        message: "This capability requires a paid plan",
+      },
+      code: "INTERNAL_SERVER_ERROR",
+    });
+
+    const result = convertErrorWithCodeToTRPCError(error);
+
+    expect(result).toBeInstanceOf(TRPCError);
+    expect((result as TRPCError).code).toBe("FORBIDDEN");
   });
 
   it("returns generic Error unchanged", () => {

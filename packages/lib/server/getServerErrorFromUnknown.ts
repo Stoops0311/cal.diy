@@ -8,6 +8,8 @@ import { redactError } from "../redactError";
 import { stripeInvalidRequestErrorSchema } from "../stripe-error";
 import { TracedError } from "../tracing/error";
 
+const knownErrorCodes = new Set<string>(Object.values(ErrorCode));
+
 function hasName(cause: unknown): cause is { name: string } {
   return !!cause && typeof cause === "object" && "name" in cause;
 }
@@ -123,8 +125,15 @@ export function getServerErrorFromUnknown(cause: unknown): HttpError {
 }
 
 export function getHttpStatusCode(cause: Error | ErrorWithCode): number {
-  const errorCode = cause instanceof ErrorWithCode ? cause.code : cause.message;
+  const errorCode =
+    "code" in cause && typeof cause.code === "string" && knownErrorCodes.has(cause.code)
+      ? cause.code
+      : cause.message;
 
+  return getHttpStatusCodeFromErrorCode(errorCode);
+}
+
+export function getHttpStatusCodeFromErrorCode(errorCode: string): number {
   switch (errorCode) {
     // Generic HTTP error codes
     case ErrorCode.BadRequest:

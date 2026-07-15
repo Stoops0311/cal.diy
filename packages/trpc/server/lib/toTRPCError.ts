@@ -1,7 +1,37 @@
-import { ErrorWithCode } from "@calcom/lib/errors";
-import { getHttpStatusCode } from "@calcom/lib/server/getServerErrorFromUnknown";
-
+import { ErrorCode } from "@calcom/lib/errorCodes";
+import { getHttpStatusCodeFromErrorCode } from "@calcom/lib/server/getServerErrorFromUnknown";
 import { TRPCError } from "@trpc/server";
+
+const errorCodes = new Set<string>(Object.values(ErrorCode));
+
+function isErrorWithCode(cause: unknown): cause is {
+  code: ErrorCode;
+  data?: Record<string, unknown>;
+  message: string;
+} {
+  return (
+    typeof cause === "object" &&
+    cause !== null &&
+    "message" in cause &&
+    typeof cause.message === "string" &&
+    "code" in cause &&
+    typeof cause.code === "string" &&
+    errorCodes.has(cause.code)
+  );
+}
+
+function unwrapInternalTRPCError(cause: unknown): unknown {
+  if (
+    typeof cause === "object" &&
+    cause !== null &&
+    "code" in cause &&
+    cause.code === "INTERNAL_SERVER_ERROR" &&
+    "cause" in cause
+  ) {
+    return cause.cause;
+  }
+  return cause;
+}
 
 // Copied from `TRPC_ERROR_CODE_KEY` from `@trpc/server/unstable-core-do-not-import`
 type TRPCErrorCode =
@@ -60,12 +90,13 @@ export function httpStatusToTrpcCode(status: number): TRPCErrorCode {
  * TODO: Consider converting any unknown error into TRPC error in the future.
  */
 export function convertErrorWithCodeToTRPCError(cause: unknown) {
-  if (cause instanceof ErrorWithCode) {
-    const statusCode = getHttpStatusCode(cause);
+  const domainError = unwrapInternalTRPCError(cause);
+  if (isErrorWithCode(domainError)) {
+    const statusCode = getHttpStatusCodeFromErrorCode(domainError.code);
     return new TRPCError({
       code: httpStatusToTrpcCode(statusCode),
-      message: cause.message ?? "",
-      cause: cause,
+      message: domainError.message,
+      cause: domainError,
     });
   }
 

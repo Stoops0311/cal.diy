@@ -1,13 +1,13 @@
 import { convertErrorWithCodeToTRPCError } from "../lib/toTRPCError";
 import { middleware } from "../trpc";
 
-/**
- * Middleware that catches errors thrown by other layers and converts them to TRPCError.
- */
+/** Converts domain errors returned by downstream tRPC layers to TRPCError. */
 export const errorConversionMiddleware = middleware(async ({ next }) => {
-  try {
-    return await next();
-  } catch (e) {
-    throw convertErrorWithCodeToTRPCError(e);
+  const result = await next();
+
+  if (!result.ok) {
+    throw convertErrorWithCodeToTRPCError(result.error);
   }
+
+  return result;
 });

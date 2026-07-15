@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 import { ZodError } from "zod";
 import { HttpError } from "../http-error";
 import { TracedError } from "../tracing/error";
-import { getServerErrorFromUnknown } from "./getServerErrorFromUnknown";
+import { getHttpStatusCode, getServerErrorFromUnknown } from "./getServerErrorFromUnknown";
 
 const test400Codes = [
   ErrorCode.RequestBodyWithouEnd,
@@ -58,6 +58,14 @@ describe("getServerErrorFromUnknown", () => {
 
     expect(result.statusCode).toBe(403);
     expect(result.message).toBe("This capability requires a paid plan");
+  });
+
+  test("maps an error-code shape from a duplicated bundle", () => {
+    const error = Object.assign(new Error("This capability requires a paid plan"), {
+      code: ErrorCode.EntitlementRequired,
+    });
+
+    expect(getHttpStatusCode(error)).toBe(403);
   });
 
   test("should handle a StripeInvalidRequestError", () => {
