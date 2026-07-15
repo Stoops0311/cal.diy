@@ -52,4 +52,5 @@ export enum ErrorCode {
   ClerkOrganizationOwnerRequired = "clerk_organization_owner_required",
   ClerkMemberLocalUserMissing = "clerk_member_local_user_missing",
   ClerkOrganizationConflict = "clerk_organization_conflict",
+  ClerkWebhookPayloadConflict = "clerk_webhook_payload_conflict",
 }

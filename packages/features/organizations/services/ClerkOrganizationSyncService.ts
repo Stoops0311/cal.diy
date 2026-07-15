@@ -105,14 +105,16 @@ class ClerkOrganizationSyncService {
       }
 
       const activeSnapshots = snapshot.memberships.filter(({ active }) => active);
-      const activeClerkUserIds = [...new Set(activeSnapshots.map(({ clerkUserId }) => clerkUserId))];
+      const activeClerkUserIds = Array.from(new Set(activeSnapshots.map(({ clerkUserId }) => clerkUserId)));
       const localMembers = await tx.user.findMany({
         where: { clerkUserId: { in: activeClerkUserIds } },
         select: { clerkUserId: true, email: true, id: true, username: true },
       });
-      const localMemberByClerkId = new Map(
-        localMembers.flatMap((user) => (user.clerkUserId ? [[user.clerkUserId, user] as const] : []))
-      );
+      const localMemberByClerkId = new Map<string, LocalMember>();
+      for (const user of localMembers) {
+        if (!user.clerkUserId) continue;
+        localMemberByClerkId.set(user.clerkUserId, { ...user, clerkUserId: user.clerkUserId });
+      }
       const missingClerkUserId = activeClerkUserIds.find((id) => !localMemberByClerkId.has(id));
       if (missingClerkUserId) {
         throw new ErrorWithCode(
