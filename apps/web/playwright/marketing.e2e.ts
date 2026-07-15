@@ -28,12 +28,10 @@ test.describe("Convenio marketing layout", () => {
     const pricingLink = page.getByRole("banner").getByRole("link", { name: "Pricing" });
     await expect(pricingLink).toHaveAttribute("aria-current", "page");
     await expect(pricingLink).toBeInViewport();
+    await expect(page.getByRole("banner").getByRole("link", { name: "Get started" })).toBeInViewport();
     await expect
-      .poll(async () => {
-        const box = await page.getByRole("banner").boundingBox();
-        return box ? box.x + box.width : Number.POSITIVE_INFINITY;
-      })
-      .toBeLessThanOrEqual(390);
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
+      .toBe(true);
     await expect(page.getByRole("heading", { name: "Pro" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Team" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Free" })).toHaveCount(0);
