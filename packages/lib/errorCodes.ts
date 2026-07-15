@@ -55,4 +55,5 @@ export enum ErrorCode {
   ClerkWebhookPayloadConflict = "clerk_webhook_payload_conflict",
   PolarProjectionConflict = "polar_projection_conflict",
   PolarSubjectNotFound = "polar_subject_not_found",
+  PolarWebhookPayloadConflict = "polar_webhook_payload_conflict",
 }
