@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCleanupArguments } from "./cleanup-clerk-polar-e2e";
+import { isMissingProviderObject, parseCleanupArguments } from "./cleanup-clerk-polar-e2e";
 
 describe("cleanup Clerk and Polar E2E CLI", () => {
   it("requires one exact run tag", () => {
@@ -17,5 +17,13 @@ describe("cleanup Clerk and Polar E2E CLI", () => {
     expect(parseCleanupArguments(["--run-tag=convenio-e2e-20260715T120000Z-ab12cd"])).toEqual({
       runTag: "convenio-e2e-20260715T120000Z-ab12cd",
     });
+  });
+
+  it("recognizes missing objects from Clerk and Polar error shapes", () => {
+    expect(isMissingProviderObject({ status: 404 })).toBe(true);
+    expect(isMissingProviderObject({ statusCode: 404 })).toBe(true);
+    expect(isMissingProviderObject({ name: "ResourceNotFound" })).toBe(true);
+    expect(isMissingProviderObject({ response$: { status: 404 } })).toBe(true);
+    expect(isMissingProviderObject({ response$: { status: 500 } })).toBe(false);
   });
 });

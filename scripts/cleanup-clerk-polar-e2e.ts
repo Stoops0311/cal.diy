@@ -36,8 +36,18 @@ function requireEnvironment(name: string): string {
 
 function isMissingProviderObject(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
-  const candidate = error as { status?: number; statusCode?: number };
-  return candidate.status === 404 || candidate.statusCode === 404;
+  const candidate = error as {
+    name?: string;
+    response$?: { status?: number };
+    status?: number;
+    statusCode?: number;
+  };
+  return (
+    candidate.name === "ResourceNotFound" ||
+    candidate.response$?.status === 404 ||
+    candidate.status === 404 ||
+    candidate.statusCode === 404
+  );
 }
 
 function splitMembership(reference: FixtureReference): { organizationId: string; userId: string } {
@@ -182,5 +192,5 @@ if (entrypoint && import.meta.url === pathToFileURL(entrypoint).href) {
   });
 }
 
-export { createRuntimeCleanupAdapter, parseCleanupArguments };
+export { createRuntimeCleanupAdapter, isMissingProviderObject, parseCleanupArguments };
 export { E2E_METADATA_KEY };
