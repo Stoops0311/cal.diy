@@ -504,6 +504,7 @@ model User {
   filterSegments                 FilterSegment[]
   filterSegmentPreferences       UserFilterSegmentPreference[]
   creditBalance                  CreditBalance?
+  billingSubscription            BillingSubscription?
   calAiPhoneNumbers              CalAiPhoneNumber[]
   agents                         Agent[]
   oAuthClients                   OAuthClient[]
@@ -638,6 +639,7 @@ model Team {
 
   teamBilling               TeamBilling?               @relation("TeamBilling")
   organizationBilling       OrganizationBilling?       @relation("OrganizationBilling")
+  billingSubscription       BillingSubscription?
   integrationAttributeSyncs IntegrationAttributeSync[]
 
   autoOptInFeatures Boolean @default(false)
@@ -2603,6 +2605,52 @@ model CalAiPhoneNumber {
   @@index([teamId])
   @@index([inboundAgentId])
   @@index([outboundAgentId])
+}
+
+enum PlanKey {
+  FREE
+  PRO
+  TEAM
+}
+
+enum BillingInterval {
+  MONTH
+  YEAR
+}
+
+enum BillingStatus {
+  NONE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
+model BillingSubscription {
+  id                  String           @id @default(uuid())
+  subjectKey          String           @unique
+  userId              Int?             @unique
+  user                User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId      Int?             @unique
+  organization        Team?            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan                PlanKey          @default(FREE)
+  interval            BillingInterval?
+  status              BillingStatus    @default(NONE)
+  polarCustomerId     String?          @unique
+  polarSubscriptionId String?          @unique
+  polarProductId      String?
+  seatCount           Int              @default(1)
+  currentPeriodStart  DateTime?
+  currentPeriodEnd    DateTime?
+  cancelAtPeriodEnd   Boolean          @default(false)
+  latestEffectiveAt   DateTime?
+  providerModifiedAt  DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([plan, status])
+  @@index([currentPeriodEnd])
 }
 
 model TeamBilling {
