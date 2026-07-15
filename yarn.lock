@@ -2503,6 +2503,7 @@ __metadata:
     "@calcom/trpc": "workspace:*"
     "@calcom/ui": "workspace:*"
     "@clerk/backend": "npm:^3.11.5"
+    "@clerk/nextjs": "npm:^7.5.18"
     bcryptjs: "npm:2.4.3"
     dub: "npm:0.59.1"
     handlebars: "npm:4.7.9"
