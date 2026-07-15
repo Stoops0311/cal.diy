@@ -219,5 +219,5 @@ class ClerkWebhookService {
   }
 }
 
-export { ClerkWebhookService };
-export type { ClerkWebhookEvent, ClerkWebhookServiceDependencies };
+export { ClerkBackendOrganizationSource, ClerkWebhookService };
+export type { ClerkOrganizationSource, ClerkWebhookEvent, ClerkWebhookServiceDependencies };
