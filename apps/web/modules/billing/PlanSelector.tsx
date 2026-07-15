@@ -195,6 +195,16 @@ export function PlanSelector({
                   <p className="text-emphasis mt-3 text-base font-medium">{t("billing_free_outcome")}</p>
                   <p className="text-subtle mt-2 text-sm leading-6">{t("billing_free_description")}</p>
                   <p className="font-mono mt-6 text-4xl font-semibold tracking-tight">$0</p>
+                  <ul className="mt-6 space-y-3">
+                    {(["billing_free_events", "billing_free_calendar", "billing_free_branding"] as const).map(
+                      (feature) => (
+                        <li className="text-emphasis flex gap-3 text-sm" key={feature}>
+                          <Icon className="text-subtle mt-0.5 h-4 w-4 shrink-0" name="check" />
+                          <span>{t(feature)}</span>
+                        </li>
+                      )
+                    )}
+                  </ul>
                   <Button className="mt-6 w-full justify-center" color="secondary" href={freeHref}>
                     {t("billing_keep_working_free")}
                   </Button>

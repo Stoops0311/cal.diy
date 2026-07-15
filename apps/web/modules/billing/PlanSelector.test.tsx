@@ -1,5 +1,6 @@
 import { fireEvent, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import common from "../../../../packages/i18n/locales/en/common.json";
 
 vi.mock("@calcom/lib/hooks/useLocale", () => ({
   useLocale: () => ({
@@ -10,6 +11,17 @@ vi.mock("@calcom/lib/hooks/useLocale", () => ({
           billing_price_cadence_member_yearly: "Per accepted member, billed yearly",
           billing_price_cadence_monthly: "Billed monthly",
           billing_price_cadence_yearly: "Billed yearly",
+          billing_free_branding: "Convenio branding stays on the booking page.",
+          billing_free_calendar: "1 connected calendar — Keep availability tied to your main calendar.",
+          billing_free_events: "2 active event types — Publish your two most useful booking links.",
+          billing_pro_calendar: "Connect every calendar — Only show times that are truly free.",
+          billing_pro_handoffs:
+            "Webhooks and API keys — Send confirmed bookings into the tools that act on them.",
+          billing_pro_unlimited: "Unlimited event types — Offer every kind of meeting you run.",
+          billing_team_record:
+            "Roles and booking history — Control who can change things and see what happened.",
+          billing_team_roles: "Round-robin and collective scheduling — Find a time across the right people.",
+          billing_team_scheduling: "Shared event types — Give the team one set of booking rules.",
           billing_weekly_member_equivalent: "{{price}} per accepted member per week when billed yearly",
         }[key] ?? key;
       return values ? translated.replace("{{price}}", values.price) : translated;
@@ -18,6 +30,30 @@ vi.mock("@calcom/lib/hooks/useLocale", () => ({
 }));
 
 import { PlanSelector } from "./PlanSelector";
+
+it("uses the approved capability and outcome copy", () => {
+  expect({
+    free: [common.billing_free_events, common.billing_free_calendar, common.billing_free_branding],
+    pro: [common.billing_pro_unlimited, common.billing_pro_calendar, common.billing_pro_handoffs],
+    team: [common.billing_team_scheduling, common.billing_team_roles, common.billing_team_record],
+  }).toEqual({
+    free: [
+      "2 active event types — Publish your two most useful booking links.",
+      "1 connected calendar — Keep availability tied to your main calendar.",
+      "Convenio branding stays on the booking page.",
+    ],
+    pro: [
+      "Unlimited event types — Offer every kind of meeting you run.",
+      "Connect every calendar — Only show times that are truly free.",
+      "Webhooks and API keys — Send confirmed bookings into the tools that act on them.",
+    ],
+    team: [
+      "Shared event types — Give the team one set of booking rules.",
+      "Round-robin and collective scheduling — Find a time across the right people.",
+      "Roles and booking history — Control who can change things and see what happened.",
+    ],
+  });
+});
 
 describe("PlanSelector", () => {
   it("starts yearly and shows only the two paid plans", () => {
@@ -35,6 +71,24 @@ describe("PlanSelector", () => {
     expect(view.getByRole("heading", { name: "billing_plan_pro" })).toBeInTheDocument();
     expect(view.getByRole("heading", { name: "billing_plan_team" })).toBeInTheDocument();
     expect(view.queryByRole("heading", { name: "billing_plan_free" })).not.toBeInTheDocument();
+    expect(
+      view.getByText("Unlimited event types — Offer every kind of meeting you run.")
+    ).toBeInTheDocument();
+    expect(
+      view.getByText("Connect every calendar — Only show times that are truly free.")
+    ).toBeInTheDocument();
+    expect(
+      view.getByText("Webhooks and API keys — Send confirmed bookings into the tools that act on them.")
+    ).toBeInTheDocument();
+    expect(
+      view.getByText("Shared event types — Give the team one set of booking rules.")
+    ).toBeInTheDocument();
+    expect(
+      view.getByText("Round-robin and collective scheduling — Find a time across the right people.")
+    ).toBeInTheDocument();
+    expect(
+      view.getByText("Roles and booking history — Control who can change things and see what happened.")
+    ).toBeInTheDocument();
   });
 
   it("labels monthly prices and the accepted-member scope from the catalog", () => {
@@ -58,6 +112,13 @@ describe("PlanSelector", () => {
       "href",
       "/event-types"
     );
+    expect(
+      view.getByText("2 active event types — Publish your two most useful booking links.")
+    ).toBeInTheDocument();
+    expect(
+      view.getByText("1 connected calendar — Keep availability tied to your main calendar.")
+    ).toBeInTheDocument();
+    expect(view.getByText("Convenio branding stays on the booking page.")).toBeInTheDocument();
   });
 
   it("submits action-specific paid selections", () => {
