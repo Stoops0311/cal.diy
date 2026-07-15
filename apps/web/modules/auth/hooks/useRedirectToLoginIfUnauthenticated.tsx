@@ -1,10 +1,9 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
+import { WEBAPP_URL } from "@calcom/lib/constants";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-
-import { WEBAPP_URL } from "@calcom/lib/constants";
 
 export function useRedirectToLoginIfUnauthenticated(isPublic = false) {
   const { data: session, status } = useSession();
