@@ -1,9 +1,9 @@
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
 import { ConfirmationDialogContent } from "@calcom/ui/components/dialog";
 import { showToast } from "@calcom/ui/components/toast";
-import { useSession } from "next-auth/react";
 import type { Dispatch } from "react";
 import type { UserTableAction, UserTableState } from "./types";
 

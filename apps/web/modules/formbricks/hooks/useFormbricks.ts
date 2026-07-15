@@ -1,8 +1,8 @@
-import formbricks from "@formbricks/js";
-import { useSession } from "next-auth/react";
-import { useEffect } from "react";
-
+import process from "node:process";
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import useMeQuery from "@calcom/trpc/react/hooks/useMeQuery";
+import formbricks from "@formbricks/js";
+import { useEffect } from "react";
 
 const initFormbricks = async ({
   userId,

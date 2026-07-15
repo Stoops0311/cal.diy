@@ -1,5 +1,6 @@
 "use client";
 
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { WEBHOOK_TRIGGER_EVENTS } from "@calcom/features/webhooks/lib/constants";
 import { subscriberUrlReserved } from "@calcom/features/webhooks/lib/subscriberUrlReserved";
 import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
@@ -9,7 +10,6 @@ import { trpc } from "@calcom/trpc/react";
 import { revalidateWebhooksList } from "@calcom/web/app/(use-page-wrapper)/settings/(settings-layout)/developer/webhooks/(with-loader)/actions";
 import { toastManager } from "@coss/ui/components/toast";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import type { WebhookFormSubmitData } from "../components/WebhookForm";
 import WebhookForm from "../components/WebhookForm";
 import { WebhookVersionCTA } from "../components/WebhookVersionCTA";

@@ -1,6 +1,7 @@
 "use client";
 
 import { checkAdminOrOwner } from "@calcom/features/auth/lib/checkAdminOrOwner";
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { ColumnFilterType, convertFacetedValuesToMap, type FacetedValue } from "@calcom/features/data-table";
 import { WEBAPP_URL } from "@calcom/lib/constants";
 import { downloadAsCsv } from "@calcom/lib/csvUtils";
@@ -30,7 +31,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import posthog from "posthog-js";
 import { useMemo, useReducer, useState } from "react";

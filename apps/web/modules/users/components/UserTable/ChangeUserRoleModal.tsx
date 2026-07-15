@@ -1,4 +1,4 @@
-import { useSession } from "next-auth/react";
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import type { Dispatch } from "react";
 import type { UserTableAction, UserTableState } from "./types";
 

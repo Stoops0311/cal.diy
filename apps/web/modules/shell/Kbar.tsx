@@ -1,7 +1,6 @@
-import { useSession } from "next-auth/react";
-
 import { appStoreMetadata } from "@calcom/app-store/appStoreMetaData";
 import dayjs from "@calcom/dayjs";
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { isMac } from "@calcom/lib/isMac";
 import { trpc } from "@calcom/trpc/react";
