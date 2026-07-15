@@ -65,6 +65,15 @@ function setup() {
 }
 
 describe("ClerkOrganizationCommandService", () => {
+  it("fails closed when the Polar seat adapter is not configured", async () => {
+    const ctx = setup();
+    const service = new ClerkOrganizationCommandService();
+
+    await expect(
+      service.activateAcceptedMember({ organizationId: 41, snapshot: ctx.snapshot })
+    ).rejects.toMatchObject({ code: ErrorCode.EntitlementRequired });
+  });
+
   it("creates in Clerk before reconciling local state", async () => {
     const ctx = setup();
     const service = new ClerkOrganizationCommandService(ctx.dependencies);

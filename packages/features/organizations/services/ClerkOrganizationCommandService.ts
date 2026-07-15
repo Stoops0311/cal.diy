@@ -146,8 +146,10 @@ class PrismaOrganizationCommandRepository implements OrganizationCommandReposito
   }
 }
 
-class NoopSeatBilling implements OrganizationSeatBillingPort {
-  async syncAcceptedSeats(): Promise<void> {}
+class UnconfiguredSeatBilling implements OrganizationSeatBillingPort {
+  async syncAcceptedSeats(): Promise<void> {
+    throw new ErrorWithCode(ErrorCode.EntitlementRequired, "Organization seat billing is not configured");
+  }
 }
 
 function requireAdmin(access: OrganizationAccess): void {
@@ -171,7 +173,7 @@ class ClerkOrganizationCommandService {
         organizationSource: new ClerkBackendOrganizationSource(),
         reconciler: new ClerkOrganizationSyncService(),
         repository: new PrismaOrganizationCommandRepository(),
-        seatBilling: new NoopSeatBilling(),
+        seatBilling: new UnconfiguredSeatBilling(),
       } satisfies ClerkOrganizationCommandDependencies);
   }
 
