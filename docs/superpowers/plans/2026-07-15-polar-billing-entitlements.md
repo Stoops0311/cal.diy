@@ -423,7 +423,7 @@ git commit -m "feat(billing): add subscription management UI"
 
 - [ ] **Step 1: Add direct-mutation tests for every gate**
 
-Test Free third event creation/reactivation, second calendar connection, advanced/recurring/private/redirect/booking-field/payment settings, branding removal, API-key creation, webhook creation, organization creation/invite/member activation, team event creation, collective/round-robin selection, and booking-audit read. Test Pro success for personal gates and denial for team gates; Team success for all included gates.
+Test Free third event creation/reactivation, second calendar connection, advanced/recurring/private/redirect/booking-field/payment settings, branding removal, API-key creation, webhook creation, second provisional organization creation, provisional organization invite/member activation, team event creation, collective/round-robin selection, and booking-audit read. Verify that the first owner-only provisional organization can be created for Team checkout while every other team capability remains denied. Test Pro success for personal gates and denial for team gates; Team success for all included gates.
 
 - [ ] **Step 2: Implement the read-only entitlement service**
 

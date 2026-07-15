@@ -69,6 +69,14 @@ Rejected alternatives:
 - Collective and round-robin scheduling.
 - Booking audit access.
 
+Self-serve Team checkout uses a provisional-organization bootstrap. Any signed-in user may create one
+owner-only organization so Polar has a stable organization subject and an initial seat. Until a verified
+Team subscription is active for that organization, invitations, role changes, member activation, team
+events, and all other organization administration remain read-only. A user cannot create another
+provisional organization; owners whose existing organizations all have active Team access may bootstrap
+another separately billed organization. Archiving remains available so an abandoned provisional
+organization never traps the owner.
+
 Workflows, Insights, SSO, SCIM, directory sync, compliance claims, enterprise support, nested organizations, and custom organization roles are not part of this release.
 
 ## 5. Clerk Application Configuration
@@ -154,6 +162,10 @@ Each Clerk organization maps one-to-one to one local top-level `Team` with `isOr
 - Local membership and permission records control Convenio scheduling authorization.
 
 Convenio organization actions call Clerk and then synchronously reconcile the local record. Verified Clerk `organization.*`, invitation, and membership webhooks repair missed or interrupted updates. Removing an external organization sets `archivedAt`; it does not cascade-delete schedules, bookings, event types, or profiles. At least one local owner is maintained for every active organization.
+
+Creation is the sole pre-subscription exception: it creates an owner-only provisional organization for
+Team checkout. Every other organization mutation evaluates the entitlement of the target organization,
+not a Team entitlement inherited from some other membership.
 
 Team billing uses the accepted local membership count as Polar seat quantity. Seat updates are serialized per organization and retried idempotently. If Polar refuses a seat increase, the new member is not activated locally and the user receives a recoverable billing error.
 

@@ -1,4 +1,10 @@
 import { getClerkBackendClient } from "@calcom/features/auth/lib/clerkClient";
+import {
+  assertEntitled,
+  assertWithinLimit,
+  type EntitlementCapability,
+} from "@calcom/features/billing/lib/entitlements";
+import { EntitlementService } from "@calcom/features/billing/services/EntitlementService";
 import { PolarSeatService } from "@calcom/features/billing/services/PolarSeatService";
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
@@ -39,6 +45,7 @@ type ClerkOrganizationCommandGateway = {
 
 type OrganizationCommandRepository = {
   getActorClerkUserId(userId: number): Promise<string>;
+  getOwnedOrganizationIds(userId: number): Promise<number[]>;
   getOrganizationAccess(input: { actorUserId: number; organizationId: number }): Promise<OrganizationAccess>;
   getTargetMember(input: { memberUserId: number; organizationId: number }): Promise<TargetMember>;
   ownerCount(organizationId: number): Promise<number>;
@@ -48,6 +55,7 @@ type OrganizationReconciler = Pick<ClerkOrganizationSyncService, "reconcileOrgan
 
 type ClerkOrganizationCommandDependencies = {
   clerk: ClerkOrganizationCommandGateway;
+  entitlements: Pick<EntitlementService, "forOrganization">;
   organizationSource: ClerkOrganizationSource;
   reconciler: OrganizationReconciler;
   repository: OrganizationCommandRepository;
@@ -140,6 +148,19 @@ class PrismaOrganizationCommandRepository implements OrganizationCommandReposito
     };
   }
 
+  async getOwnedOrganizationIds(userId: number): Promise<number[]> {
+    const memberships = await prisma.membership.findMany({
+      where: {
+        accepted: true,
+        role: "OWNER",
+        team: { archivedAt: null, isOrganization: true },
+        userId,
+      },
+      select: { teamId: true },
+    });
+    return memberships.map(({ teamId }) => teamId);
+  }
+
   async getTargetMember(input: { memberUserId: number; organizationId: number }): Promise<TargetMember> {
     const membership = await prisma.membership.findUnique({
       where: { userId_teamId: { teamId: input.organizationId, userId: input.memberUserId } },
@@ -174,6 +195,7 @@ class ClerkOrganizationCommandService {
       dependencies ??
       ({
         clerk: new ClerkCommandGateway(),
+        entitlements: new EntitlementService(),
         organizationSource: new ClerkBackendOrganizationSource(),
         reconciler: new ClerkOrganizationSyncService(),
         repository: new PrismaOrganizationCommandRepository(),
@@ -186,6 +208,18 @@ class ClerkOrganizationCommandService {
     name: string;
     slug: string;
   }): Promise<ClerkOrganizationSyncResult> {
+    const ownedOrganizationIds = await this.dependencies.repository.getOwnedOrganizationIds(
+      input.actorUserId
+    );
+    const ownedEntitlements = await Promise.all(
+      ownedOrganizationIds.map((organizationId) =>
+        this.dependencies.entitlements.forOrganization(organizationId)
+      )
+    );
+    for (const entitlements of ownedEntitlements) {
+      assertEntitled(entitlements, "canManageOrganizations");
+    }
+
     const creatorClerkUserId = await this.dependencies.repository.getActorClerkUserId(input.actorUserId);
     let clerkOrganizationId: string;
     try {
@@ -207,7 +241,11 @@ class ClerkOrganizationCommandService {
     organizationId: number;
     role: ClerkRole;
   }): Promise<void> {
-    const access = await this.authorize(input.actorUserId, input.organizationId);
+    const access = await this.authorize(
+      input.actorUserId,
+      input.organizationId,
+      "canInviteOrganizationMembers"
+    );
     const inviterClerkUserId = await this.dependencies.repository.getActorClerkUserId(input.actorUserId);
     try {
       await this.dependencies.clerk.inviteMember({
@@ -228,7 +266,11 @@ class ClerkOrganizationCommandService {
     organizationId: number;
     role: ClerkRole;
   }): Promise<void> {
-    const access = await this.authorize(input.actorUserId, input.organizationId);
+    const access = await this.authorize(
+      input.actorUserId,
+      input.organizationId,
+      "canManageOrganizationRoles"
+    );
     const target = await this.dependencies.repository.getTargetMember(input);
     await this.guardOwnerChange(input.organizationId, target);
     try {
@@ -255,7 +297,7 @@ class ClerkOrganizationCommandService {
     organizationId: number;
   }): Promise<void> {
     return this.serialize(input.organizationId, async () => {
-      const access = await this.authorize(input.actorUserId, input.organizationId);
+      const access = await this.authorize(input.actorUserId, input.organizationId, "canManageOrganizations");
       const target = await this.dependencies.repository.getTargetMember(input);
       await this.guardOwnerChange(input.organizationId, target);
       try {
@@ -280,9 +322,13 @@ class ClerkOrganizationCommandService {
     organizationId: number;
     snapshot: ClerkOrganizationSnapshot;
   }): Promise<void> {
-    return this.serialize(input.organizationId, () =>
-      this.syncSeatsAndReconcile(input.organizationId, input.snapshot)
-    );
+    return this.serialize(input.organizationId, async () => {
+      const entitlements = await this.dependencies.entitlements.forOrganization(input.organizationId);
+      assertEntitled(entitlements, "canInviteOrganizationMembers");
+      const desiredSeats = input.snapshot.memberships.filter(({ active }) => active).length;
+      assertWithinLimit(entitlements, "acceptedOrganizationMembers", Math.max(0, desiredSeats - 1));
+      await this.syncSeatsAndReconcile(input.organizationId, input.snapshot);
+    });
   }
 
   async archiveOrganization(input: { actorUserId: number; organizationId: number }): Promise<void> {
@@ -303,12 +349,19 @@ class ClerkOrganizationCommandService {
     });
   }
 
-  private async authorize(actorUserId: number, organizationId: number): Promise<OrganizationAccess> {
+  private async authorize(
+    actorUserId: number,
+    organizationId: number,
+    capability?: EntitlementCapability
+  ): Promise<OrganizationAccess> {
     const access = await this.dependencies.repository.getOrganizationAccess({ actorUserId, organizationId });
     if (access.archivedAt) {
       throw new ErrorWithCode(ErrorCode.ClerkOrganizationConflict, "Archived organizations are read-only");
     }
     requireAdmin(access);
+    if (capability) {
+      assertEntitled(await this.dependencies.entitlements.forOrganization(organizationId), capability);
+    }
     return access;
   }
 
