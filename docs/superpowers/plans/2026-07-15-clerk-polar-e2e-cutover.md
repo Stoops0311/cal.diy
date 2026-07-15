@@ -186,7 +186,7 @@ Global setup calls Clerk testing-token setup supported by `@clerk/testing`, vali
 
 - [ ] **Step 2: Implement ordered identity scenarios**
 
-Test new email/password signup, `424242` verification, required username, local provisioning, logout, protected redirect, password login, session persistence, forgotten password, TOTP enrollment/recovery, migrated bcrypt login with unchanged password, Google linking, and Microsoft linking without duplicate local users.
+Test new email/password signup, `424242` verification, required username, local provisioning, logout, protected redirect, password login, session persistence, forgotten password, TOTP enrollment/recovery, and migrated bcrypt login with the unchanged password. For Google and Microsoft, verify Clerk configuration and browser handoff to each provider; hosted consent, callback, and verified-email linking remain Clerk-owned and do not require dedicated provider test identities.
 
 - [ ] **Step 3: Implement ordered organization scenarios**
 
@@ -194,7 +194,7 @@ Test organization creation, invitation, acceptance, accepted-seat count, admin/m
 
 - [ ] **Step 4: Implement ordered billing scenarios**
 
-Test checkout for Pro monthly/annual and Team monthly/annual with sandbox card; pending redirect; verified projection; Pro-to-Team; seat increase/decrease; portal access; invoices/payment method visibility; period-end cancellation; paid-period retention; benefit removal/revocation.
+Test checkout for Pro monthly/annual and Team monthly/annual with sandbox card; pending redirect; verified projection; personal-Pro/organization-Team subject isolation; seat increase/decrease; portal access; invoices/payment method visibility; period-end cancellation; paid-period retention; benefit removal/revocation.
 
 - [ ] **Step 5: Implement resilience and entitlement scenarios**
 

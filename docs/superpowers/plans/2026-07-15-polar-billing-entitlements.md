@@ -513,7 +513,7 @@ For Pro monthly/annual and Team monthly/annual: initiate checkout, complete sand
 
 - [ ] **Step 2: Implement lifecycle scenarios**
 
-Cover Pro-to-Team change, accepted member seat increase, member removal/decrement, portal URL/invoice/payment-method visibility, period-end cancellation, paid-period retention, benefit revocation, delayed webhook plus reconcile, invalid signature, duplicate, and out-of-order delivery.
+Cover personal-Pro/organization-Team subject isolation, accepted member seat increase, member removal/decrement, portal URL/invoice/payment-method visibility, period-end cancellation, paid-period retention, benefit revocation, delayed webhook plus reconcile, invalid signature, duplicate, and out-of-order delivery.
 
 - [ ] **Step 3: Implement direct mutation entitlement scenarios**
 

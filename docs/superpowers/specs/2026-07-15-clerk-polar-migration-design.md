@@ -278,10 +278,10 @@ The acceptance run proves:
 2. Sign-out, protected-route redirect, password sign-in, and session persistence.
 3. Forgotten-password and TOTP enrollment/recovery behavior.
 4. One migrated bcrypt user signs in with the unchanged password.
-5. Google and Microsoft login link to one local user rather than duplicating it.
+5. Google and Microsoft are enabled in Clerk and Convenio hands authentication off to each provider; Clerk owns hosted consent, callback, and verified-email account linking.
 6. Organization creation, invitation, acceptance, role update, and member authorization boundaries.
 7. Checkout for all four Polar products and verified local entitlement activation.
-8. Pro-to-Team change, accepted-member seat increases, member removal, and Polar seat reconciliation.
+8. Personal Pro and organization Team subject isolation, accepted-member seat increases, member removal, and Polar seat reconciliation.
 9. Customer portal access, invoice visibility, payment-method management, and cancellation at period end.
 10. Access retention through the paid period and revocation behavior when Polar removes benefits.
 11. Invalid signatures, duplicate deliveries, out-of-order events, delayed delivery, and explicit reconciliation.
