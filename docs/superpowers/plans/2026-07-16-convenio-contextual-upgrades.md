@@ -24,6 +24,17 @@
 
 ---
 
+## Execution correction
+
+Task 1 is delivered as two stacked PRs because the complete eight-file diff would exceed the repository's 500-line limit:
+
+- **Task 1A:** Steps 1-6 produce the four new intent/controller primitive files. Review range: `4e37b210c9..e95506cef0` (4 code files, 464 insertions).
+- **Task 1B:** Steps 7-9 migrate `Pricing` and `CreateOrganization` plus their tests onto those reviewed primitives.
+
+Tasks 2 and 3 remain unchanged. This creates four stacked implementation PRs for the slice while preserving the interfaces and test sequence below.
+
+---
+
 ### Task 1: Safe upgrade intent and shared paid-checkout controller
 
 **Files:**
