@@ -1,6 +1,9 @@
 import type { appDataSchemas } from "@calcom/app-store/apps.schemas.generated";
 import { DailyLocationType } from "@calcom/app-store/constants";
 import { eventTypeAppMetadataOptionalSchema } from "@calcom/app-store/zod-utils";
+import { assertEntitled, assertWithinLimit } from "@calcom/features/billing/lib/entitlements";
+import type { EvaluatedEntitlements } from "@calcom/features/billing/services/EntitlementService";
+import { EntitlementService } from "@calcom/features/billing/services/EntitlementService";
 import { CalVideoSettingsRepository } from "@calcom/features/calVideoSettings/repositories/CalVideoSettingsRepository";
 import { HashedLinkRepository } from "@calcom/features/hashedLink/lib/repository/HashedLinkRepository";
 import { HashedLinkService } from "@calcom/features/hashedLink/lib/service/HashedLinkService";
@@ -52,12 +55,80 @@ type UpdateOptions = {
     res?: NextApiResponse | GetServerSidePropsContext["res"];
     prisma: PrismaClient;
   };
+  dependencies?: UpdateEntitlementDependencies;
   input: TUpdateInputSchema;
 };
 
+type UpdateEntitlementTarget = {
+  hidden: boolean;
+  schedulingType: SchedulingType | null;
+  teamId: number | null;
+};
+type UpdateEntitlementDependencies = {
+  entitlements: Pick<EntitlementService, "forOrganization" | "forUser">;
+  getTarget(prisma: PrismaClient, eventTypeId: number): Promise<UpdateEntitlementTarget>;
+};
+
+const defaultEntitlementDependencies: UpdateEntitlementDependencies = {
+  entitlements: new EntitlementService(),
+  getTarget: async (prisma, eventTypeId) =>
+    prisma.eventType.findUniqueOrThrow({
+      where: { id: eventTypeId },
+      select: { hidden: true, schedulingType: true, teamId: true },
+    }),
+};
+
+function assertEventTypeUpdateEntitled(
+  entitlements: EvaluatedEntitlements,
+  target: UpdateEntitlementTarget,
+  input: TUpdateInputSchema
+): void {
+  if (target.teamId) {
+    assertEntitled(entitlements, "canCreateTeamEvents");
+    const schedulingType = input.schedulingType ?? target.schedulingType;
+    if (schedulingType === SchedulingType.COLLECTIVE) {
+      assertEntitled(entitlements, "canUseCollectiveScheduling");
+    }
+    if (schedulingType === SchedulingType.ROUND_ROBIN) {
+      assertEntitled(entitlements, "canUseRoundRobinScheduling");
+    }
+  } else if (target.hidden && input.hidden === false) {
+    assertWithinLimit(entitlements, "activePersonalEventTypes", entitlements.usage.activePersonalEventTypes);
+  }
+
+  if (input.recurringEvent) assertEntitled(entitlements, "canUseRecurringEvents");
+  if (input.multiplePrivateLinks?.length) assertEntitled(entitlements, "canUsePrivateLinks");
+  if (input.successRedirectUrl) assertEntitled(entitlements, "canUseCustomRedirects");
+  if (input.bookingFields?.length || input.customInputs?.length) {
+    assertEntitled(entitlements, "canUseCustomBookingFields");
+  }
+  if (input.price !== undefined && input.price > 0) {
+    assertEntitled(entitlements, "canUseBookingPayments");
+  }
+  if (
+    input.bookingLimits ||
+    input.durationLimits ||
+    input.seatsPerTimeSlot ||
+    input.beforeEventBuffer ||
+    input.afterEventBuffer
+  ) {
+    assertEntitled(entitlements, "canUseAdvancedEvents");
+  }
+}
+
 export type UpdateEventTypeReturn = Awaited<ReturnType<typeof updateHandler>>;
 
-export const updateHandler = async ({ ctx, input }: UpdateOptions) => {
+export const updateHandler = async ({
+  ctx,
+  dependencies = defaultEntitlementDependencies,
+  input,
+}: UpdateOptions) => {
+  const entitlementTarget = await dependencies.getTarget(ctx.prisma, input.id);
+  const entitlements = entitlementTarget.teamId
+    ? await dependencies.entitlements.forOrganization(entitlementTarget.teamId)
+    : await dependencies.entitlements.forUser(ctx.user.id);
+  assertEventTypeUpdateEntitled(entitlements, entitlementTarget, input);
+
   const {
     schedule,
     instantMeetingSchedule,
@@ -776,3 +847,6 @@ export const updateHandler = async ({ ctx, input }: UpdateOptions) => {
   }
   return { eventType };
 };
+
+export { assertEventTypeUpdateEntitled };
+export type { UpdateEntitlementDependencies, UpdateEntitlementTarget };
