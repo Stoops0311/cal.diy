@@ -4,6 +4,8 @@ import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
 import { prisma } from "@calcom/prisma";
 import { Prisma } from "@calcom/prisma/client";
+import type { PolarBillingGateway } from "./PolarBillingGateway";
+import { PolarSdkBillingGateway } from "./PolarBillingGateway";
 import { type PolarEnvironment, resolveConfiguredPolarBenefits } from "./PolarClient";
 import {
   type PolarCustomerStateSnapshot,
@@ -38,6 +40,7 @@ type PolarWebhookProjection = Pick<PolarSubscriptionProjectionService, "projectC
 type PolarWebhookServiceDependencies = {
   environment: PolarEnvironment;
   projection: PolarWebhookProjection;
+  subscriptionSource: Pick<PolarBillingGateway, "getSubscription">;
 };
 
 type ProcessInput = { event: PolarWebhookEvent; eventId: string; rawBody: string };
@@ -55,10 +58,13 @@ function sanitizedError(error: unknown): string {
 class PolarWebhookService {
   private readonly environment: PolarEnvironment;
   private readonly projection: PolarWebhookProjection;
+  private readonly subscriptionSource: Pick<PolarBillingGateway, "getSubscription">;
 
   constructor(dependencies?: PolarWebhookServiceDependencies) {
     this.environment = dependencies?.environment ?? process.env;
     this.projection = dependencies?.projection ?? new PolarSubscriptionProjectionService(this.environment);
+    this.subscriptionSource =
+      dependencies?.subscriptionSource ?? new PolarSdkBillingGateway(this.environment);
   }
 
   async process(input: ProcessInput): Promise<ProcessResult> {
@@ -70,7 +76,7 @@ class PolarWebhookService {
         await this.markSucceeded(input.eventId);
         return "ignored";
       }
-      await this.projection.projectCustomerState(this.toSnapshot(input.eventId, input.event));
+      await this.projection.projectCustomerState(await this.toSnapshot(input.eventId, input.event));
       await this.markSucceeded(input.eventId);
       return "processed";
     } catch (error) {
@@ -83,7 +89,7 @@ class PolarWebhookService {
     }
   }
 
-  private toSnapshot(eventId: string, event: PolarWebhookEvent): PolarCustomerStateSnapshot {
+  private async toSnapshot(eventId: string, event: PolarWebhookEvent): Promise<PolarCustomerStateSnapshot> {
     const data = event.data;
     if (!data?.externalCustomerId) throw conflict("Polar customer has no external subject");
     if (data.activeSubscriptions.length > 1) {
@@ -111,11 +117,19 @@ class PolarWebhookService {
 
     let seats = 1;
     if (data.type === "team") {
-      const metadataSeats = subscription.metadata.seats;
-      if (typeof metadataSeats !== "number" || !Number.isInteger(metadataSeats)) {
-        throw conflict("Team subscription metadata must include integer seats");
+      const providerSubscription = await this.subscriptionSource.getSubscription(subscription.id);
+      if (providerSubscription.externalCustomerId !== data.externalCustomerId) {
+        throw conflict("Polar Team subscription ownership does not match the customer");
       }
-      seats = metadataSeats;
+      if (
+        providerSubscription.seats === null ||
+        !Number.isInteger(providerSubscription.seats) ||
+        providerSubscription.seats < 1 ||
+        providerSubscription.seats > 50
+      ) {
+        throw conflict("Polar Team subscription has an invalid seat count");
+      }
+      seats = providerSubscription.seats;
     }
     const effectiveAt = [event.timestamp, data.modifiedAt, subscription.modifiedAt]
       .filter((value): value is Date => value instanceof Date)

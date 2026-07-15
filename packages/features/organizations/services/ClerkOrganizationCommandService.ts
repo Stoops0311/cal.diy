@@ -1,4 +1,5 @@
 import { getClerkBackendClient } from "@calcom/features/auth/lib/clerkClient";
+import { PolarSeatService } from "@calcom/features/billing/services/PolarSeatService";
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
 import { prisma } from "@calcom/prisma";
@@ -155,12 +156,6 @@ class PrismaOrganizationCommandRepository implements OrganizationCommandReposito
   }
 }
 
-class UnconfiguredSeatBilling implements OrganizationSeatBillingPort {
-  async syncAcceptedSeats(): Promise<void> {
-    throw new ErrorWithCode(ErrorCode.EntitlementRequired, "Organization seat billing is not configured");
-  }
-}
-
 function requireAdmin(access: OrganizationAccess): void {
   if (access.actorRole === "OWNER" || access.actorRole === "ADMIN") return;
   throw new ErrorWithCode(ErrorCode.Forbidden, "Organization administrator access is required");
@@ -182,7 +177,7 @@ class ClerkOrganizationCommandService {
         organizationSource: new ClerkBackendOrganizationSource(),
         reconciler: new ClerkOrganizationSyncService(),
         repository: new PrismaOrganizationCommandRepository(),
-        seatBilling: new UnconfiguredSeatBilling(),
+        seatBilling: new PolarSeatService(),
       } satisfies ClerkOrganizationCommandDependencies);
   }
 

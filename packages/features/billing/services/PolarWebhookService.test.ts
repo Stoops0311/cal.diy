@@ -47,11 +47,22 @@ function customerStateEvent(): PolarWebhookEvent {
 
 function setup() {
   const projectCustomerState = vi.fn().mockResolvedValue({ applied: true, subscription: {} });
+  const getSubscription = vi.fn().mockResolvedValue({
+    externalCustomerId: "org:org_test",
+    id: "subscription_test",
+    seats: 4,
+  });
   const dependencies: PolarWebhookServiceDependencies = {
     environment,
     projection: { projectCustomerState },
+    subscriptionSource: { getSubscription },
   };
-  return { dependencies, projectCustomerState, service: new PolarWebhookService(dependencies) };
+  return {
+    dependencies,
+    getSubscription,
+    projectCustomerState,
+    service: new PolarWebhookService(dependencies),
+  };
 }
 
 async function process(service: PolarWebhookService, eventId: string, event: PolarWebhookEvent) {
@@ -87,6 +98,31 @@ describe("PolarWebhookService", () => {
       status: "active",
       subscriptionId: "subscription_test",
     });
+  });
+
+  it("loads authoritative Team seats instead of trusting checkout metadata", async () => {
+    const test = setup();
+    const eventId = `event_${crypto.randomUUID()}`;
+    const event = customerStateEvent();
+    if (!event.data) throw new Error("Expected customer state data");
+    event.data.type = "team";
+    event.data.externalCustomerId = "org:org_test";
+    event.data.grantedBenefitIds = ["benefit_team"];
+    event.data.activeSubscriptions[0] = {
+      ...event.data.activeSubscriptions[0],
+      metadata: { billing_interval: "MONTH", plan_key: "TEAM", seats: 1 },
+      productId: "product_team_month",
+    };
+
+    await expect(process(test.service, eventId, event)).resolves.toBe("processed");
+
+    expect(test.getSubscription).toHaveBeenCalledWith("subscription_test");
+    expect(test.projectCustomerState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        externalCustomerId: "org:org_test",
+        seats: 4,
+      })
+    );
   });
 
   it("records and acknowledges unrelated verified events", async () => {

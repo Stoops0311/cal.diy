@@ -1,6 +1,15 @@
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
 import { describe, expect, it, vi } from "vitest";
+
+const { defaultSeatSync } = vi.hoisted(() => ({ defaultSeatSync: vi.fn() }));
+
+vi.mock("@calcom/features/billing/services/PolarSeatService", () => ({
+  PolarSeatService: class {
+    syncAcceptedSeats = defaultSeatSync;
+  },
+}));
+
 import {
   type ClerkOrganizationCommandDependencies,
   ClerkOrganizationCommandService,
@@ -66,13 +75,17 @@ function setup() {
 }
 
 describe("ClerkOrganizationCommandService", () => {
-  it("fails closed when the Polar seat adapter is not configured", async () => {
+  it("uses Polar seat billing by default", async () => {
     const ctx = setup();
+    defaultSeatSync.mockRejectedValueOnce(
+      new ErrorWithCode(ErrorCode.InternalServerError, "Polar seat adapter called")
+    );
     const service = new ClerkOrganizationCommandService();
 
     await expect(
       service.activateAcceptedMember({ organizationId: 41, snapshot: ctx.snapshot })
-    ).rejects.toMatchObject({ code: ErrorCode.EntitlementRequired });
+    ).rejects.toMatchObject({ code: ErrorCode.InternalServerError });
+    expect(defaultSeatSync).toHaveBeenCalledWith({ desiredSeats: 1, organizationId: 41 });
   });
 
   it("creates in Clerk before reconciling local state", async () => {
