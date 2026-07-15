@@ -14,6 +14,7 @@ import {
 
 type CleanupArguments = { runTag: string };
 type MetadataRow = { metadata: unknown };
+type LocalUserOwnershipRow = MetadataRow & { clerkUserId: string | null };
 
 function parseCleanupArguments(args: string[]): CleanupArguments {
   const values = args
@@ -85,10 +86,19 @@ async function createRuntimeCleanupAdapter(): Promise<FixtureCleanupAdapter> {
           return { metadata: (await polar.subscriptions.get({ id: reference.id })).metadata };
         }
         if (reference.kind === "local_user") {
-          const result = await database.query<MetadataRow>("SELECT metadata FROM users WHERE id = $1", [
-            reference.id,
-          ]);
-          return result.rows[0] ?? null;
+          const result = await database.query<LocalUserOwnershipRow>(
+            'SELECT metadata, "clerkUserId" FROM users WHERE id = $1',
+            [reference.id]
+          );
+          const localUser = result.rows[0];
+          if (!localUser) return null;
+          if (!localUser.clerkUserId) return { metadata: localUser.metadata };
+          try {
+            return { metadata: (await clerk.users.getUser(localUser.clerkUserId)).publicMetadata };
+          } catch (error) {
+            if (isMissingProviderObject(error)) return { metadata: localUser.metadata };
+            throw error;
+          }
         }
         if (reference.kind === "local_organization") {
           const result = await database.query<MetadataRow>('SELECT metadata FROM "Team" WHERE id = $1', [

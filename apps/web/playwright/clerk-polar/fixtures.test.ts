@@ -44,7 +44,7 @@ describe("Clerk and Polar E2E fixture ownership", () => {
     expect(unsafe.remove).not.toHaveBeenCalled();
   });
 
-  it("removes subscriptions before customers, memberships, organizations, and users", async () => {
+  it("removes local projections before the tagged Clerk identities that prove their ownership", async () => {
     const safe = adapter();
     const input = manifest([
       { id: "user", kind: "clerk_user" },
@@ -63,11 +63,11 @@ describe("Clerk and Polar E2E fixture ownership", () => {
       "polar_subscription",
       "polar_customer",
       "clerk_membership",
-      "clerk_organization",
-      "clerk_user",
       "local_projection",
       "local_organization",
       "local_user",
+      "clerk_organization",
+      "clerk_user",
     ]);
   });
 

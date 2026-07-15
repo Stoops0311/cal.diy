@@ -80,11 +80,11 @@ const cleanupPriority: Record<FixtureKind, number> = {
   polar_subscription: 10,
   polar_customer: 20,
   clerk_membership: 30,
-  clerk_organization: 40,
-  clerk_user: 50,
-  local_projection: 60,
-  local_organization: 70,
-  local_user: 80,
+  local_projection: 40,
+  local_organization: 50,
+  local_user: 60,
+  clerk_organization: 70,
+  clerk_user: 80,
 };
 
 async function cleanupTaggedFixtures(
