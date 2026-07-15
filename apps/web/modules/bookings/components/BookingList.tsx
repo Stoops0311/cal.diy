@@ -1,14 +1,12 @@
 "use client";
 
-import type { Table as ReactTable } from "@tanstack/react-table";
-
-import { DataTableWrapper } from "~/data-table/components";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
+import { Button } from "@calcom/ui/components/button";
 import { EmptyScreen } from "@calcom/ui/components/empty-screen";
-
 import SkeletonLoader from "@components/booking/SkeletonLoader";
-
-import type { RowData, BookingListingStatus } from "../types";
+import type { Table as ReactTable } from "@tanstack/react-table";
+import { DataTableWrapper } from "~/data-table/components";
+import type { BookingListingStatus, RowData } from "../types";
 
 const descriptionByStatus: Record<BookingListingStatus, string> = {
   upcoming: "upcoming_bookings",
@@ -48,7 +46,7 @@ export function BookingList({
       totalRowCount={totalRowCount}
       variant="compact"
       paginationMode="standard"
-      separatorClassName="py-4 pl-6 text-xs uppercase leading-4"
+      separatorClassName="text-subtle py-4 pl-6 font-mono text-[11px] uppercase leading-4 tracking-[0.18em]"
       LoaderView={<SkeletonLoader />}
       EmptyView={
         <div className="flex items-center justify-center pt-2 xl:pt-0">
@@ -59,6 +57,7 @@ export function BookingList({
               status: t(status).toLowerCase(),
               description: t(descriptionByStatus[status]),
             })}
+            buttonRaw={<Button href="/event-types">{t("view_event_types")}</Button>}
           />
         </div>
       }

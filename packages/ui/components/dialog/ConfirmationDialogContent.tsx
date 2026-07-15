@@ -39,6 +39,7 @@ export const ConfirmationContent = (props: PropsWithChildren<ConfirmationDialogC
     onConfirm,
     children,
   } = props;
+  const confirmColor = variety === "danger" ? "destructive" : "primary";
 
   return (
     <>
@@ -47,17 +48,17 @@ export const ConfirmationContent = (props: PropsWithChildren<ConfirmationDialogC
           <div className="mt-0.5 ltr:mr-3">
             {variety === "danger" && (
               <div className="bg-error mx-auto rounded-full p-2 text-center">
-                <CircleAlertIcon className="h-5 w-5 text-red-600 dark:text-red-100" />
+                <CircleAlertIcon className="text-error h-5 w-5" />
               </div>
             )}
             {variety === "warning" && (
               <div className="bg-attention mx-auto rounded-full p-2 text-center">
-                <CircleAlertIcon className="h-5 w-5 text-orange-600" />
+                <CircleAlertIcon className="text-attention h-5 w-5" />
               </div>
             )}
             {variety === "success" && (
               <div className="bg-cal-success mx-auto rounded-full p-2 text-center">
-                <CheckIcon className="h-5 w-5 text-green-600" />
+                <CheckIcon className="text-success h-5 w-5" />
               </div>
             )}
           </div>
@@ -76,7 +77,7 @@ export const ConfirmationContent = (props: PropsWithChildren<ConfirmationDialogC
           confirmBtn
         ) : (
           <DialogClose
-            color="primary"
+            color={confirmColor}
             loading={isPending}
             onClick={(e) => onConfirm && onConfirm(e)}
             data-testid="dialog-confirmation">

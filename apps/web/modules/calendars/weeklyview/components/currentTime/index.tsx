@@ -45,10 +45,12 @@ export function CurrentTime({
     updateCurrentTimePosition();
 
     if (!scrollToCurrentTime || !currentTimeRef.current || scrolledIntoView) return;
-    setTimeout(() => {
+    const scrollTimeout = window.setTimeout(() => {
       currentTimeRef?.current?.scrollIntoView({ block: "center" });
       setScrolledIntoView(true);
     }, 100);
+
+    return () => window.clearTimeout(scrollTimeout);
   }, [updateCurrentTimePosition, scrolledIntoView, scrollToCurrentTime]);
 
   useEffect(() => {

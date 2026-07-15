@@ -1,20 +1,18 @@
 "use client";
 
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import classNames from "@calcom/ui/classNames";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { ForwardRefExoticComponent, ReactNode } from "react";
 import React from "react";
-
-import { useLocale } from "@calcom/lib/hooks/useLocale";
-import classNames from "@calcom/ui/classNames";
-
 import type { ButtonProps } from "../button";
 import { Button } from "../button";
 import type { IconName } from "../icon";
 import { Icon } from "../icon";
 
 const dialogClasses = cva(
-  "fadeIn bg-default scroll-bar fixed left-1/2 top-1/2 z-50 w-[95vw] m-auto -translate-x-1/2 -translate-y-1/2 rounded-2xl text-left shadow-xl focus-visible:outline-none sm:align-middle",
+  "fadeIn bg-subtle border-subtle scroll-bar fixed left-1/2 top-1/2 z-50 m-auto w-[95vw] -translate-x-1/2 -translate-y-1/2 overscroll-contain rounded-2xl border text-left shadow-xl focus-visible:outline-none motion-reduce:animate-none sm:align-middle",
   {
     variants: {
       size: {
@@ -38,7 +36,7 @@ export function Dialog(props: DialogProps) {
 }
 
 type DialogContentProps = React.ComponentProps<(typeof DialogPrimitive)["Content"]> & {
-  type?: "creation" | "confirmation";
+  type?: "creation" | "confirmation" | null;
   title?: string;
   description?: string | JSX.Element | null;
   closeText?: string;
@@ -70,9 +68,9 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
     return (
       <DialogPrimitive.Portal>
         {forceOverlayWhenNoModal ? (
-          <div className="fadeIn fixed inset-0 z-50  bg-neutral-800/70 transition-opacity" />
+          <div className="fadeIn fixed inset-0 z-50 bg-overlay transition-opacity motion-reduce:animate-none motion-reduce:transition-none" />
         ) : (
-          <DialogPrimitive.Overlay className="fadeIn fixed inset-0 z-50 bg-neutral-800/70 transition-opacity dark:bg-neutral-800/80" />
+          <DialogPrimitive.Overlay className="fadeIn fixed inset-0 z-50 bg-overlay transition-opacity motion-reduce:animate-none motion-reduce:transition-none" />
         )}
         <DialogPrimitive.Content
           {...props}
@@ -105,7 +103,12 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
               </div>
             </div>
           )}
-          {!type && children}
+          {!type && (
+            <>
+              {title && <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>}
+              {children}
+            </>
+          )}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     );
@@ -130,12 +133,11 @@ export function DialogHeader(props: DialogHeaderProps) {
           </div>
         )}
         <div>
-          <h2
+          <DialogPrimitive.Title
             data-testid="dialog-title"
-            className="text-semibold text-emphasis font-cal text-xl"
-            id="modal-title">
+            className="text-semibold text-emphasis font-cal text-xl">
             {props.title}
-          </h2>
+          </DialogPrimitive.Title>
           {props.subtitle && (
             <p className="text-subtle text-sm" data-testid="dialog-subtitle">
               {props.subtitle}
@@ -156,8 +158,9 @@ type DialogFooterProps = {
 export function DialogFooter(props: DialogFooterProps) {
   return (
     <div
+      data-testid="dialog-footer"
       className={classNames(
-        "bg-cal-muted border-muted bottom-0 -mx-8 mt-10 rounded-b-2xl border",
+        "bg-default border-muted bottom-0 -mx-8 mt-10 rounded-b-2xl border-t",
         props?.noSticky ? "" : "sticky",
         props.className
       )}>

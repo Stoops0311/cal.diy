@@ -1,21 +1,19 @@
-import type { MutableRefObject } from "react";
-import { forwardRef } from "react";
-
 import type { BookerLayout } from "@calcom/features/bookings/Booker/types";
 import { useEmbedBookerUrl } from "@calcom/features/bookings/hooks/useBookerUrl";
 import { APP_NAME } from "@calcom/lib/constants";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { TextArea } from "@calcom/ui/components/form";
-
+import type { MutableRefObject } from "react";
+import { forwardRef } from "react";
 import type { EmbedFramework, EmbedType, PreviewState } from "../types";
-import { Codes } from "./EmbedCodes";
 import { buildCssVarsPerTheme } from "./buildCssVarsPerTheme";
-import { embedLibUrl, EMBED_PREVIEW_HTML_URL } from "./constants";
+import { EMBED_PREVIEW_HTML_URL, embedLibUrl } from "./constants";
+import { Codes } from "./EmbedCodes";
 import { getApiNameForReactSnippet, getApiNameForVanillaJsSnippet } from "./getApiName";
 import { getDimension } from "./getDimension";
 import { useEmbedCalOrigin } from "./hooks";
 
-export const enum EmbedTabName {
+export enum EmbedTabName {
   HTML = "embed-code",
   IFRAME_REACT = "embed-react",
   ATOM_REACT = "embed-atom-react",
@@ -189,6 +187,7 @@ ${getEmbedTypeSpecificString({
       { calLink: string; embedType: EmbedType; previewState: PreviewState; namespace: string }
     >(function Preview({ calLink, embedType }, ref) {
       const bookerUrl = useEmbedBookerUrl();
+      const { t } = useLocale();
       const iframeSrc = `${EMBED_PREVIEW_HTML_URL}?embedType=${embedType}&calLink=${calLink}&embedLibUrl=${embedLibUrl}&bookerUrl=${bookerUrl}`;
       if (ref instanceof Function || !ref) {
         return null;
@@ -198,6 +197,7 @@ ${getEmbedTypeSpecificString({
       }
       return (
         <iframe
+          title={t("embed_preview", { appName: APP_NAME })}
           ref={ref as typeof ref & MutableRefObject<HTMLIFrameElement>}
           data-testid="embed-preview"
           className="rounded-md border"

@@ -288,13 +288,16 @@ export const CreateOrEditOutOfOfficeEntryModal = ({
             {/* Reason Select */}
             <div className="mt-4 w-full">
               <div className="">
-                <p className="text-emphasis block text-sm font-medium">{t("reason")}</p>
+                <Label htmlFor="reason" className="text-emphasis block text-sm font-medium">
+                  {t("reason")}
+                </Label>
                 <Controller
                   control={control}
                   name="reasonId"
                   render={({ field: { onChange, value } }) => (
                     <Select<Option>
-                      className="mb-0 mt-1 text-white"
+                      className="mt-1 mb-0 text-default"
+                      inputId="reason"
                       name="reason"
                       data-testid="reason_select"
                       menuPlacement="bottom"
@@ -314,8 +317,11 @@ export const CreateOrEditOutOfOfficeEntryModal = ({
 
             {/* Notes input */}
             <div className="mt-4">
-              <p className="text-emphasis text-sm font-medium">{t("notes")}</p>
+              <Label htmlFor="notes_input" className="text-emphasis text-sm font-medium">
+                {t("notes")}
+              </Label>
               <TextArea
+                id="notes_input"
                 data-testid="notes_input"
                 className="border-subtle mt-2 h-10 w-full rounded-lg border px-2"
                 placeholder={t("additional_notes")}
@@ -353,7 +359,7 @@ export const CreateOrEditOutOfOfficeEntryModal = ({
               />
             </div>
 
-            <div className="bg-cal-muted my-4 rounded-xl p-5">
+            <div className="border-subtle bg-default my-4 rounded-xl border p-5 shadow-sm">
               <div className="flex flex-row">
                 <Switch
                   disabled={!hasTeamPlan}

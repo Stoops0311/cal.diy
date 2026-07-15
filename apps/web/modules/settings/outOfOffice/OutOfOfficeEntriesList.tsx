@@ -72,6 +72,7 @@ export default function OutOfOfficeEntriesList({
 
   return (
     <SettingsHeader
+      eyebrow={t("my_account")}
       title={t("out_of_office")}
       description={t("out_of_office_description")}
       borderInShellHeader={true}
@@ -81,7 +82,7 @@ export default function OutOfOfficeEntriesList({
           <CreateNewOutOfOfficeEntryButton data-testid="add_entry_ooo" onClick={onOpenCreateDialog} />
         </div>
       }>
-      <div className="border-subtle rounded-b-lg border border-t-0 px-4 py-6 sm:px-6">
+      <div className="py-6">
         <DataTableProvider tableIdentifier={pathname} useSegments={useSegments}>
           <OutOfOfficeEntriesListContent
             onOpenCreateDialog={onOpenCreateDialog}
@@ -355,16 +356,16 @@ function OutOfOfficeEntriesListContent({
               <div className="mt-4 h-[102px]">
                 <div className="flex h-full flex-col items-center justify-center p-2 md:mt-0 md:p-0">
                   <div className="relative">
-                    <div className="dark:bg-darkgray-50 absolute -left-3 -top-3 -z-20 h-[70px] w-[70px] -rotate-24 rounded-3xl border-2 border-[#e5e7eb] p-8 opacity-40 dark:opacity-80">
+                    <div className="absolute -top-3 -left-3 -z-20 h-[70px] w-[70px] -rotate-24 rounded-3xl border-2 border-subtle bg-subtle p-8 opacity-40">
                       <div className="w-12" />
                     </div>
-                    <div className="dark:bg-darkgray-50 absolute -top-3 left-3 -z-10 h-[70px] w-[70px] rotate-24 rounded-3xl border-2 border-[#e5e7eb] p-8 opacity-60 dark:opacity-90">
+                    <div className="absolute -top-3 left-3 -z-10 h-[70px] w-[70px] rotate-24 rounded-3xl border-2 border-subtle bg-muted p-8 opacity-60">
                       <div className="w-12" />
                     </div>
-                    <div className="dark:bg-darkgray-50 text-inverted relative z-0 flex h-[70px] w-[70px] items-center justify-center rounded-3xl border-2 border-[#e5e7eb] bg-white">
-                      <ClockIcon size={28} className="text-black" />
-                      <div className="dark:bg-darkgray-50 absolute right-4 top-5 h-[12px] w-[12px] rotate-56 bg-white text-lg font-bold" />
-                      <span className="absolute right-4 top-3 font-sans text-sm font-extrabold text-black">
+                    <div className="relative z-0 flex h-[70px] w-[70px] items-center justify-center rounded-3xl border-2 border-subtle bg-default text-emphasis">
+                      <ClockIcon size={28} className="text-emphasis" />
+                      <div className="absolute top-5 right-4 h-[12px] w-[12px] rotate-56 bg-default font-bold text-lg" />
+                      <span className="absolute top-3 right-4 font-extrabold font-sans text-emphasis text-sm">
                         z
                       </span>
                     </div>

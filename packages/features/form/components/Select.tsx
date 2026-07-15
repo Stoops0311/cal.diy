@@ -1,9 +1,8 @@
-import React, { useCallback, useEffect, useState } from "react";
-import type { GroupBase, Props, InputProps, SingleValue, MultiValue } from "react-select";
-import ReactSelect, { components } from "react-select";
-
 import { useGetTheme } from "@calcom/lib/hooks/useTheme";
 import classNames from "@calcom/ui/classNames";
+import React, { useCallback, useEffect, useState } from "react";
+import type { GroupBase, InputProps, MultiValue, Props, SingleValue } from "react-select";
+import ReactSelect, { components } from "react-select";
 
 export type SelectProps<
   Option,
@@ -80,7 +79,12 @@ function Select<
 
   // Till we know in JS the theme is ready, we can't render react-select as it would render with light theme instead
   if (!mounted) {
-    return <input type="text" className={className} />;
+    return (
+      <div
+        aria-hidden="true"
+        className={classNames("h-9 rounded-md border border-default bg-default", className)}
+      />
+    );
   }
 
   return (
@@ -170,6 +174,7 @@ export function SelectWithValidation<
       />
       {required && (
         <input
+          aria-hidden="true"
           tabIndex={-1}
           autoComplete="off"
           style={{

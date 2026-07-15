@@ -1,9 +1,5 @@
-import Link from "next/link";
-import { useState } from "react";
-import posthog from "posthog-js";
-
-import { InstallAppButtonWithoutPlanCheck } from "@calcom/app-store/InstallAppButtonWithoutPlanCheck";
 import type { TDependencyData } from "@calcom/app-store/_appRegistry";
+import { InstallAppButtonWithoutPlanCheck } from "@calcom/app-store/InstallAppButtonWithoutPlanCheck";
 import { WEBAPP_URL } from "@calcom/lib/constants";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
@@ -12,6 +8,10 @@ import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
 import { showToast } from "@calcom/ui/components/toast";
 import { ArrowRightIcon, CircleAlertIcon } from "@coss/ui/icons";
+import Link from "next/link";
+import posthog from "posthog-js";
+import { useState } from "react";
+import { normalizeAppBrandText } from "../../../modules/apps/lib/normalizeAppBrandText";
 
 interface IAppConnectionItem {
   title: string;
@@ -26,7 +26,7 @@ interface IAppConnectionItem {
 }
 
 const AppConnectionItem = (props: IAppConnectionItem) => {
-  const { title, logo, type, installed, isDefault, defaultInstall, slug } = props;
+  const { title, description, logo, type, installed, isDefault, defaultInstall, slug } = props;
   const { t } = useLocale();
   const utils = trpc.useUtils();
   const setDefaultConferencingApp = trpc.viewer.apps.setDefaultConferencingApp.useMutation({
@@ -43,14 +43,25 @@ const AppConnectionItem = (props: IAppConnectionItem) => {
   const [isInstalling, setInstalling] = useState(false);
 
   return (
-    <div className="flex flex-row items-center justify-between p-5">
-      <div className="flex items-center space-x-3">
+    <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-start gap-3">
         {/* eslint-disable @next/next/no-img-element */}
-        <img src={logo} alt={title} className="h-8 w-8" />
-        <p className="text-sm font-bold">{title}</p>
-        {isDefault && <Badge variant="green">{t("default")}</Badge>}
+        <div className="bg-subtle border-subtle flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border">
+          <img src={logo} alt="" className="h-6 w-6" />
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-emphasis text-sm font-semibold">{title}</p>
+            {isDefault && <Badge variant="green">{t("default")}</Badge>}
+          </div>
+          {description && (
+            <p className="text-subtle mt-1 line-clamp-2 text-sm leading-5">
+              {normalizeAppBrandText(description)}
+            </p>
+          )}
+        </div>
       </div>
-      <div className="flex items-center space-x-2">
+      <div className="flex shrink-0 items-center space-x-2 sm:pl-4">
         <InstallAppButtonWithoutPlanCheck
           type={type}
           options={{

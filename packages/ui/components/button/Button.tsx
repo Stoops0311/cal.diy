@@ -1,13 +1,12 @@
+import classNames from "@calcom/ui/classNames";
 import type { VariantProps } from "class-variance-authority";
 import { cva } from "class-variance-authority";
 import type { LinkProps } from "next/link";
 import Link from "next/link";
-import React, { forwardRef } from "react";
-
-import classNames from "@calcom/ui/classNames";
-
-import { Icon } from "../icon/Icon";
+import type React from "react";
+import { forwardRef } from "react";
 import type { IconName } from "../icon/Icon";
+import { Icon } from "../icon/Icon";
 import { Tooltip } from "../tooltip/Tooltip";
 
 type InferredVariantProps = VariantProps<typeof buttonClasses>;
@@ -40,13 +39,13 @@ export type ButtonProps = ButtonBaseProps &
   );
 
 export const buttonClasses = cva(
-  "group whitespace-nowrap inline-flex items-center text-sm font-medium relative rounded-[10px] transition cursor-pointer disabled:cursor-not-allowed gap-1",
+  "group whitespace-nowrap inline-flex items-center text-sm font-medium relative rounded-full transition cursor-pointer disabled:cursor-not-allowed gap-1",
   {
     variants: {
       variant: {
         button: "",
         icon: "flex justify-center",
-        fab: "min-w-14 min-h-14 md:min-w-min md:min-h-min rounded-full justify-center md:rounded-[10px] radix-state-open:rotate-45 md:radix-state-open:rotate-0 radix-state-open:shadown-none radix-state-open:ring-0",
+        fab: "min-w-14 min-h-14 md:min-w-min md:min-h-min rounded-full justify-center md:rounded-full radix-state-open:rotate-45 md:radix-state-open:rotate-0 radix-state-open:shadown-none radix-state-open:ring-0",
       },
       color: {
         primary: [
@@ -122,23 +121,24 @@ export const buttonClasses = cva(
         destructive: [
           // Base colors and border
           "border",
-          "border-default",
+          "border-semantic-error",
+          "bg-error",
           "text-error",
           // Hover state
-          "dark:hover:text-red-400",
-          "hover:border-semantic-error",
-          "hover:bg-error",
+          "not-disabled:hover:border-semantic-error",
+          "not-disabled:hover:bg-semantic-error-emphasis",
+          "not-disabled:hover:text-inverted",
           // Focus state
-          "focus-visible:text-red-700",
+          "focus-visible:text-error",
           "focus-visible:bg-error",
           "focus-visible:outline-none",
           "focus-visible:ring-0",
           "focus-visible:shadow-button-outline-red-focused",
           // Disabled state
-          "disabled:bg-red-100",
-          "disabled:border-red-200",
-          "disabled:text-red-700",
-          "disabled:hover:border-red-200",
+          "disabled:bg-error",
+          "disabled:border-semantic-error",
+          "disabled:text-error",
+          "disabled:hover:border-semantic-error",
           "disabled:opacity-30",
           // Shadows and effects
           "shadow-outline-red-rested",
@@ -149,7 +149,7 @@ export const buttonClasses = cva(
         ],
       },
       size: {
-        xs: "h-6 p-2 leading-none text-xs rounded-md",
+        xs: "h-6 p-2 leading-none text-xs rounded-full",
         sm: "h-7 px-2 py-1.5 leading-none text-sm" /** For backwards compatibility */,
         base: "px-2.5 py-2 text-sm leading-none",
         lg: "px-3 py-2.5 ",
@@ -181,8 +181,7 @@ export const buttonClasses = cva(
       {
         loading: true,
         color: "destructive",
-        className:
-          "text-red-700/30 dark:text-red-700/30 hover:text-red-700/30  border border-default text-emphasis",
+        className: "border border-default text-error opacity-30",
       },
       {
         variant: "icon",
@@ -192,12 +191,12 @@ export const buttonClasses = cva(
       {
         variant: "icon",
         size: "xs",
-        className: "h-5 w-5 p-1! rounded-md",
+        className: "h-5 w-5 p-1! rounded-full",
       },
       {
         variant: "icon",
         size: "sm",
-        className: "h-6 w-6 p-1! rounded-md",
+        className: "h-6 w-6 p-1! rounded-full",
       },
       {
         variant: "icon",
@@ -231,6 +230,7 @@ export const Button = forwardRef<HTMLAnchorElement | HTMLButtonElement, ButtonPr
     tooltipSide = "top",
     tooltipOffset = 4,
     tooltipClassName,
+    tooltip,
     StartIcon,
     CustomStartIcon,
     EndIcon,
@@ -242,6 +242,9 @@ export const Button = forwardRef<HTMLAnchorElement | HTMLButtonElement, ButtonPr
   const disabled = props.disabled || loading || false;
   // If pass an `href`-attr is passed it's Link, otherwise it's a `<button />`
   const isLink = typeof props.href !== "undefined";
+  const ariaLabel =
+    passThroughProps["aria-label"] ??
+    (variant === "icon" && typeof tooltip === "string" ? tooltip : undefined);
   const buttonClassName = classNames(buttonClasses({ color, size, loading, variant }), props.className);
   const handleClick = disabled
     ? (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
@@ -333,6 +336,7 @@ export const Button = forwardRef<HTMLAnchorElement | HTMLButtonElement, ButtonPr
       <Link
         {...(passThroughProps as Omit<JSX.IntrinsicElements["a"], "href" | "onClick" | "ref"> & LinkProps)}
         shallow={shallow && shallow}
+        aria-label={ariaLabel}
         className={buttonClassName}
         onClick={handleClick}>
         {buttonContent}
@@ -343,13 +347,14 @@ export const Button = forwardRef<HTMLAnchorElement | HTMLButtonElement, ButtonPr
   return (
     <Wrapper
       data-testid="wrapper"
-      tooltip={props.tooltip}
+      tooltip={tooltip}
       tooltipSide={tooltipSide}
       tooltipOffset={tooltipOffset}
       tooltipClassName={tooltipClassName}>
       <button
         {...(passThroughProps as Omit<JSX.IntrinsicElements["button"], "onClick" | "ref">)}
         ref={forwardedRef as React.Ref<HTMLButtonElement>}
+        aria-label={ariaLabel}
         disabled={disabled}
         type={type as "button" | "submit" | "reset"}
         className={buttonClassName}

@@ -1,17 +1,16 @@
 "use client";
 
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import classNames from "@calcom/ui/classNames";
 import Link from "next/link";
 import { useState } from "react";
-
-import classNames from "@calcom/ui/classNames";
-
 import type { BadgeProps } from "../badge";
 import { Badge } from "../badge";
 import { Button } from "../button";
-import { Dropdown, DropdownMenuTrigger, DropdownMenuContent, DropdownItem } from "../dropdown";
+import { Dropdown, DropdownItem, DropdownMenuContent, DropdownMenuTrigger } from "../dropdown";
 import { Input } from "../form/inputs/TextField";
-import { Icon } from "../icon";
 import type { IconName } from "../icon";
+import { Icon } from "../icon";
 
 type Action = { check: () => boolean; fn: () => void; color?: "destructive" | "minimal"; disabled?: boolean };
 
@@ -21,6 +20,7 @@ type FormCardActionsProps = {
 };
 
 const FormCardActions = ({ deleteField, duplicateField }: FormCardActionsProps) => {
+  const { t } = useLocale();
   type ActionItem = {
     label: string;
     icon: IconName;
@@ -31,12 +31,12 @@ const FormCardActions = ({ deleteField, duplicateField }: FormCardActionsProps) 
 
   const actions: ActionItem[] = [
     duplicateField?.fn && {
-      label: "Duplicate",
+      label: t("duplicate"),
       icon: "copy",
       onClick: () => duplicateField.fn(),
     },
     deleteField?.fn && {
-      label: "Delete",
+      label: t("delete"),
       icon: "trash",
       onClick: () => deleteField.fn(),
       color: deleteField.color ?? "minimal",
@@ -126,6 +126,7 @@ export default function FormCard({
   );
 
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { t } = useLocale();
 
   const toggleFormCard = () => {
     setIsCollapsed((prev) => !prev);
@@ -137,7 +138,8 @@ export default function FormCard({
         {moveUp?.check() ? (
           <button
             type="button"
-            className="bg-default text-muted hover:text-emphasis invisible -ml-2 mb-1 flex h-6 w-6 scale-0 items-center justify-center rounded-md border p-1 transition-all hover:border-transparent hover:shadow group-hover:visible group-hover:scale-100"
+            aria-label={t("move_up")}
+            className="bg-default text-muted hover:text-emphasis invisible -ml-2 mb-1 flex h-6 w-6 scale-0 items-center justify-center rounded-md border p-1 transition-[transform,color,border-color,box-shadow] hover:border-transparent hover:shadow group-hover:visible group-hover:scale-100"
             onClick={() => moveUp?.fn()}>
             <Icon name="arrow-up" />
           </button>
@@ -145,7 +147,8 @@ export default function FormCard({
         {moveDown?.check() ? (
           <button
             type="button"
-            className="bg-default text-muted hover:text-emphasis invisible -ml-2 flex h-6 w-6 scale-0 items-center justify-center rounded-md border p-1 transition-all hover:border-transparent hover:shadow group-hover:visible group-hover:scale-100"
+            aria-label={t("move_down")}
+            className="bg-default text-muted hover:text-emphasis invisible -ml-2 flex h-6 w-6 scale-0 items-center justify-center rounded-md border p-1 transition-[transform,color,border-color,box-shadow] hover:border-transparent hover:shadow group-hover:visible group-hover:scale-100"
             onClick={() => moveDown?.fn()}>
             <Icon name="arrow-down" />
           </button>

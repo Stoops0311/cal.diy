@@ -1,12 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "@calcom/ui/components/button";
 import { XIcon } from "@coss/ui/icons";
-
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useOnboardingStore } from "../store/onboarding-store";
 
 export const OnboardingContinuationPrompt = () => {
@@ -66,12 +64,14 @@ export const OnboardingContinuationPrompt = () => {
     <div className="animate-fade-in fixed bottom-4 right-4 z-50">
       <div className="bg-default border-muted shadow-default relative w-[360px] rounded-lg border p-4">
         <button
+          type="button"
+          aria-label={t("close")}
           onClick={() => setIsVisible(false)}
-          className="text-muted hover:text-emphasis absolute right-2 top-2 rounded-md p-1 transition-colors">
-          <XIcon className="h-4 w-4" />
+          className="text-muted hover:text-emphasis absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-md transition-colors">
+          <XIcon aria-hidden="true" className="h-4 w-4" />
         </button>
 
-        <div className="mb-3 pr-6">
+        <div className="mb-3 pr-8">
           <h3 className="text-emphasis mb-1 text-base font-semibold">
             {t("onboarding_continue_prompt_title")}
           </h3>

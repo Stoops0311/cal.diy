@@ -1,5 +1,6 @@
 "use client";
 
+import { type ActiveAppCategoryKeys, APP_CATEGORY_ENTRIES } from "@calcom/app-store/_utils/getAppCategories";
 import getAppCategoryTitle from "@calcom/app-store/_utils/getAppCategoryTitle";
 import { AppList, type HandleDisconnect } from "@calcom/features/apps/components/AppList";
 import type { UpdateUsersDefaultConferencingAppParams } from "@calcom/features/apps/components/AppSetDefaultLinkDialog";
@@ -20,7 +21,6 @@ import { CalendarListContainer } from "@components/apps/CalendarListContainer";
 import InstalledAppsLayout from "@components/apps/layouts/InstalledAppsLayout";
 import { QueryCell } from "@lib/QueryCell";
 import { useReducer } from "react";
-import { APP_CATEGORY_ENTRIES, ActiveAppCategoryKeys } from "@calcom/app-store/_utils/getAppCategories";
 
 interface IntegrationsContainerProps {
   variant?: AppCategories;
@@ -73,12 +73,12 @@ const IntegrationsContainer = ({
       { appSlug, appLink },
       {
         onSuccess: () => {
-          showToast("Default app updated successfully", "success");
+          showToast(t("default_app_updated_successfully"), "success");
           utils.viewer.apps.getUsersDefaultConferencingApp.invalidate();
           onSuccessCallback();
         },
         onError: (error) => {
-          showToast(`Error: ${error.message}`, "error");
+          showToast(t("default_app_update_failed", { error: error.message }), "error");
           onErrorCallback();
         },
       }
@@ -135,7 +135,7 @@ const IntegrationsContainer = ({
           );
         }
         return (
-          <div className="border-subtle rounded-md border p-7">
+          <div className="border-subtle border-t pt-6">
             <ShellSubHeading
               title={t(variant || "other")}
               subtitle={t(`installed_app_${variant || "other"}_description`)}

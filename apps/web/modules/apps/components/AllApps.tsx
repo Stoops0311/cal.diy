@@ -1,9 +1,5 @@
 "use client";
 
-import { useAutoAnimate } from "@formkit/auto-animate/react";
-import type { UIEvent } from "react";
-import { useEffect, useRef, useState } from "react";
-
 import type { UserAdminTeams } from "@calcom/features/users/repositories/UserRepository";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import type { AppCategories } from "@calcom/prisma/client";
@@ -12,7 +8,9 @@ import type { CredentialFrontendPayload as Credential } from "@calcom/types/Cred
 import classNames from "@calcom/ui/classNames";
 import { EmptyScreen } from "@calcom/ui/components/empty-screen";
 import { ChevronLeftIcon, ChevronRightIcon } from "@coss/ui/icons";
-
+import { useAutoAnimate } from "@formkit/auto-animate/react";
+import type { UIEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppCard } from "./AppCard";
 
 export function useShouldShowArrows() {
@@ -88,7 +86,11 @@ function CategoryTab({ selectedCategory, categories, searchText, onCategoryChang
             })}
       </h2>
       {leftVisible && (
-        <button onClick={handleLeft} className="absolute bottom-0 flex  lg:left-1/2">
+        <button
+          type="button"
+          aria-label={t("previous")}
+          onClick={handleLeft}
+          className="absolute bottom-0 flex rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emphasis lg:left-1/2">
           <div className="bg-default flex h-10 w-5 items-center justify-end">
             <ChevronLeftIcon className="text-subtle h-4 w-4" />
           </div>
@@ -99,36 +101,39 @@ function CategoryTab({ selectedCategory, categories, searchText, onCategoryChang
         className="no-scrollbar mt-3 flex max-w-full space-x-1 overflow-x-auto lg:mt-0 lg:max-w-[50%]"
         onScroll={(e) => calculateScroll(e)}
         ref={ref}>
-        <li
-          onClick={() => {
-            onCategoryChange(null);
-          }}
-          className={classNames(
-            selectedCategory === null ? "bg-emphasis text-default" : "bg-cal-muted text-emphasis",
-            "hover:bg-emphasis min-w-max rounded-md px-4 py-2.5 text-sm font-medium transition hover:cursor-pointer"
-          )}>
-          {t("all")}
+        <li className="min-w-max">
+          <button
+            type="button"
+            aria-pressed={selectedCategory === null}
+            onClick={() => onCategoryChange(null)}
+            className={classNames(
+              selectedCategory === null ? "bg-inverted text-inverted" : "bg-subtle text-emphasis",
+              "rounded-lg px-4 py-2.5 font-medium text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emphasis"
+            )}>
+            {t("all")}
+          </button>
         </li>
         {categories.map((cat, pos) => (
-          <li
-            key={pos}
-            onClick={() => {
-              if (selectedCategory === cat) {
-                onCategoryChange(null);
-              } else {
-                onCategoryChange(cat);
-              }
-            }}
-            className={classNames(
-              selectedCategory === cat ? "bg-emphasis text-default" : "bg-cal-muted text-emphasis",
-              "hover:bg-emphasis rounded-md px-4 py-2.5 text-sm font-medium transition hover:cursor-pointer"
-            )}>
-            {cat === "crm" ? cat.toUpperCase() : cat[0].toUpperCase() + cat.slice(1)}
+          <li key={pos} className="min-w-max">
+            <button
+              type="button"
+              aria-pressed={selectedCategory === cat}
+              onClick={() => onCategoryChange(selectedCategory === cat ? null : cat)}
+              className={classNames(
+                selectedCategory === cat ? "bg-inverted text-inverted" : "bg-subtle text-emphasis",
+                "rounded-lg px-4 py-2.5 font-medium text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emphasis"
+              )}>
+              {cat === "crm" ? cat.toUpperCase() : cat[0].toUpperCase() + cat.slice(1)}
+            </button>
           </li>
         ))}
       </ul>
       {rightVisible && (
-        <button onClick={handleRight} className="absolute bottom-0 right-0 flex ">
+        <button
+          type="button"
+          aria-label={t("next")}
+          onClick={handleRight}
+          className="absolute right-0 bottom-0 flex rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emphasis">
           <div className="to-default flex h-10 w-5 bg-linear-to-r from-transparent" />
           <div className="bg-default flex h-10 w-5 items-center justify-end">
             <ChevronRightIcon className="text-subtle h-4 w-4" />
@@ -158,15 +163,15 @@ export function AllApps({ apps, searchText, categories, userAdminTeams }: AllApp
           : app.category === selectedCategory
         : true
     )
-   .filter((app) =>
-  searchText
-    ? app.name
-        .toLowerCase()
-        .replace(/[\s\-_]/g, "")
-        .includes(searchText.toLowerCase().replace(/[\s\-_]/g, ""))
-    : true
-)
-    .sort(function (a, b) {
+    .filter((app) =>
+      searchText
+        ? app.name
+            .toLowerCase()
+            .replace(/[\s\-_]/g, "")
+            .includes(searchText.toLowerCase().replace(/[\s\-_]/g, ""))
+        : true
+    )
+    .sort((a, b) => {
       if (a.name < b.name) return -1;
       else if (a.name > b.name) return 1;
       return 0;
@@ -181,9 +186,7 @@ export function AllApps({ apps, searchText, categories, userAdminTeams }: AllApp
         onCategoryChange={handleCategoryChange}
       />
       {filteredApps.length ? (
-        <div
-          className="grid gap-3 lg:grid-cols-4 [@media(max-width:1270px)]:grid-cols-3 [@media(max-width:500px)]:grid-cols-1 [@media(max-width:730px)]:grid-cols-1"
-          ref={appsContainerRef}>
+        <div className="border-subtle divide-subtle divide-y border-b border-t" ref={appsContainerRef}>
           {filteredApps.map((app) => (
             <AppCard
               key={app.name}
@@ -192,7 +195,7 @@ export function AllApps({ apps, searchText, categories, userAdminTeams }: AllApp
               credentials={app.credentials}
               userAdminTeams={userAdminTeams}
             />
-          ))}{" "}
+          ))}
         </div>
       ) : (
         <EmptyScreen

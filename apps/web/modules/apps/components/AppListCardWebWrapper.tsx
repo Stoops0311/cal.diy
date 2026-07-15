@@ -1,13 +1,13 @@
 "use client";
 
+import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
+import { useTypedQuery } from "@calcom/lib/hooks/useTypedQuery";
+import type { AppListCardProps } from "@calcom/ui/components/app-list-card";
+import { AppListCard } from "@calcom/ui/components/app-list-card";
+import { normalizeAppBrandText } from "@calcom/web/modules/apps/lib/normalizeAppBrandText";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
-
-import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
-import { useTypedQuery } from "@calcom/lib/hooks/useTypedQuery";
-import { AppListCard } from "@calcom/ui/components/app-list-card";
-import type { AppListCardProps } from "@calcom/ui/components/app-list-card";
 
 const schema = z.object({ hl: z.string().optional() });
 
@@ -44,5 +44,11 @@ export default function AppListCardWebWrapper(props: AppListCardProps) {
     };
   }, [highlight, pathname, router, searchParams, shouldHighlight]);
 
-  return <AppListCard {...props} />;
+  return (
+    <AppListCard
+      {...props}
+      title={normalizeAppBrandText(props.title)}
+      description={props.description ? normalizeAppBrandText(props.description) : props.description}
+    />
+  );
 }

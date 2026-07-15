@@ -1,4 +1,4 @@
-import { CheckIcon, InfoIcon, XIcon } from "@coss/ui/icons";
+import { CheckIcon, InfoIcon, TriangleAlertIcon, XIcon } from "@coss/ui/icons";
 import classNames from "classnames";
 import type { ExternalToast } from "sonner";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ type IToast = {
 
 export const SuccessToast = ({ message, onClose, toastId }: IToast) => (
   <button
+    type="button"
     className={classNames(
       "data-testid-toast-success bg-default dark:bg-inverted text-emphasis dark:text-inverted shadow-elevation-low border-subtle mb-2 flex h-auto items-center justify-between space-x-2 rounded-lg border px-3 py-2.5 text-sm font-semibold rtl:space-x-reverse md:max-w-sm"
     )}
@@ -31,12 +32,13 @@ export const SuccessToast = ({ message, onClose, toastId }: IToast) => (
 
 export const ErrorToast = ({ message, onClose, toastId }: IToast) => (
   <button
+    type="button"
     className={classNames(
       "animate-fade-in-up bg-semantic-error-subtle text-semantic-error shadow-elevation-low border-semantic-error-subtle mb-2 flex h-auto items-center justify-between space-x-2 rounded-md border px-3 py-2.5 text-sm font-semibold rtl:space-x-reverse md:max-w-sm"
     )}
     onClick={() => onClose(toastId)}>
     <span>
-      <InfoIcon className="text-semantic-error  size-4" />
+      <TriangleAlertIcon className="text-semantic-error size-4" />
     </span>
     <div className="flex items-center">
       <p data-testid="toast-error" className="m-0 w-full text-left">
@@ -51,6 +53,7 @@ export const ErrorToast = ({ message, onClose, toastId }: IToast) => (
 
 export const WarningToast = ({ message, onClose, toastId }: IToast) => (
   <button
+    type="button"
     className={classNames(
       "animate-fade-in-up bg-semantic-attention-subtle text-semantic-attention shadow-elevation-low border-semantic-attention-subtle mb-2 flex h-auto items-center justify-between space-x-2 rounded-md border px-3 py-2.5 text-sm font-semibold rtl:space-x-reverse md:max-w-sm"
     )}
@@ -80,7 +83,8 @@ export function showToast(
 ) {
   const _options: ExternalToast = typeof options === "number" ? { duration: options } : options;
   if (!_options.duration) _options.duration = TOAST_VISIBLE_DURATION;
-  if (!_options.position) _options.position = "bottom-center";
+  // bottom-center would collide with the floating dock
+  if (!_options.position) _options.position = "bottom-right";
 
   const onClose = (toastId: string | number) => {
     toast.dismiss(toastId);

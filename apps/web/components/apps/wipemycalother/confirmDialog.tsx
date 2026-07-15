@@ -1,7 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
-import type { Dispatch, SetStateAction } from "react";
-import { useState } from "react";
-
+import process from "node:process";
 import dayjs from "@calcom/dayjs";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -9,8 +6,11 @@ import logger from "@calcom/lib/logger";
 import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
 import { DialogContent, DialogFooter, DialogHeader } from "@calcom/ui/components/dialog";
-import { ClockIcon } from "@coss/ui/icons";
 import { showToast } from "@calcom/ui/components/toast";
+import { ClockIcon } from "@coss/ui/icons";
+import { useMutation } from "@tanstack/react-query";
+import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 
 interface IConfirmDialogWipe {
   isOpenDialog: boolean;
@@ -28,20 +28,16 @@ const wipeMyCalAction = async (props: IWipeMyCalAction) => {
     initialDate,
     endDate,
   };
-  try {
-    const endpoint = "/api/integrations/wipemycalother/wipe";
-    return fetch(`${process.env.NEXT_PUBLIC_WEBAPP_URL}${endpoint}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      showToast("Error occurred while trying to cancel bookings", "error");
-    }
-  }
+  const endpoint = "/api/integrations/wipemycalother/wipe";
+  const response = await fetch(`${process.env.NEXT_PUBLIC_WEBAPP_URL}${endpoint}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(`Unable to cancel bookings: ${response.status}`);
+  return response;
 };
 
 export const ConfirmDialog = (props: IConfirmDialogWipe) => {
@@ -82,18 +78,18 @@ export const ConfirmDialog = (props: IConfirmDialogWipe) => {
     <Dialog open={isOpenDialog} onOpenChange={setIsOpenDialog}>
       <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
         <div className="flex flex-row space-x-3">
-          <div className="flex h-10 w-10 shrink-0 justify-center rounded-full bg-[#FAFAFA]">
+          <div className="border-subtle bg-default flex h-10 w-10 shrink-0 justify-center rounded-full border">
             <ClockIcon className="m-auto h-5 w-5" />
           </div>
           <div className="pt-1">
-            <DialogHeader title="Wipe My Calendar" />
+            <DialogHeader title={t("wipe_my_calendar")} />
             <p className="text-subtle mt-2 text-sm">
-              This will cancel all upcoming meetings from: <br />{" "}
+              {t("wipe_my_calendar_description")} <br />{" "}
               <strong className="text-emphasis">
                 {initialDate.format(dateFormat)} - {endDate.format(dateFormat)}
               </strong>
             </p>
-            <p className="mb-2 mt-6 text-sm">Are you sure? This can&apos;t be undone</p>
+            <p className="mb-2 mt-6 text-sm">{t("wipe_my_calendar_confirm")}</p>
           </div>
         </div>
 
@@ -103,7 +99,7 @@ export const ConfirmDialog = (props: IConfirmDialogWipe) => {
           </Button>
 
           <Button
-            color="primary"
+            color="destructive"
             data-testid="send_request"
             disabled={isPending}
             onClick={async () => {

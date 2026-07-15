@@ -1,9 +1,9 @@
 import dayjs from "@calcom/dayjs";
 import { useTimePreferences } from "@calcom/features/bookings/lib/timePreferences";
-import { TimezoneSelect } from "@calcom/web/modules/timezone/components/TimezoneSelect";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { DatePicker, SettingsToggle } from "@calcom/ui/components/form";
 import { DatePickerWithRange as DateRangePicker } from "@calcom/ui/components/form/date-range-picker/DateRangePicker";
+import { TimezoneSelect } from "@calcom/web/modules/timezone/components/TimezoneSelect";
 import { Button } from "@coss/ui/components/button";
 import {
   Dialog,
@@ -17,7 +17,7 @@ import {
 } from "@coss/ui/components/dialog";
 import { Label } from "@coss/ui/components/label";
 import { useIsMobile } from "@coss/ui/hooks/use-mobile";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { UseFormSetValue } from "react-hook-form";
 import type { FormValues } from "~/settings/my-account/general-view";
 
@@ -45,6 +45,11 @@ const TravelScheduleModal = ({
   const [isNoEndDate, setIsNoEndDate] = useState(false);
   const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalTarget(document.body);
+  }, []);
 
   const isOverlapping = (newSchedule: { startDate: Date; endDate?: Date }) => {
     const newStart = dayjs(newSchedule.startDate);
@@ -166,7 +171,7 @@ const TravelScheduleModal = ({
               id="timeZone"
               value={selectedTimeZone}
               onChange={({ value }) => setSelectedTimeZone(value)}
-              menuPortalTarget={typeof document === "undefined" ? undefined : document.body}
+              menuPortalTarget={portalTarget}
               menuPlacement={isMobile ? "top" : "auto"}
               styles={{ menuPortal: (base) => Object.assign({}, base, { zIndex: 9999 }) }}
               className="mb-11 mt-2 w-full rounded-md text-sm"

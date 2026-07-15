@@ -72,7 +72,7 @@ export default function RecurringEventController({
             <Alert
               className={classNames("mb-4", customClassNames?.experimentalAlert)}
               severity="warning"
-              title="Experimental: Recurring Events are currently experimental and causes some issues sometimes when checking for availability. We are working on fixing this."
+              title={t("recurring_events_experimental_description")}
             />
             <SettingsToggle
               labelClassName={classNames("text-sm", customClassNames?.recurringToggle?.label)}

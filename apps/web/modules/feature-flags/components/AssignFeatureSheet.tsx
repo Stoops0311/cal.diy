@@ -1,24 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-
 import { useDebounce } from "@calcom/lib/hooks/useDebounce";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
-import { trpc } from "@calcom/trpc/react";
 import type { RouterOutputs } from "@calcom/trpc/react";
+import { trpc } from "@calcom/trpc/react";
 import { Avatar } from "@calcom/ui/components/avatar";
 import { Button } from "@calcom/ui/components/button";
 import { Checkbox, TextField } from "@calcom/ui/components/form";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
-  SheetBody,
-  SheetFooter,
 } from "@calcom/ui/components/sheet";
 import { SkeletonContainer, SkeletonText } from "@calcom/ui/components/skeleton";
 import { showToast } from "@calcom/ui/components/toast";
+import { useEffect, useState } from "react";
 
 type Flag = RouterOutputs["viewer"]["features"]["list"][number];
 
@@ -97,14 +96,15 @@ export function AssignFeatureSheet({ flag, open, onOpenChange }: AssignFeatureSh
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
-      <SheetContent className="bg-cal-muted">
+      <SheetContent className="bg-subtle">
         <SheetHeader>
-          <SheetTitle>Assign: {flag.slug}</SheetTitle>
+          <SheetTitle>{t("assign_feature", { feature: flag.slug })}</SheetTitle>
         </SheetHeader>
         <SheetBody>
           <div className="mb-4">
             <TextField
               type="text"
+              label={t("search_teams")}
               placeholder={t("search")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -122,12 +122,9 @@ export function AssignFeatureSheet({ flag, open, onOpenChange }: AssignFeatureSh
             <>
               <div className="stack-y-2">
                 {teams.map((team) => (
-                  <button
+                  <div
                     key={team.id}
-                    type="button"
-                    onClick={() => handleToggleTeam(team.id, team.hasFeature)}
-                    disabled={isLoading}
-                    className="bg-default border-subtle hover:bg-cal-muted flex w-full items-center justify-between rounded-lg border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50">
+                    className="flex w-full items-center justify-between rounded-2xl border border-subtle bg-default p-4 text-left transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         {team.isOrganization ? (
@@ -173,8 +170,13 @@ export function AssignFeatureSheet({ flag, open, onOpenChange }: AssignFeatureSh
                         )}
                       </div>
                     </div>
-                    <Checkbox checked={team.hasFeature} disabled={isLoading} onCheckedChange={() => {}} />
-                  </button>
+                    <Checkbox
+                      checked={team.hasFeature}
+                      disabled={isLoading}
+                      aria-label={t("assign_feature_to_team", { feature: flag.slug, team: team.name })}
+                      onCheckedChange={() => handleToggleTeam(team.id, team.hasFeature)}
+                    />
+                  </div>
                 ))}
               </div>
               {hasNextPage && (

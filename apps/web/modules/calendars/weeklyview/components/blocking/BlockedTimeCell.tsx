@@ -1,16 +1,11 @@
-import classNames from "@calcom/ui/classNames";
-
 export function BlockedTimeCell() {
   return (
     <div
-      className={classNames(
-        "group absolute inset-0 flex h-full flex-col  hover:cursor-not-allowed",
-        "[--disabled-gradient-background:#E5E7EB] [--disabled-gradient-foreground:#D1D5DB] dark:[--disabled-gradient-background:#262626] dark:[--disabled-gradient-foreground:#393939]"
-      )}
+      className="group absolute inset-0 flex h-full flex-col hover:cursor-not-allowed"
       style={{
-        backgroundColor: "#D1D5DB",
+        backgroundColor: "var(--cal-bg-subtle)",
         background:
-          "repeating-linear-gradient( -45deg, var(--disabled-gradient-background), var(--disabled-gradient-background) 2.5px, var(--disabled-gradient-foreground) 2.5px, var(--disabled-gradient-foreground) 6.5px )",
+          "repeating-linear-gradient(-45deg, var(--cal-bg-subtle), var(--cal-bg-subtle) 2.5px, var(--cal-bg-muted) 2.5px, var(--cal-bg-muted) 6.5px)",
       }}
     />
   );

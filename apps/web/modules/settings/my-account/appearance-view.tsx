@@ -150,8 +150,11 @@ const AppearanceView = ({
   });
 
   return (
-    <SettingsHeader title={t("appearance")} description={t("appearance_description")}>
-      <div className="border-subtle mt-6 flex items-center rounded-t-lg border p-6 text-sm">
+    <SettingsHeader
+      eyebrow={t("my_account")}
+      title={t("appearance")}
+      description={t("appearance_description")}>
+      <div className="flex items-center text-sm">
         <div>
           <p className="text-default text-base font-semibold">{t("app_theme")}</p>
           <p className="text-default">{t("app_theme_applies_note")}</p>
@@ -165,7 +168,7 @@ const AppearanceView = ({
             appTheme,
           });
         }}>
-        <div className="border-subtle flex flex-col justify-between border-x px-6 py-8 sm:flex-row">
+        <div className="flex flex-col justify-between py-8 sm:flex-row">
           <ThemeLabel
             variant="system"
             value="system"
@@ -205,7 +208,7 @@ const AppearanceView = ({
 
       {isApartOfOrganization ? null : (
         <>
-          <div className="border-subtle mt-6 flex items-center rounded-t-lg border p-6 text-sm">
+          <div className="mt-8 flex items-center text-sm">
             <div>
               <p className="text-default text-base font-semibold">{t("theme")}</p>
               <p className="text-default">{t("theme_applies_note")}</p>
@@ -224,7 +227,7 @@ const AppearanceView = ({
                 theme: null,
               });
             }}>
-            <div className="border-subtle flex flex-col justify-between border-x px-6 py-8 sm:flex-row">
+            <div className="flex flex-col justify-between py-8 sm:flex-row">
               <ThemeLabel
                 variant="system"
                 value="system"
@@ -302,7 +305,7 @@ const AppearanceView = ({
                   }
                 }}
                 childrenClassName="lg:ml-0">
-                <div className="border-subtle flex flex-col gap-6 border-x p-6">
+                <div className="flex flex-col gap-6 py-6">
                   <Controller
                     name="brandColor"
                     control={brandColorsFormMethods.control}

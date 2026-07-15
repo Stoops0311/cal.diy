@@ -1,15 +1,14 @@
-import type {
-  QueryObserverPendingResult,
-  QueryObserverRefetchErrorResult,
-  QueryObserverSuccessResult,
-  QueryObserverLoadingErrorResult,
-  UseQueryResult,
-} from "@tanstack/react-query";
-import type { ReactNode } from "react";
-
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Alert } from "@calcom/ui/components/alert";
 import { Loader } from "@calcom/ui/components/skeleton";
+import type {
+  QueryObserverLoadingErrorResult,
+  QueryObserverPendingResult,
+  QueryObserverRefetchErrorResult,
+  QueryObserverSuccessResult,
+  UseQueryResult,
+} from "@tanstack/react-query";
+import type { ReactNode } from "react";
 
 type ErrorLike = {
   message: string;
@@ -50,7 +49,7 @@ export function QueryCell<TData, TError extends ErrorLike>(
   opts: QueryCellOptionsNoEmpty<TData, TError> | QueryCellOptionsWithEmpty<TData, TError>
 ) {
   const { query } = opts;
-  const { isLocaleReady } = useLocale();
+  const { isLocaleReady, t } = useLocale();
   const StatusLoader = opts.customLoader || <Loader />; // Fixes edge case where this can return null form query cell
 
   if (!isLocaleReady) {
@@ -64,14 +63,13 @@ export function QueryCell<TData, TError extends ErrorLike>(
     if ("empty" in opts && (query.data == null || (Array.isArray(query.data) && query.data.length === 0))) {
       return opts.empty(query);
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return opts.success(query as any);
+    return opts.success(query as QueryObserverSuccessResult<NonNullable<TData>, TError>);
   }
 
   if (query.status === "error") {
     return (
       opts.error?.(query) ?? (
-        <Alert severity="error" title="Something went wrong" message={query.error.message} />
+        <Alert severity="error" title={t("something_went_wrong")} message={query.error.message} />
       )
     );
   }

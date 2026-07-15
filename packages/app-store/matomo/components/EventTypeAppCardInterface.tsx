@@ -1,12 +1,17 @@
-import { useAppContextWithSchema } from "@calcom/app-store/EventTypeAppContext";
 import AppCard from "@calcom/app-store/_components/AppCard";
 import useIsAppEnabled from "@calcom/app-store/_utils/useIsAppEnabled";
+import { useAppContextWithSchema } from "@calcom/app-store/EventTypeAppContext";
 import type { EventTypeAppCardComponent } from "@calcom/app-store/types";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { TextField } from "@calcom/ui/components/form";
-
 import type { appDataSchema } from "../zod";
 
-const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({ app, eventType, onAppInstallSuccess }) {
+const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({
+  app,
+  eventType,
+  onAppInstallSuccess,
+}) {
+  const { t } = useLocale();
   const { getAppData, setAppData, disabled } = useAppContextWithSchema<typeof appDataSchema>();
   const matomoUrl = getAppData("MATOMO_URL");
   const siteId = getAppData("SITE_ID");
@@ -25,8 +30,9 @@ const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({ 
       <div className="flex flex-col gap-2">
         <TextField
           dataTestid={`${app.slug}-url`}
-          name="Matomo URL"
-          placeholder="Enter your Matomo URL here"
+          name="matomoUrl"
+          label={t("matomo_url")}
+          placeholder={t("matomo_url_placeholder")}
           value={matomoUrl}
           disabled={disabled}
           onChange={(e) => {
@@ -36,8 +42,9 @@ const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({ 
         <TextField
           dataTestid={`${app.slug}-site-id`}
           disabled={disabled}
-          name="Site ID"
-          placeholder="Enter your Site ID"
+          name="siteId"
+          label={t("site_id")}
+          placeholder={t("site_id_placeholder")}
           value={siteId}
           onChange={(e) => {
             setAppData("SITE_ID", e.target.value);

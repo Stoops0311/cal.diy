@@ -3,8 +3,8 @@
 import { useCurrentAuthActions } from "@calcom/features/auth/lib/useCurrentAuthActions";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "@calcom/ui/components/button";
-import { Logo } from "@calcom/ui/components/logo";
 import type { ReactNode } from "react";
+import { ConvenioMark } from "../../../auth/components/AuthShell";
 
 type OnboardingLayoutProps = {
   userEmail: string;
@@ -24,17 +24,22 @@ export const OnboardingLayout = ({ userEmail, currentStep, children }: Onboardin
     <div className="bg-default flex min-h-screen w-full flex-col items-start overflow-clip rounded-xl">
       {/* Header */}
       <div className="flex w-full items-center justify-between px-6 py-4">
-        <Logo className="h-5 w-auto" />
+        <div className="text-emphasis flex items-center gap-2.5">
+          <ConvenioMark className="h-6 w-6" />
+          <span className="font-cal text-base tracking-tight">Convenio</span>
+        </div>
 
-        {/* Progress dots - centered */}
-        <div className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center gap-1">
+        {/* Numbered progress — mono, the sequence carries the information */}
+        <div className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center gap-3 font-mono text-[11px] tracking-[0.14em]">
           {[1, 2, 3, 4].map((step) => (
-            <div
+            <span
               key={step}
-              className={`bg-${step <= currentStep ? "emphasis" : "subtle"} ${
-                step === currentStep ? "h-1.5 w-1.5" : "h-1 w-1"
-              } rounded-full`}
-            />
+              aria-label={t("step_of", { step, total: 4 })}
+              className={
+                step === currentStep ? "text-emphasis" : step < currentStep ? "text-subtle" : "text-muted"
+              }>
+              {String(step).padStart(2, "0")}
+            </span>
           ))}
         </div>
 

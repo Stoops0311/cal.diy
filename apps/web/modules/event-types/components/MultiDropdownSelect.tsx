@@ -1,8 +1,8 @@
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import { Select } from "@calcom/ui/components/form";
+import { Icon } from "@calcom/ui/components/icon";
 import type { CSSObjectWithLabel, GroupBase, Props, ValueContainerProps } from "react-select";
 import { components } from "react-select";
-
-import { Icon } from "@calcom/ui/components/icon";
-import { Select } from "@calcom/ui/components/form";
 
 // Helper to merge react-select styles with type safety
 const mergeStyles = (base: CSSObjectWithLabel, overrides: Record<string, unknown>): CSSObjectWithLabel => {
@@ -13,6 +13,7 @@ const LimitedChipsContainer = <Option, IsMulti extends boolean, Group extends Gr
   children,
   ...props
 }: ValueContainerProps<Option, IsMulti, Group>) => {
+  const { t } = useLocale();
   if (!props.hasValue) {
     return <components.ValueContainer {...props}>{children as React.ReactNode[]}</components.ValueContainer>;
   }
@@ -30,7 +31,9 @@ const LimitedChipsContainer = <Option, IsMulti extends boolean, Group extends Gr
         <span className="bg-subtle text-default flex items-center justify-center rounded-md px-2 py-[5px] text-[14px] font-medium leading-4">
           <>
             <Icon name="plus" className="mr-1 inline h-3 w-3 stroke-[3px]" />{" "}
-            <span>{overflowCounter} more</span>
+            <span>
+              {overflowCounter} {t("more").toLowerCase()}
+            </span>
           </>
         </span>
       )}
@@ -40,15 +43,15 @@ const LimitedChipsContainer = <Option, IsMulti extends boolean, Group extends Gr
 };
 
 export const MultiDropdownSelect = ({ options = [], value = [], ...props }: Props) => {
-  // const { t } = useLocale();
+  const { t } = useLocale();
 
   return (
     <Select
       styles={{
         multiValue: (base) =>
           mergeStyles(base, {
-            backgroundColor: "#F3F4F6",
-            color: "#374151",
+            backgroundColor: "var(--cal-bg-subtle)",
+            color: "var(--cal-text)",
             borderRadius: "6px",
             padding: "5px 8px",
             gap: "8px",
@@ -65,7 +68,7 @@ export const MultiDropdownSelect = ({ options = [], value = [], ...props }: Prop
           }),
         multiValueRemove: (base) =>
           mergeStyles(base, {
-            color: "#4B5563",
+            color: "var(--cal-text-subtle)",
             padding: "0",
             ":hover": {
               background: "transparent",
@@ -95,7 +98,7 @@ export const MultiDropdownSelect = ({ options = [], value = [], ...props }: Prop
       }}
       className="cal-multiselect"
       classNamePrefix="cal-multiselect"
-      placeholder="Select"
+      placeholder={t("select")}
       defaultValue={value}
       options={options}
       hideSelectedOptions={false}

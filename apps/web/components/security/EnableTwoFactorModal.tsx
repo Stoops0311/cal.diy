@@ -1,7 +1,3 @@
-import type { BaseSyntheticEvent } from "react";
-import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-
 import { ErrorCode } from "@calcom/features/auth/lib/ErrorCode";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useCallbackRef } from "@calcom/lib/hooks/useCallbackRef";
@@ -9,9 +5,11 @@ import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "@calcom/ui/components/button";
 import { DialogContent } from "@calcom/ui/components/dialog";
 import { Form } from "@calcom/ui/components/form";
-
 import TwoFactor from "@components/auth/TwoFactor";
-
+import type React from "react";
+import type { BaseSyntheticEvent } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import TwoFactorAuthAPI from "./TwoFactorAuthAPI";
 import TwoFactorModalHeader from "./TwoFactorModalHeader";
 
@@ -144,7 +142,7 @@ const EnableTwoFactorModal = ({ onEnable, onCancel }: EnableTwoFactorModalProps)
 
   return (
     <Dialog open={true}>
-      <DialogContent>
+      <DialogContent type={null} title={t("enable_2fa")}>
         <TwoFactorModalHeader title={t("enable_2fa")} description={setupDescriptions[step]} />
 
         <WithStep step={SetupStep.ConfirmPassword} current={step}>
@@ -165,7 +163,7 @@ const EnableTwoFactorModal = ({ onEnable, onCancel }: EnableTwoFactorModalProps)
                 />
               </div>
 
-              {errorMessage && <p className="mt-1 text-sm text-red-700">{errorMessage}</p>}
+              {errorMessage && <p className="text-error mt-1 text-sm">{errorMessage}</p>}
             </div>
           </form>
         </WithStep>
@@ -185,7 +183,7 @@ const EnableTwoFactorModal = ({ onEnable, onCancel }: EnableTwoFactorModalProps)
             <div className="mb-4">
               <TwoFactor center />
 
-              {errorMessage && <p className="mt-1 text-sm text-red-700">{errorMessage}</p>}
+              {errorMessage && <p className="text-error mt-1 text-sm">{errorMessage}</p>}
             </div>
           </WithStep>
 

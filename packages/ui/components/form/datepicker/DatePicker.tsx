@@ -1,8 +1,7 @@
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import classNames from "@calcom/ui/classNames";
 import * as Popover from "@radix-ui/react-popover";
 import { format } from "date-fns";
-
-import classNames from "@calcom/ui/classNames";
-
 import { Button } from "../../button/Button";
 import { Calendar } from "../date-range-picker/Calendar";
 
@@ -16,6 +15,7 @@ type Props = {
 };
 
 const DatePicker = ({ minDate, disabled, date, onDatesChange, className, label }: Props) => {
+  const { t } = useLocale();
   function handleDayClick(newDate: Date) {
     onDatesChange?.(newDate ?? new Date());
   }
@@ -44,17 +44,16 @@ const DatePicker = ({ minDate, disabled, date, onDatesChange, className, label }
             color="secondary"
             EndIcon="calendar"
             className={classNames("justify-between text-left font-normal", !date && "text-subtle")}>
-            {label ?? (date ? <>{format(date, "LLL dd, y")}</> : <span>Pick a date</span>)}
+            {label ?? (date ? <>{format(date, "LLL dd, y")}</> : <span>{t("pick_a_date")}</span>)}
           </Button>
         </Popover.Trigger>
         <Popover.Portal>
-        <Popover.Content
-          className="bg-default text-emphasis z-50 w-auto rounded-md border p-0 outline-none"
-          align="start"
-          sideOffset={4}
-          >
-          {calendar}
-        </Popover.Content>
+          <Popover.Content
+            className="border-subtle bg-subtle text-emphasis z-50 w-auto rounded-xl border p-0 shadow-xl outline-none"
+            align="start"
+            sideOffset={4}>
+            {calendar}
+          </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
     </div>

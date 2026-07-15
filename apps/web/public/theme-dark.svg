@@ -15,7 +15,7 @@
   </g>
   <defs>
     <radialGradient id="b" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="rotate(145.4 103.67 32.3) scale(465.773 828.954)">
-      <stop stop-color="#282E39"/>
+      <stop stop-color="#292929"/>
       <stop offset="1" stop-color="#D4D4D5"/>
     </radialGradient>
     <clipPath id="a">

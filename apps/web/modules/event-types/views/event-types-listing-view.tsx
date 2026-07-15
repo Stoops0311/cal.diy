@@ -14,7 +14,6 @@ import { localStorage } from "@calcom/lib/webstorage";
 import { MembershipRole, SchedulingType } from "@calcom/prisma/enums";
 import type { RouterOutputs } from "@calcom/trpc/react";
 import { trpc } from "@calcom/trpc/react";
-import classNames from "@calcom/ui/classNames";
 import { ArrowButton } from "@calcom/ui/components/arrow-button";
 import { UserAvatarGroup } from "@calcom/ui/components/avatar";
 import { Badge } from "@calcom/ui/components/badge";
@@ -189,6 +188,12 @@ const Item = ({
 
   const content = (): JSX.Element => (
     <div>
+      {eventTypeColor && (
+        <span
+          className="mr-2 inline-block h-2 w-2 shrink-0 rounded-full align-middle"
+          style={{ backgroundColor: eventTypeColor }}
+        />
+      )}
       <span
         className="break-words font-semibold text-default ltr:mr-1 rtl:ml-1"
         data-testid={`event-type-title-${type.id}`}>
@@ -202,7 +207,7 @@ const Item = ({
         </small>
       ) : null}
       {!isManagedEventType && type.hidden && (
-        <span className="ml-2 text-gray-400 text-sm sm:hidden">{t("hidden")}</span>
+        <span className="ml-2 text-subtle text-sm sm:hidden">{t("hidden")}</span>
       )}
       {readOnly && (
         <Badge variant="gray" className="ml-2" data-testid="readonly-badge">
@@ -211,7 +216,7 @@ const Item = ({
       )}
       {showAssignedBadge && (
         <Tooltip content={t("you_are_assigned_to_this_event")}>
-          <Badge variant="blue" className="ml-2" data-testid="assigned-badge">
+          <Badge variant="gray" className="ml-2" data-testid="assigned-badge">
             {t("assigned")}
           </Badge>
         </Tooltip>
@@ -220,57 +225,24 @@ const Item = ({
   );
 
   return (
-    <div className={classNames(eventTypeColor && "-ml-3", "relative flex-1 overflow-hidden pr-4 text-sm")}>
-      {eventTypeColor && (
-        <div className="absolute h-full w-0.5" style={{ backgroundColor: eventTypeColor }} />
+    <div className="relative flex-1 overflow-hidden pr-4 text-sm">
+      {readOnly ? (
+        <div>
+          {content()}
+          <EventTypeDescription eventType={type} shortenDescription />
+        </div>
+      ) : (
+        <Link href={`/event-types/${type.id}?tabName=setup`} title={type.title}>
+          {content()}
+          <EventTypeDescription
+            eventType={{
+              ...type,
+              descriptionAsSafeHTML: type.safeDescription,
+            }}
+            shortenDescription
+          />
+        </Link>
       )}
-      <div className={classNames(eventTypeColor && "ml-3")}>
-        {readOnly ? (
-          <div>
-            {content()}
-            <EventTypeDescription eventType={type} shortenDescription />
-          </div>
-        ) : (
-          <Link href={`/event-types/${type.id}?tabName=setup`} title={type.title}>
-            <div>
-              <span
-                className="break-words font-semibold text-default ltr:mr-1 rtl:ml-1"
-                data-testid={`event-type-title-${type.id}`}>
-                {type.title}
-              </span>
-              {group.profile.slug && type.schedulingType !== SchedulingType.MANAGED ? (
-                <small
-                  className="hidden font-normal text-subtle leading-4 sm:inline"
-                  data-testid={`event-type-slug-${type.id}`}>
-                  {`/${group.profile.slug}/${type.slug}`}
-                </small>
-              ) : null}
-              {!isManagedEventType && type.hidden && (
-                <span className="ml-2 text-gray-400 text-sm sm:hidden">{t("hidden")}</span>
-              )}
-              {readOnly && (
-                <Badge variant="gray" className="ml-2" data-testid="readonly-badge">
-                  {t("readonly")}
-                </Badge>
-              )}
-              {showAssignedBadge && (
-                <Tooltip content={t("you_are_assigned_to_this_event")}>
-                  <Badge variant="blue" className="ml-2" data-testid="assigned-badge">
-                    {t("assigned")}
-                  </Badge>
-                </Tooltip>
-              )}
-            </div>
-            <EventTypeDescription
-              eventType={{
-                ...type,
-                descriptionAsSafeHTML: type.safeDescription,
-              }}
-              shortenDescription
-            />
-          </Link>
-        )}
-      </div>
     </div>
   );
 };
@@ -301,8 +273,7 @@ export const InfiniteEventTypeList = ({
 
   const utils = trpc.useUtils();
   const mutation = trpc.viewer.loggedInViewerRouter.eventTypeOrder.useMutation({
-    onError: async (err) => {
-      console.error(err.message);
+    onError: async () => {
       // REVIEW: Should we invalidate the entire router or just the `getByViewer` query?
       await utils.viewer.eventTypes.getEventTypesFromGroup.cancel();
     },
@@ -411,9 +382,26 @@ export const InfiniteEventTypeList = ({
       );
     }
 
-    mutation.mutate({
-      ids: newOrder.flatMap((page) => page.eventTypes.map((type) => type.id)),
-    });
+    mutation.mutate(
+      {
+        ids: newOrder.flatMap((page) => page.eventTypes.map((type) => type.id)),
+      },
+      {
+        onError: () => {
+          if (previousValue) {
+            utils.viewer.eventTypes.getEventTypesFromGroup.setInfiniteData(
+              {
+                limit: LIMIT,
+                searchQuery: debouncedSearchTerm,
+                group: { teamId: group?.teamId, parentId: group?.parentId },
+              },
+              () => previousValue
+            );
+          }
+          showToast(t("something_went_wrong"), "error");
+        },
+      }
+    );
   }
 
   async function deleteEventTypeHandler(id: number): Promise<void> {
@@ -534,8 +522,11 @@ export const InfiniteEventTypeList = ({
   });
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-md border border-subtle bg-default">
-      <ul ref={parent} className="static! w-full divide-y divide-subtle" data-testid="event-types">
+    <div className="flex flex-col">
+      <ul
+        ref={parent}
+        className="static! w-full divide-y divide-subtle border-y border-subtle"
+        data-testid="event-types">
         {pages.map((page, pageIdx) => {
           return page?.eventTypes?.map((type, index) => {
             const embedLink = `${group.profile.slug}/${type.slug}`;
@@ -596,7 +587,7 @@ export const InfiniteEventTypeList = ({
                         <div className="flex items-center justify-between space-x-2 rtl:space-x-reverse">
                           {!isManagedEventType && (
                             <>
-                              {type.hidden && <span className="text-gray-400 text-sm">{t("hidden")}</span>}
+                              {type.hidden && <span className="text-subtle text-sm">{t("hidden")}</span>}
                               <Tooltip
                                 content={
                                   type.hidden ? t("show_eventtype_on_profile") : t("hide_from_profile")
@@ -749,6 +740,26 @@ export const InfiniteEventTypeList = ({
                       </DropdownMenuTrigger>
                       <DropdownMenuPortal>
                         <DropdownMenuContent>
+                          {!(firstItem && firstItem.id === type.id) && (
+                            <DropdownMenuItem className="outline-none">
+                              <DropdownItem
+                                onClick={() => moveEventType(LIMIT * pageIdx + index, -1)}
+                                StartIcon="arrow-up"
+                                className="w-full rounded-none">
+                                {t("move_up")}
+                              </DropdownItem>
+                            </DropdownMenuItem>
+                          )}
+                          {!(lastItem && lastItem.id === type.id) && (
+                            <DropdownMenuItem className="outline-none">
+                              <DropdownItem
+                                onClick={() => moveEventType(LIMIT * pageIdx + index, 1)}
+                                StartIcon="arrow-down"
+                                className="w-full rounded-none">
+                                {t("move_down")}
+                              </DropdownItem>
+                            </DropdownMenuItem>
+                          )}
                           {!isManagedEventType && (
                             <>
                               <DropdownMenuItem className="outline-none">
@@ -930,9 +941,7 @@ const CTA = ({ profileOptions }: { profileOptions: ProfileOption[] }) => {
         }}
         placeholder={t("search")}
       />
-      <Button
-        data-testid="new-event-type"
-        href={`?dialog=new&eventPage=${profileOptions[0]?.slug ?? ""}`}>
+      <Button data-testid="new-event-type" href={`?dialog=new&eventPage=${profileOptions[0]?.slug ?? ""}`}>
         {t("new")}
       </Button>
       <CreateEventTypeDialog profileOptions={profileOptions} />

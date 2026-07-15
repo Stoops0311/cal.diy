@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-
+import process from "node:process";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
 import { showToast } from "@calcom/ui/components/toast";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 interface WebPushContextProps {
   permission: NotificationPermission;
@@ -20,6 +21,7 @@ interface ProviderProps {
 }
 
 export function WebPushProvider({ children }: ProviderProps) {
+  const { t } = useLocale();
   const [permission, setPermission] = useState<NotificationPermission>(() =>
     typeof window !== "undefined" && "Notification" in window ? Notification.permission : "denied"
   );
@@ -67,7 +69,7 @@ export function WebPushProvider({ children }: ProviderProps) {
             });
             addSubscription({ subscription: JSON.stringify(subscription) });
             setIsSubscribed(true);
-            showToast("Notifications enabled successfully", "success");
+            showToast(t("notifications_enabled_successfully"), "success");
           }
         } catch (error) {
           console.error("Failed to subscribe:", error);
@@ -76,9 +78,9 @@ export function WebPushProvider({ children }: ProviderProps) {
             error.name === "InvalidAccessError" &&
             error.message.includes("applicationServerKey")
           ) {
-            showToast("Please enable Google services for push messaging and try again", "error");
+            showToast(t("enable_google_services_for_push"), "error");
           } else {
-            showToast("Failed to enable notifications", "error");
+            showToast(t("failed_to_enable_notifications"), "error");
           }
         } finally {
           setIsLoading(false);
@@ -94,17 +96,17 @@ export function WebPushProvider({ children }: ProviderProps) {
             await subscription.unsubscribe();
             removeSubscription({ subscription: subscriptionJson });
             setIsSubscribed(false);
-            showToast("Notifications disabled successfully", "success");
+            showToast(t("notifications_disabled_successfully"), "success");
           }
         } catch (error) {
           console.error("Failed to unsubscribe:", error);
-          showToast("Failed to disable notifications", "error");
+          showToast(t("failed_to_disable_notifications"), "error");
         } finally {
           setIsLoading(false);
         }
       },
     }),
-    [permission, isLoading, isSubscribed, pushManager, addSubscription, removeSubscription]
+    [permission, isLoading, isSubscribed, pushManager, addSubscription, removeSubscription, t]
   );
 
   return <WebPushContext.Provider value={contextValue}>{children}</WebPushContext.Provider>;
@@ -112,7 +114,7 @@ export function WebPushProvider({ children }: ProviderProps) {
 
 const urlB64ToUint8Array = (base64String: string) => {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; ++i) {

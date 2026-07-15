@@ -30,6 +30,7 @@ import type { FC } from "react";
 import { useReducer, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
+import { normalizeAppBrandText } from "../lib/normalizeAppBrandText";
 
 type App = RouterOutputs["viewer"]["apps"]["listLocal"][number];
 
@@ -43,6 +44,7 @@ const IntegrationContainer = ({
   handleModelOpen: (data: EditModalState) => void;
 }) => {
   const { t } = useLocale();
+  const displayAppName = normalizeAppBrandText(app.name);
   const utils = trpc.useUtils();
   const [disableDialog, setDisableDialog] = useState(false);
 
@@ -56,7 +58,7 @@ const IntegrationContainer = ({
         type: app.type,
         isOpen: "editKeys",
         fromEnabled,
-        appName: app.name,
+        appName: displayAppName,
       });
     }
   };
@@ -66,7 +68,9 @@ const IntegrationContainer = ({
       utils.viewer.apps.listLocal.invalidate({ category });
       setDisableDialog(false);
       showToast(
-        enabled ? t("app_is_enabled", { appName: app.name }) : t("app_is_disabled", { appName: app.name }),
+        enabled
+          ? t("app_is_enabled", { appName: displayAppName })
+          : t("app_is_disabled", { appName: displayAppName }),
         "success"
       );
       if (enabled) {
@@ -88,12 +92,18 @@ const IntegrationContainer = ({
         actions={
           <div className="flex items-center justify-self-end">
             {app.keys && (
-              <Button color="secondary" className="mr-2" onClick={() => showKeyModal()}>
+              <Button
+                color="secondary"
+                variant="icon"
+                tooltip={t("edit")}
+                className="mr-2"
+                onClick={() => showKeyModal()}>
                 <PencilIcon />
               </Button>
             )}
 
             <Switch
+              aria-label={app.enabled ? t("disable_app") : t("enable_app")}
               checked={app.enabled}
               onClick={() => {
                 if (app.enabled) {
@@ -173,16 +183,19 @@ const AdminAppsList = ({
         }}>
         <AdminAppsListContainer />
       </AppCategoryNavigation>
-      <div className="flex justify-end gap-2 px-4 py-4">
-        {nav && (
-          <Button type="button" color="secondary" onClick={nav.onPrev}>
-            {t("prev_step")}
+      {/* Footer only exists for the onboarding/installation reuse; the admin page has no submit action */}
+      {(nav || onSubmit !== noop) && (
+        <div className="flex justify-end gap-2 px-4 py-4">
+          {nav && (
+            <Button type="button" color="secondary" onClick={nav.onPrev}>
+              {t("prev_step")}
+            </Button>
+          )}
+          <Button type="submit" color="primary">
+            {t("finish")}
           </Button>
-        )}
-        <Button type="submit" color="primary">
-          {t("finish")}
-        </Button>
-      </div>
+        </div>
+      )}
     </form>
   );
 };

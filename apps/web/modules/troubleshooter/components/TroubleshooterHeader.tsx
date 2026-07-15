@@ -1,11 +1,9 @@
-import { useMemo } from "react";
-
 import dayjs from "@calcom/dayjs";
+import { useTroubleshooterStore } from "@calcom/features/troubleshooter/store";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "@calcom/ui/components/button";
 import { ButtonGroup } from "@calcom/ui/components/buttonGroup";
-
-import { useTroubleshooterStore } from "@calcom/features/troubleshooter/store";
+import { useMemo } from "react";
 
 export function TroubleshooterHeader({ extraDays, isMobile }: { extraDays: number; isMobile: boolean }) {
   const { t, i18n } = useLocale();
@@ -54,7 +52,7 @@ export function TroubleshooterHeader({ extraDays, isMobile }: { extraDays: numbe
             variant="icon"
             color="minimal"
             StartIcon="chevron-left"
-            aria-label="Previous Day"
+            aria-label={t("previous_day")}
             onClick={() => addToSelectedDate(-extraDays)}
           />
           <Button
@@ -62,7 +60,7 @@ export function TroubleshooterHeader({ extraDays, isMobile }: { extraDays: numbe
             variant="icon"
             color="minimal"
             StartIcon="chevron-right"
-            aria-label="Next Day"
+            aria-label={t("next_day")}
             onClick={() => addToSelectedDate(extraDays)}
           />
           {selectedDateMin3DaysDifference && (

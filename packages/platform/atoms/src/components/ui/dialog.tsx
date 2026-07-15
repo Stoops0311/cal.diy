@@ -3,11 +3,11 @@ In this file we can edit all the Primitives from radix-ui/react-dialog
 when building atoms package this will automatically replace the DialogPrimitives used in components from all over the monorepo
 ensuring that we don't have issues with atoms.
 */
+
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import { XIcon } from "@coss/ui/icons";
 import * as DialogPrimitives from "@radix-ui/react-dialog-atoms";
 import * as React from "react";
-
-import { XIcon } from "@coss/ui/icons";
-
 import { cn } from "../../lib/utils";
 
 const Dialog = DialogPrimitives.Root;
@@ -41,7 +41,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitives.Overlay
     ref={ref}
     className={cn(
-      "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0  fixed inset-0 z-50 bg-black/80",
+      "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-overlay motion-reduce:animate-none",
       className
     )}
     {...props}
@@ -52,28 +52,31 @@ DialogOverlay.displayName = DialogPrimitives.Overlay.displayName;
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitives.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitives.Content>
->(({ className, children, ...props }, ref) => (
-  <>
+>(({ className, children, ...props }, ref) => {
+  const { t } = useLocale();
+
+  return (
     <DialogPortal>
       <div className="calcom-atoms">
         <DialogOverlay />
         <DialogPrimitives.Content
           ref={ref}
           className={cn(
-            "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border p-6 shadow-lg duration-200 sm:rounded-lg",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-1/2 left-1/2 z-50 grid max-h-[min(90vh,760px)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-2xl border border-subtle bg-subtle p-6 shadow-xl duration-200 motion-reduce:animate-none sm:p-7",
             className
           )}
           {...props}>
           {children}
-          <DialogPrimitives.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none">
-            <XIcon className="h-4 w-4" />
-            <span className="sr-only">Close</span>
+          <DialogPrimitives.Close
+            className="absolute top-4 right-4 rounded-md p-1.5 text-subtle transition-colors hover:bg-muted hover:text-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emphasis disabled:pointer-events-none"
+            aria-label={t("close")}>
+            <XIcon className="h-4 w-4" aria-hidden="true" />
           </DialogPrimitives.Close>
         </DialogPrimitives.Content>
       </div>
     </DialogPortal>
-  </>
-));
+  );
+});
 DialogContent.displayName = DialogPrimitives.Content.displayName;
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (

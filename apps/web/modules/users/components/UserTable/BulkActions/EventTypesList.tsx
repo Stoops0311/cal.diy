@@ -77,7 +77,7 @@ export function EventTypesList({ table, orgTeams }: Props) {
           <Command>
             <CommandInput placeholder={t("search")} />
             <CommandList>
-              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandEmpty>{t("kbar_no_results_found")}</CommandEmpty>
               <CommandGroup>
                 {teams &&
                   teams.map((team) => {

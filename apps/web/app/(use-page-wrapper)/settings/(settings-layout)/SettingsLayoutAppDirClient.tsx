@@ -387,7 +387,7 @@ const BackButtonInSidebar = ({ name }: { name: string }) => {
   return (
     <Link
       href="/event-types"
-      className="group my-6 todesktop:mt-10 flex h-6 max-h-6 w-full flex-row items-center rounded-md px-3 py-2 font-medium text-emphasis text-sm leading-4 transition hover:bg-subtle group-hover:text-default [&[aria-current='page']]:bg-emphasis [&[aria-current='page']]:text-emphasis"
+      className="group my-6 todesktop:mt-10 flex h-11 max-h-11 w-full flex-row items-center rounded-md px-3 py-2 font-medium text-emphasis text-sm leading-4 transition hover:bg-subtle group-hover:text-default lg:h-6 lg:max-h-6 [&[aria-current='page']]:bg-emphasis [&[aria-current='page']]:text-emphasis"
       data-testid={`vertical-tab-${name}`}>
       <ArrowLeftIcon className="h-4 w-4 stroke-[2px] md:mt-0 ltr:mr-[10px] rtl:ml-[10px] rtl:rotate-180" />
       <Skeleton title={name} as="p" className="min-h-4 max-w-36 truncate" loadingClassName="ms-3">
@@ -450,7 +450,7 @@ const SettingsSidebarContainer = ({
                     height={16}
                     className="rounded-full ltr:mr-3 rtl:ml-3"
                     src={tab?.avatar}
-                    alt="Organization Logo"
+                    alt={t("organization_logo")}
                   />
                 )}
                 <Skeleton
@@ -471,14 +471,14 @@ const SettingsSidebarContainer = ({
                     href={child.href || "/"}
                     trackingMetadata={child.trackingMetadata}
                     textClassNames="text-emphasis font-medium text-sm"
-                    className={`h-auto min-h-7 w-fit px-2! py-1! ${
+                    className={`h-auto min-h-11 w-fit px-2! py-1! lg:min-h-7 ${
                       tab.children && index === tab.children?.length - 1 && "mb-3!"
                     }`}
                     disableChevron
                   />
                   {child.isBadged && (
-                    <Badge variant="blue" className="mt-0.5 text-xs">
-                      New
+                    <Badge variant="default" className="mt-0.5 text-xs">
+                      {t("new")}
                     </Badge>
                   )}
                 </div>
@@ -506,6 +506,7 @@ const MobileSettingsContainer = (props: { onSideContainerOpen?: () => void }) =>
         </Button>
 
         <button
+          type="button"
           className="flex items-center space-x-2 rounded-md px-3 py-1 hover:bg-emphasis rtl:space-x-reverse"
           onClick={() => router.back()}>
           <ArrowLeftIcon className="h-4 w-4 text-default" />
@@ -558,7 +559,6 @@ function SettingsLayoutAppDirClient({ children, teamFeatures, permissions, ...re
         />
       }
       drawerState={state}
-      MobileNavigationContainer={null}
       TopNavContainer={
         <MobileSettingsContainer onSideContainerOpen={() => setSideContainerOpen(!sideContainerOpen)} />
       }>
@@ -593,8 +593,9 @@ const SidebarContainerElement = ({
       {/* Mobile backdrop */}
       {sideContainerOpen && (
         <button
+          type="button"
           onClick={() => setSideContainerOpen(false)}
-          className="fixed top-0 left-0 z-10 h-full w-full bg-black/50">
+          className="fixed top-0 left-0 z-10 h-full w-full bg-overlay">
           <span className="sr-only">{t("hide_navigation")}</span>
         </button>
       )}

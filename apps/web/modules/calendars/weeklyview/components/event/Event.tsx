@@ -42,11 +42,11 @@ const eventClasses = cva(
 );
 
 const STATUS_COLOR_MAP: Record<BookingStatus, string> = {
-  ACCEPTED: "bg-green-500",
-  PENDING: "bg-orange-500",
-  REJECTED: "bg-red-500",
-  CANCELLED: "bg-red-500",
-  AWAITING_HOST: "bg-blue-500",
+  ACCEPTED: "bg-semantic-success-emphasis",
+  PENDING: "bg-semantic-attention-emphasis",
+  REJECTED: "bg-semantic-error-emphasis",
+  CANCELLED: "bg-semantic-error-emphasis",
+  AWAITING_HOST: "bg-semantic-info-emphasis",
 };
 
 // Maps booking status to color classes for the color bar

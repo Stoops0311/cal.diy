@@ -1,24 +1,22 @@
-import { ErrorMessage } from "@hookform/error-message";
-import type { TFunction } from "i18next";
-import { Controller, useFormContext } from "react-hook-form";
-import type { z } from "zod";
-
+import { fieldsThatSupportLabelAsSafeHtml } from "@calcom/features/form-builder/fieldsThatSupportLabelAsSafeHtml";
+import { fieldTypesConfigMap } from "@calcom/features/form-builder/fieldTypes";
+import type { fieldsSchema } from "@calcom/features/form-builder/schema";
+import {
+  getFieldNameFromErrorMessage,
+  useShouldBeDisabledDueToPrefill,
+} from "@calcom/features/form-builder/useShouldBeDisabledDueToPrefill";
+import { getTranslatedConfig as getTranslatedVariantsConfig } from "@calcom/features/form-builder/utils/variantsConfig";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { markdownToSafeHTML } from "@calcom/lib/markdownToSafeHTML";
 import classNames from "@calcom/ui/classNames";
 import { InfoBadge } from "@calcom/ui/components/badge";
 import { Label } from "@calcom/ui/components/form";
 import { InfoIcon } from "@coss/ui/icons";
-
+import { ErrorMessage } from "@hookform/error-message";
+import type { TFunction } from "i18next";
+import { Controller, useFormContext } from "react-hook-form";
+import type { z } from "zod";
 import { Components, isValidValueProp } from "./Components";
-import { fieldTypesConfigMap } from "@calcom/features/form-builder/fieldTypes";
-import { fieldsThatSupportLabelAsSafeHtml } from "@calcom/features/form-builder/fieldsThatSupportLabelAsSafeHtml";
-import type { fieldsSchema } from "@calcom/features/form-builder/schema";
-import {
-  useShouldBeDisabledDueToPrefill,
-  getFieldNameFromErrorMessage,
-} from "@calcom/features/form-builder/useShouldBeDisabledDueToPrefill";
-import { getTranslatedConfig as getTranslatedVariantsConfig } from "@calcom/features/form-builder/utils/variantsConfig";
 
 // helper to render markdown label safely
 const renderLabel = (field: Partial<RhfFormField>) => {
@@ -124,7 +122,7 @@ export const FormBuilderField = ({
                   return (
                     <div
                       data-testid={`error-message-${field.name}`}
-                      className="mt-2 flex items-center text-sm text-red-700 ">
+                      className="text-error mt-2 flex items-center text-sm">
                       <InfoIcon className="h-3 w-3 ltr:mr-2 rtl:ml-2" />
                       <p>{t(message || "invalid_input")}</p>
                     </div>
@@ -182,7 +180,7 @@ const WithLabel = ({
           )}
       {children}
       {field.name === "smsReminderNumber" && (
-        <div className="text-sm text-gray-500">{t("sms_workflow_consent")}</div>
+        <div className="text-subtle text-sm">{t("sms_workflow_consent")}</div>
       )}
     </div>
   );

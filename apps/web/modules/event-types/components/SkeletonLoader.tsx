@@ -1,5 +1,5 @@
-import { ClockIcon, SearchIcon, UserIcon } from "@coss/ui/icons";
 import { SkeletonAvatar, SkeletonContainer, SkeletonText } from "@calcom/ui/components/skeleton";
+import { ClockIcon, SearchIcon, UserIcon } from "@coss/ui/icons";
 
 function SkeletonLoader() {
   return (
@@ -31,6 +31,42 @@ export function InfiniteSkeletonLoader() {
         <SkeletonItem />
       </ul>
     </SkeletonContainer>
+  );
+}
+
+export function EventTypeEditFormSkeleton() {
+  return (
+    <div className="flex flex-col xl:flex-row xl:space-x-6">
+      <div className="hidden w-64 shrink-0 xl:block">
+        <SkeletonContainer>
+          <div className="stack-y-1 flex flex-col">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="flex w-64 flex-row items-center px-3 py-[10px]">
+                <SkeletonAvatar className="mr-3 h-4 w-4" />
+                <div className="flex w-full flex-col">
+                  <SkeletonText className="h-4 w-24" />
+                  <SkeletonText className="mt-1 h-3 w-16" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </SkeletonContainer>
+      </div>
+      <div className="w-full ltr:mr-2 rtl:ml-2">
+        <div className="border-subtle bg-default mt-4 rounded-2xl p-2 sm:mx-0 md:border md:p-6 xl:mt-0">
+          <SkeletonContainer>
+            <div className="stack-y-6 flex flex-col">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="stack-y-2 flex flex-col">
+                  <SkeletonText className="h-4 w-32" />
+                  <SkeletonText className="h-10 w-full" />
+                </div>
+              ))}
+            </div>
+          </SkeletonContainer>
+        </div>
+      </div>
+    </div>
   );
 }
 

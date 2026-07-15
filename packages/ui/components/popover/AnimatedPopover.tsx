@@ -1,8 +1,6 @@
+import classNames from "@calcom/ui/classNames";
 import * as Popover from "@radix-ui/react-popover";
 import React from "react";
-
-import classNames from "@calcom/ui/classNames";
-
 import { buttonClasses } from "../button";
 import { Icon } from "../icon";
 import { Tooltip } from "../tooltip";
@@ -55,6 +53,8 @@ export const AnimatedPopover = ({
     <Popover.Root defaultOpen={defaultOpen} onOpenChange={setOpen} modal={true}>
       <Popover.Trigger asChild>
         <button
+          type="button"
+          aria-label={text}
           ref={ref}
           className={classNames(
             buttonClasses({

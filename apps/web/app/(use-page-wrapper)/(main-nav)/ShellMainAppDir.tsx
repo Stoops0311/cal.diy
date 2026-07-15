@@ -1,6 +1,5 @@
 import { ShellMainAppDirBackButton } from "app/(use-page-wrapper)/(main-nav)/ShellMainAppDirBackButton";
 import classNames from "classnames";
-
 import type { LayoutProps } from "~/shell/Shell";
 
 // Copied from `ShellMain` but with a different `ShellMainAppDirBackButton` import
@@ -11,7 +10,7 @@ export function ShellMainAppDir(props: LayoutProps) {
       {(props.heading || !!props.backPath) && (
         <div
           className={classNames(
-            "flex items-center md:mb-6 md:mt-0",
+            "border-subtle mb-4 flex items-center border-b pb-3 md:mb-6 md:mt-0 md:pb-4",
             props.smallHeading ? "lg:mb-7" : "lg:mb-8"
           )}>
           {!!props.backPath && <ShellMainAppDirBackButton backPath={props.backPath} />}
@@ -22,22 +21,23 @@ export function ShellMainAppDir(props: LayoutProps) {
                 "flex w-full max-w-full items-center flex-wrap md:flex-nowrap gap-2 md:gap-0"
               )}>
               {props.HeadingLeftIcon && <div className="ltr:mr-4">{props.HeadingLeftIcon}</div>}
-              <div
-                className={classNames(
-                  "hidden min-w-0 flex-1 ltr:mr-4 rtl:ml-4 md:block",
-                  props.headerClassName
-                )}>
+              <div className={classNames("min-w-0 flex-1 ltr:mr-4 rtl:ml-4 md:block", props.headerClassName)}>
+                {props.eyebrow && (
+                  <p className="text-subtle font-mono text-[11px] uppercase tracking-[0.18em]">
+                    {props.eyebrow}
+                  </p>
+                )}
                 {props.heading && (
-                  <h3
+                  <h1
                     className={classNames(
-                      "font-cal text-emphasis max-w-28 sm:max-w-72 md:max-w-80 inline truncate text-lg font-semibold tracking-wide sm:text-xl md:block xl:max-w-full",
-                      props.smallHeading ? "text-base" : "text-xl"
+                      "font-cal text-emphasis truncate font-bold tracking-tight xl:max-w-full",
+                      props.smallHeading ? "text-base" : "text-xl sm:text-2xl"
                     )}>
                     {props.heading}
-                  </h3>
+                  </h1>
                 )}
                 {props.subtitle && (
-                  <p className="text-default hidden text-sm md:block" data-testid="subtitle">
+                  <p className="text-subtle hidden text-sm md:block" data-testid="subtitle">
                     {props.subtitle}
                   </p>
                 )}

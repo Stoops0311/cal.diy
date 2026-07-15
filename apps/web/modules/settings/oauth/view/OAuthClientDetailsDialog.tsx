@@ -1,12 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useCopy } from "@calcom/lib/hooks/useCopy";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
-
 import { Alert } from "@calcom/ui/components/alert";
 import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
@@ -16,11 +12,11 @@ import {
   DialogContent,
   DialogFooter,
 } from "@calcom/ui/components/dialog";
-
+import { Label, TextArea } from "@calcom/ui/components/form";
 import { showToast } from "@calcom/ui/components/toast";
 import { Tooltip } from "@calcom/ui/components/tooltip";
-import { Label, TextArea } from "@calcom/ui/components/form";
-
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import type { OAuthClientCreateFormValues } from "../create/OAuthClientCreateModal";
 import { OAuthClientFormFields } from "./OAuthClientFormFields";
 
@@ -203,7 +199,7 @@ const OAuthClientDetailsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent enableOverflow type="creation">
+      <DialogContent enableOverflow type="creation" title={t("oauth_client")}>
         {client ? (
           <form
             data-testid="oauth-client-details-form"
@@ -343,7 +339,7 @@ const OAuthClientDetailsDialog = ({
                     StartIcon="x"
                     data-testid="oauth-client-details-reject-confirm"
                     loading={isStatusChangePending}
-                    className="not-disabled:hover:!bg-error not-disabled:hover:!text-white not-disabled:hover:!border-semantic-error"
+                    className="not-disabled:hover:!border-semantic-error not-disabled:hover:!bg-error not-disabled:hover:!text-inverted"
                     onClick={handleConfirmReject}>
                     {t("reject")}
                   </Button>

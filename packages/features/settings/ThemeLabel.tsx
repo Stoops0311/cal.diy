@@ -23,13 +23,8 @@ export default function ThemeLabel(props: ThemeLabelProps) {
         defaultChecked={defaultChecked}
         {...register(fieldName)}
       />
-      <div className="ring-inverted relative z-10 rounded-lg ring-offset-2 transition-all peer-checked:ring-2">
-        <img
-          aria-hidden="true"
-          className="cover w-full rounded-lg"
-          src={`/theme-${variant}.svg`}
-          alt={`theme ${variant}`}
-        />
+      <div className="ring-inverted relative z-10 rounded-lg ring-offset-2 transition-shadow peer-checked:ring-2">
+        <img aria-hidden="true" className="cover w-full rounded-lg" src={`/theme-${variant}.svg`} alt="" />
       </div>
       <p className="peer-checked:text-emphasis text-default mt-2 text-sm font-medium">{label}</p>
     </label>

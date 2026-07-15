@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { shallow } from "zustand/shallow";
-
 import dayjs from "@calcom/dayjs";
-import classNames from "@calcom/ui/classNames";
-
 import { useCalendarStore } from "@calcom/features/calendars/weeklyview/state/store";
 import { calculateEventLayouts, createLayoutMap } from "@calcom/features/calendars/weeklyview/utils/overlap";
+import classNames from "@calcom/ui/classNames";
+import { useEffect, useMemo, useState } from "react";
+import { shallow } from "zustand/shallow";
 import { Event } from "./Event";
 
 type Props = {
@@ -104,7 +102,7 @@ export function EventList({ day }: Props) {
           <div
             key={`${event.id}-${eventStart.toISOString()}`}
             className={classNames(
-              "absolute transition-all duration-100 ease-out",
+              "absolute transition-[top,height] duration-100 ease-out motion-reduce:transition-none",
               event.options?.borderOnly && "pointer-events-none"
             )}
             data-testid={event.options?.["data-test-id"]}

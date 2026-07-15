@@ -7,9 +7,13 @@ import { Skeleton } from "@coss/ui/components/skeleton";
 export const SkeletonLoader = () => {
   const { t } = useLocale();
   return (
-    <SettingsHeader title={t("general")} description={t("general_description")} borderInShellHeader={true}>
+    <SettingsHeader
+      eyebrow={t("my_account")}
+      title={t("general")}
+      description={t("general_description")}
+      borderInShellHeader={true}>
       <div className="space-y-6">
-        <div className="border-subtle stack-y-6 rounded-b-xl border border-t-0 px-4 py-8 sm:px-6">
+        <div className="stack-y-6 py-8">
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-8 w-full" />

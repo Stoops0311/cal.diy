@@ -1,7 +1,3 @@
-import type { Dispatch, SetStateAction } from "react";
-import { useState } from "react";
-import { z } from "zod";
-
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
@@ -10,6 +6,9 @@ import { Button } from "@calcom/ui/components/button";
 import { DialogContent, DialogFooter, DialogHeader } from "@calcom/ui/components/dialog";
 import { showToast } from "@calcom/ui/components/toast";
 import { TriangleAlertIcon, UserPlusIcon } from "@coss/ui/icons";
+import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
+import { z } from "zod";
 
 interface IAddGuestsDialog {
   isOpenDialog: boolean;
@@ -58,12 +57,12 @@ export const AddGuestsDialog = (props: IAddGuestsDialog) => {
     <Dialog open={isOpenDialog} onOpenChange={setIsOpenDialog}>
       <DialogContent enableOverflow>
         <div className="flex flex-row md:space-x-3">
-          <div className="bg-subtle hidden h-10 w-10 shrink-0 justify-center rounded-full md:flex">
+          <div className="border-subtle bg-default hidden h-10 w-10 shrink-0 justify-center rounded-full border shadow-sm md:flex">
             <UserPlusIcon className="m-auto h-6 w-6" />
           </div>
           <div className="w-full md:pt-1">
             <DialogHeader title={t("additional_guests")} />
-            <div className="bg-default">
+            <div className="border-subtle bg-default mt-5 rounded-xl border p-4 shadow-sm">
               <MultiEmail
                 label={t("add_emails")}
                 value={multiEmailValue}
@@ -73,7 +72,7 @@ export const AddGuestsDialog = (props: IAddGuestsDialog) => {
             </div>
 
             {isInvalidEmail && (
-              <div className="my-4 flex text-sm text-red-700">
+              <div className="text-error my-4 flex text-sm" role="alert">
                 <div className="shrink-0">
                   <TriangleAlertIcon className="h-5 w-5" />
                 </div>

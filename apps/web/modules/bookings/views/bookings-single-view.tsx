@@ -20,7 +20,7 @@ import { isWithinMinimumRescheduleNotice as isWithinMinimumRescheduleNoticeUtil 
 import type { nameObjectSchema } from "@calcom/features/eventtypes/lib/eventNaming";
 import { getEventName } from "@calcom/features/eventtypes/lib/eventNaming";
 import { shouldShowFieldInCustomResponses } from "@calcom/lib/bookings/SystemField";
-import { APP_NAME } from "@calcom/lib/constants";
+import { APP_NAME, SUPPORT_MAIL_ADDRESS, WEBAPP_URL } from "@calcom/lib/constants";
 import { formatToLocalizedDate, formatToLocalizedTime, formatToLocalizedTimezone } from "@calcom/lib/dayjs";
 import useGetBrandingColours from "@calcom/lib/getBrandColours";
 import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
@@ -205,7 +205,7 @@ export default function Success(props: PageProps) {
   const mutation = trpc.viewer.public.submitRating.useMutation({
     onSuccess: async () => {
       setIsFeedbackSubmitted(true);
-      showToast("Thank you, feedback submitted", "success");
+      showToast(t("feedback_submitted_description"), "success");
     },
     onError: (err) => {
       showToast(err.message, "error");
@@ -214,7 +214,7 @@ export default function Success(props: PageProps) {
 
   const hostNoShowMutation = trpc.viewer.public.markHostAsNoShow.useMutation({
     onSuccess: async () => {
-      showToast("Thank you, feedback submitted", "success");
+      showToast(t("feedback_submitted_description"), "success");
     },
     onError: (err) => {
       showToast(err.message, "error");
@@ -320,7 +320,8 @@ export default function Success(props: PageProps) {
     }
     if (bookingInfo.user) {
       const isAttendee = bookingInfo.attendees.find((attendee) => attendee.email === session?.user?.email);
-      const attendee = bookingInfo.attendees[0]?.name || bookingInfo.attendees[0]?.email || "Nameless";
+      const attendee =
+        bookingInfo.attendees[0]?.name || bookingInfo.attendees[0]?.email || t("nameless_user");
       const host = bookingInfo.user.name || bookingInfo.user.email;
       if (isHost) {
         return t(`${titlePrefix}emailed_host_and_attendee${titleSuffix}`, {
@@ -372,8 +373,8 @@ export default function Success(props: PageProps) {
   const bookingCancelledEventProps = {
     booking: bookingInfo,
     organizer: {
-      name: bookingInfo?.user?.name || "Nameless",
-      email: bookingInfo?.userPrimaryEmail || bookingInfo?.user?.email || "Email-less",
+      name: bookingInfo?.user?.name || t("nameless_user"),
+      email: bookingInfo?.userPrimaryEmail || bookingInfo?.user?.email || t("no_email"),
       timeZone: bookingInfo?.user?.timeZone,
     },
     eventType,
@@ -385,6 +386,11 @@ export default function Success(props: PageProps) {
   const isEventCancelled = isCancelled && !seatReferenceUid;
   const isPastBooking = isBookingInPast;
   const isRerouting = searchParams?.get("cal.rerouting") === "true";
+  const [canReturnToOpener, setCanReturnToOpener] = useState(false);
+
+  useEffect(() => {
+    setCanReturnToOpener(Boolean(isRerouting && window.opener));
+  }, [isRerouting]);
   const isRescheduled = bookingInfo?.rescheduled;
 
   const canCancelOrReschedule = !eventType?.disableCancelling || !eventType?.disableRescheduling;
@@ -429,7 +435,7 @@ export default function Success(props: PageProps) {
     }
 
     if (isRerouting) {
-      return t("This meeting has been rerouted");
+      return t("meeting_has_been_rerouted");
     }
 
     if (isNotAttendingSeatedEvent) {
@@ -490,17 +496,13 @@ export default function Success(props: PageProps) {
               className={classNames(
                 "main my-4 flex flex-col transition-opacity sm:my-0 ",
                 isEmbed ? "" : " inset-0"
-              )}
-              aria-hidden="true">
+              )}>
               <div
                 className={classNames(
-                  "inline-block transform overflow-hidden rounded-lg border sm:my-8 sm:max-w-xl",
-                  !isBackgroundTransparent &&
-                    " bg-default dark:bg-cal-muted border-booker border-booker-width",
-                  "px-8 pb-4 pt-5 text-left align-bottom transition-all sm:w-full sm:py-8 sm:align-middle"
+                  "inline-block transform overflow-hidden rounded-3xl border shadow-xl sm:my-8 sm:max-w-xl",
+                  !isBackgroundTransparent && "border-booker border-booker-width bg-subtle",
+                  "px-8 pb-4 pt-5 text-left align-bottom transition-[opacity,transform,box-shadow] sm:w-full sm:py-8 sm:align-middle"
                 )}
-                role="dialog"
-                aria-modal="true"
                 aria-labelledby="modal-headline">
                 {!isFeedbackMode && (
                   <>
@@ -516,7 +518,11 @@ export default function Success(props: PageProps) {
                       )}
                       {giphyImage && !needsConfirmation && isReschedulable && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={giphyImage} className="w-full rounded-lg" alt="Gif from Giphy" />
+                        <img
+                          src={giphyImage}
+                          className="w-full rounded-2xl"
+                          alt={t("celebration_animation")}
+                        />
                       )}
                       <div
                         className={classNames(
@@ -532,21 +538,21 @@ export default function Success(props: PageProps) {
                           isCancelled ? "bg-error" : ""
                         )}>
                         {!giphyImage && !needsConfirmation && !isAwaitingPayment && isReschedulable && (
-                          <CheckIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+                          <CheckIcon className="h-5 w-5 text-success" />
                         )}
                         {(needsConfirmation || isAwaitingPayment) && isReschedulable && (
                           <CalendarIcon className="text-emphasis h-5 w-5" />
                         )}
-                        {isCancelled && <XIcon className="h-5 w-5 text-red-600 dark:text-red-200" />}
+                        {isCancelled && <XIcon className="h-5 w-5 text-error" />}
                       </div>
                     </div>
                     <div className="mb-8 mt-6 text-center last:mb-0">
-                      <h3
-                        className="text-emphasis text-2xl font-semibold leading-6"
+                      <h1
+                        className="font-cal text-3xl text-emphasis leading-tight"
                         data-testid={isCancelled ? "cancelled-headline" : ""}
                         id="modal-headline">
                         {successPageHeadline}
-                      </h3>
+                      </h1>
 
                       <div className="mt-3">
                         <p className="text-default">{getTitle()}</p>
@@ -729,11 +735,12 @@ export default function Success(props: PageProps) {
                             <div className="mt-9 pr-2 font-medium sm:pr-0">{t("utm_params")}</div>
                             <div className="col-span-2 mb-2 ml-3 mt-9 sm:ml-0">
                               <button
+                                type="button"
                                 data-testid="utm-dropdown"
                                 onClick={() => {
                                   setShowUtmParams((prev) => !prev);
                                 }}
-                                className="font-medium transition hover:text-blue-500 focus:outline-none">
+                                className="font-medium transition hover:text-emphasis focus:outline-none">
                                 <div className="flex items-center gap-1">
                                   {showUtmParams ? t("hide") : t("show")}
                                   <Icon
@@ -787,7 +794,7 @@ export default function Success(props: PageProps) {
                             </>
                           )}
                       </div>
-                      <div className="text-bookingdark dark:border-darkgray-200 mt-8 text-left dark:text-gray-300">
+                      <div className="mt-8 text-left text-default">
                         {eventType.bookingFields.map((field) => {
                           if (!field) return null;
 
@@ -893,6 +900,7 @@ export default function Success(props: PageProps) {
 
                                   {!isBookingInPast && canCancel && (
                                     <button
+                                      type="button"
                                       data-testid="cancel"
                                       className={classNames(
                                         "text-default underline",
@@ -936,7 +944,7 @@ export default function Success(props: PageProps) {
                           />
                         </>
                       ))}
-                    {isRerouting && typeof window !== "undefined" && window.opener && (
+                    {canReturnToOpener && (
                       <div className="flex justify-center">
                         <Button
                           type="button"
@@ -944,7 +952,7 @@ export default function Success(props: PageProps) {
                             window.opener.focus();
                             window.close();
                           }}>
-                          Go Back
+                          {t("go_back")}
                         </Button>
                       </div>
                     )}
@@ -1026,7 +1034,7 @@ export default function Success(props: PageProps) {
                       <>
                         <hr className="border-subtle mt-8" />
                         <div className="text-default pt-8 text-center text-xs">
-                          <a href="https://cal.com/signup">
+                          <a href={`${WEBAPP_URL}/signup`}>
                             {t("create_booking_link_with_calcom", { appName: APP_NAME })}
                           </a>
 
@@ -1036,15 +1044,17 @@ export default function Success(props: PageProps) {
                               const target = e.target as typeof e.target & {
                                 email: { value: string };
                               };
-                              router.push(`https://cal.com/signup?email=${target.email.value}`);
+                              router.push(
+                                `${WEBAPP_URL}/signup?email=${encodeURIComponent(target.email.value)}`
+                              );
                             }}
                             className="mt-4 flex">
                             <EmailInput
                               name="email"
                               id="email"
                               defaultValue={email}
-                              className="mr- focus:border-brand-default border-default text-default mt-0 block w-full rounded-none rounded-l-md shadow-sm focus:ring-black sm:text-sm"
-                              placeholder="rick.astley@cal.com"
+                              className="focus:border-brand-default focus:ring-emphasis border-default text-default mt-0 block w-full rounded-none rounded-l-md shadow-sm sm:text-sm"
+                              placeholder="name@example.com"
                             />
                             <Button
                               type="submit"
@@ -1082,6 +1092,9 @@ export default function Success(props: PageProps) {
                         {RATING_OPTIONS.map((option) => (
                           <button
                             key={option.value}
+                            type="button"
+                            aria-label={t("rating_out_of_five", { rating: option.value })}
+                            aria-pressed={rateValue === option.value}
                             className={classNames(
                               "flex h-10 w-10 items-center justify-center rounded-full border text-2xl hover:opacity-100",
                               rateValue === option.value
@@ -1101,7 +1114,7 @@ export default function Success(props: PageProps) {
                       <TextArea
                         id="comment"
                         name="comment"
-                        placeholder="Next time I would like to ..."
+                        placeholder={t("next_time_i_would_like")}
                         rows={3}
                         disabled={isFeedbackSubmitted}
                         onChange={(event) => setComment(event.target.value)}
@@ -1130,16 +1143,16 @@ export default function Success(props: PageProps) {
                       <p className="font-semibold">{t("google_new_spam_policy")}</p>
                       <span className="underline">
                         <a
-                          target="_blank"
-                          href="https://cal.com/blog/google-s-new-spam-policy-may-be-affecting-your-invitations"
-                          rel="noreferrer">
+                          href={`mailto:${SUPPORT_MAIL_ADDRESS}?subject=${encodeURIComponent(
+                            "Help with Google booking notifications"
+                          )}`}>
                           {t("resolve")}
                         </a>
                       </span>
                     </div>
                   }
                   CustomIcon="circle-alert"
-                  customIconColor="text-attention dark:text-orange-200"
+                  customIconColor="text-attention"
                 />
               )}
             </div>

@@ -1,11 +1,11 @@
 "use client";
 
+import { useHitPayDropIn } from "@calcom/app-store/hitpay/components/HitPayDropIn";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { useRouter } from "next/navigation";
 import qs from "qs";
 import { useEffect, useRef } from "react";
 import { z } from "zod";
-
-import { useHitPayDropIn } from "@calcom/app-store/hitpay/components/HitPayDropIn";
 
 const PaymentHitpayDataSchema = z.object({
   id: z.string(),
@@ -24,6 +24,7 @@ interface IPaymentComponentProps {
 }
 
 export const HitpayPaymentComponent = (props: IPaymentComponentProps) => {
+  const { t } = useLocale();
   const { isInitialized, init } = useHitPayDropIn();
   const isSucceeded = useRef<boolean>(false);
   const router = useRouter();
@@ -31,7 +32,9 @@ export const HitpayPaymentComponent = (props: IPaymentComponentProps) => {
   const { data } = payment;
   const wrongUrl = (
     <>
-      <p className="mt-3 text-center">Couldn&apos;t obtain payment URL</p>
+      <p className="text-error mt-3 text-center" role="alert">
+        {t("payment_url_unavailable")}
+      </p>
     </>
   );
 

@@ -2,9 +2,18 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { act } from "react-dom/test-utils";
 import { vi } from "vitest";
-
 import type { ButtonProps } from "../../button";
 import ColorPicker from "./colorpicker";
+
+vi.mock("@calcom/lib/hooks/useLocale", () => ({
+  useLocale: () => ({
+    t: (key: string) =>
+      ({
+        onboarding_pick_color_aria: "Pick color",
+        reset_to_default: "Reset to default",
+      })[key] ?? key,
+  }),
+}));
 
 vi.mock("../../button/Button", async () => {
   const ButtonMock = (await import("../../button/Button")).Button;
@@ -25,7 +34,7 @@ describe("Tests for ColorPicker component", () => {
     const onChange = vi.fn();
     render(<ColorPicker defaultValue={defaultValue} onChange={onChange} />);
 
-    const colorPickerButton = screen.getByRole("button", { name: "pick colors" });
+    const colorPickerButton = screen.getByRole("button", { name: "Pick color" });
     expect(colorPickerButton).toHaveStyle(`background-color: ${defaultValue}`);
   });
 
@@ -34,7 +43,7 @@ describe("Tests for ColorPicker component", () => {
     const onChange = vi.fn();
     render(<ColorPicker defaultValue={defaultValue} onChange={onChange} />);
 
-    const colorPickerButton = screen.getByRole("button", { name: "pick colors" });
+    const colorPickerButton = screen.getByRole("button", { name: "Pick color" });
     await act(async () => {
       fireEvent.click(colorPickerButton);
     });
@@ -57,7 +66,7 @@ describe("Tests for ColorPicker component", () => {
     await act(async () => userEvent.clear(colorInput));
     const newColorValue = "#00FF00";
     await act(async () => await userEvent.type(colorInput, newColorValue));
-    expect(screen.getByRole("button", { name: "pick colors" })).toHaveStyle(
+    expect(screen.getByRole("button", { name: "Pick color" })).toHaveStyle(
       `background-color: ${newColorValue}`
     );
   });
@@ -68,7 +77,7 @@ describe("Tests for ColorPicker component", () => {
 
     render(<ColorPicker defaultValue={defaultValue} onChange={onChange} />);
 
-    const colorPickerButton = screen.getByRole("button", { name: "pick colors" });
+    const colorPickerButton = screen.getByRole("button", { name: "Pick color" });
     await act(async () => {
       fireEvent.click(colorPickerButton);
     });
@@ -88,7 +97,7 @@ describe("Tests for ColorPicker component", () => {
       <ColorPicker defaultValue={defaultValue} resetDefaultValue={resetDefaultValue} onChange={onChange} />
     );
 
-    const colorPickerButton = screen.getByRole("button", { name: "pick colors" });
+    const colorPickerButton = screen.getByRole("button", { name: "Pick color" });
     await act(async () => {
       fireEvent.click(colorPickerButton);
     });

@@ -30,14 +30,14 @@ type TranslationWithParams = {
 };
 
 type DisplayFieldValue =
-    | { type: "translationKey"; valueKey: string }
-    | { type: "rawValue"; value: string }
-    | { type: "rawValues"; values: string[] }
-    | { type: "translationsWithParams"; valuesWithParams: TranslationWithParams[] };
+  | { type: "translationKey"; valueKey: string }
+  | { type: "rawValue"; value: string }
+  | { type: "rawValues"; values: string[] }
+  | { type: "translationsWithParams"; valuesWithParams: TranslationWithParams[] };
 
 type DisplayField = {
-    labelKey: string;
-    fieldValue: DisplayFieldValue;
+  labelKey: string;
+  fieldValue: DisplayFieldValue;
 };
 
 type AuditLog = {
@@ -333,15 +333,15 @@ function BookingLogsTimeline({ logs }: BookingLogsTimelineProps) {
                       {/* Render displayFields if available, otherwise show type */}
                       {log.displayFields && log.displayFields.length > 0
                         ? log.displayFields.map((field, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-start gap-2 py-2 border-b px-3 border-subtle">
-                            <span className="font-medium text-emphasis w-[140px]">{t(field.labelKey)}</span>
-                            <span className="font-medium">
-                              <DisplayFieldValueComponent fieldValue={field.fieldValue} />
-                            </span>
-                          </div>
-                        ))
+                            <div
+                              key={idx}
+                              className="flex items-start gap-2 py-2 border-b px-3 border-subtle">
+                              <span className="font-medium text-emphasis w-[140px]">{t(field.labelKey)}</span>
+                              <span className="font-medium">
+                                <DisplayFieldValueComponent fieldValue={field.fieldValue} />
+                              </span>
+                            </div>
+                          ))
                         : null}
                       <div className="flex items-start gap-2 py-2 border-b px-3 border-subtle">
                         <span className="font-medium text-emphasis w-[140px]">{t("actor")}</span>
@@ -477,8 +477,8 @@ export function BookingHistory({ bookingUid }: BookingHistoryProps) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <p className="text-red-600 font-medium">{t("error_loading_booking_logs")}</p>
-          <p className="text-sm text-gray-500 mt-2">{error.message}</p>
+          <p className="text-error font-medium">{t("error_loading_booking_logs")}</p>
+          <p className="mt-2 text-subtle text-sm">{error.message}</p>
         </div>
       </div>
     );

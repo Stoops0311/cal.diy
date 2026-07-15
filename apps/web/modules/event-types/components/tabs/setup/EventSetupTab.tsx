@@ -103,7 +103,11 @@ export const EventSetupTab = (
 
   const isManagedEventType = false;
   const isChildrenManagedEventType = false;
-  const shouldLockDisableProps = (_field: string) => ({ disabled: false, LockedIcon: false as const, isLocked: false });
+  const shouldLockDisableProps = (_field: string) => ({
+    disabled: false,
+    LockedIcon: false as const,
+    isLocked: false,
+  });
   const shouldLockIndicator = (_field: string) => false;
 
   const lengthLockedProps = shouldLockDisableProps("length");
@@ -116,7 +120,7 @@ export const EventSetupTab = (
       <div className={classNames("stack-y-4", customClassNames?.wrapper)}>
         <div
           className={classNames(
-            "stack-y-6 rounded-lg border border-subtle p-6",
+            "stack-y-6 rounded-xl border border-subtle bg-subtle p-6",
             customClassNames?.titleSection?.container
           )}>
           <TextField
@@ -196,7 +200,7 @@ export const EventSetupTab = (
         </div>
         <div
           className={classNames(
-            "rounded-lg border border-subtle p-6",
+            "rounded-xl border border-subtle bg-subtle p-6",
             customClassNames?.durationSection?.container
           )}>
           {multipleDuration ? (
@@ -373,7 +377,7 @@ export const EventSetupTab = (
           }>
           <div
             className={classNames(
-              "rounded-lg border border-subtle p-6",
+              "rounded-xl border border-subtle bg-subtle p-6",
               customClassNames?.locationSection?.container,
               eventType.schedulingType === SchedulingType.ROUND_ROBIN &&
                 enablePerHostLocations &&

@@ -1,14 +1,13 @@
-import type { TFunction } from "i18next";
-import { useEffect, useRef } from "react";
-
 import { useIsPlatform } from "@calcom/atoms/hooks/useIsPlatform";
 import { useIsEmbed } from "@calcom/embed-core/embed-iframe";
-import { useShouldShowArrows } from "@calcom/web/modules/apps/components/AllApps";
 import { useBookerStoreContext } from "@calcom/features/bookings/Booker/BookerStoreProvider";
 import type { BookerEvent } from "@calcom/features/bookings/types";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import classNames from "@calcom/ui/classNames";
+import { useShouldShowArrows } from "@calcom/web/modules/apps/components/AllApps";
 import { ChevronLeftIcon, ChevronRightIcon } from "@coss/ui/icons";
+import type { TFunction } from "i18next";
+import { useEffect, useRef } from "react";
 
 /** Render X mins as X hours or X hours Y mins instead of in minutes once >= 60 minutes */
 export const getDurationFormatted = (mins: number | undefined, t: TFunction) => {
@@ -43,7 +42,7 @@ export const EventDuration = ({
   event: Pick<BookerEvent, "length" | "metadata" | "isDynamic">;
 }) => {
   const { t } = useLocale();
-  const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const isPlatform = useIsPlatform();
   const [selectedDuration, setSelectedDuration, state] = useBookerStoreContext((state) => [
     state.selectedDuration,
@@ -104,9 +103,13 @@ export const EventDuration = ({
   return selectedDuration ? (
     <div className="border-default relative mr-5 flex flex-row items-center justify-between rounded-md border">
       {leftVisible && (
-        <button onClick={handleLeft} className="absolute bottom-0 left-0 flex">
+        <button
+          type="button"
+          aria-label={t("previous")}
+          onClick={handleLeft}
+          className="absolute bottom-0 left-0 flex">
           <div className="bg-default flex h-9 w-5 items-center justify-end rounded-md">
-            <ChevronLeftIcon className="text-subtle h-4 w-4" />
+            <ChevronLeftIcon aria-hidden="true" className="text-subtle h-4 w-4" />
           </div>
           <div className="to-default flex h-9 w-5 bg-linear-to-l from-transparent" />
         </button>
@@ -117,26 +120,32 @@ export const EventDuration = ({
         ref={ref}>
         {durations
           .filter((dur) => state !== "booking" || dur === selectedDuration)
-          .map((duration, index) => (
-            <li
-              data-testId={`multiple-choice-${duration}mins`}
-              data-active={selectedDuration === duration ? "true" : "false"}
-              key={index}
-              onClick={() => setSelectedDuration(duration)}
-              ref={(el) => (itemRefs.current[duration] = el)}
-              className={classNames(
-                selectedDuration === duration ? "bg-emphasis" : "hover:text-emphasis",
-                "text-default cursor-pointer rounded-[4px] px-3 py-1.5 text-sm leading-tight transition"
-              )}>
-              <div className="w-max">{getDurationFormatted(duration, t)}</div>
+          .map((duration) => (
+            <li key={duration}>
+              <button
+                type="button"
+                data-testid={`multiple-choice-${duration}mins`}
+                aria-pressed={selectedDuration === duration}
+                onClick={() => setSelectedDuration(duration)}
+                ref={(element) => (itemRefs.current[duration] = element)}
+                className={classNames(
+                  selectedDuration === duration ? "bg-emphasis" : "hover:text-emphasis",
+                  "text-default w-max cursor-pointer rounded-md px-3 py-1.5 text-sm leading-tight transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emphasis"
+                )}>
+                {getDurationFormatted(duration, t)}
+              </button>
             </li>
           ))}
       </ul>
       {rightVisible && (
-        <button onClick={handleRight} className="absolute bottom-0 right-0 flex">
+        <button
+          type="button"
+          aria-label={t("next")}
+          onClick={handleRight}
+          className="absolute bottom-0 right-0 flex">
           <div className="to-default flex h-9 w-5 bg-linear-to-r from-transparent" />
           <div className="bg-default flex h-9 w-5 items-center justify-end rounded-md">
-            <ChevronRightIcon className="text-subtle h-4 w-4" />
+            <ChevronRightIcon aria-hidden="true" className="text-subtle h-4 w-4" />
           </div>
         </button>
       )}

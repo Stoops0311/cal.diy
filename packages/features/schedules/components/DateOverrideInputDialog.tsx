@@ -1,21 +1,18 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-
 import type { Dayjs } from "@calcom/dayjs";
 import dayjs from "@calcom/dayjs";
 import { BookerStoreProvider } from "@calcom/features/bookings/Booker/BookerStoreProvider";
+import DatePicker from "@calcom/features/calendars/components/DatePicker";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { yyyymmdd } from "@calcom/lib/dayjs";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import type { WorkingHours } from "@calcom/types/schedule";
 import cs from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
-import { DialogContent, DialogHeader, DialogTrigger, DialogClose } from "@calcom/ui/components/dialog";
-import { Switch } from "@calcom/ui/components/form";
-import { Form } from "@calcom/ui/components/form";
+import { DialogClose, DialogContent, DialogHeader, DialogTrigger } from "@calcom/ui/components/dialog";
+import { Form, Switch } from "@calcom/ui/components/form";
 import { showToast } from "@calcom/ui/components/toast";
-
-import DatePicker from "@calcom/features/calendars/components/DatePicker";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import type { TimeRange } from "./ScheduleComponent";
 import { DayRanges } from "./ScheduleComponent";
 
@@ -161,7 +158,7 @@ const DateOverrideForm = ({
           />
         </BookerStoreProvider>
       </div>
-      <div className="relative mt-8 flex w-full flex-col sm:mt-0 sm:p-4 md:p-8">
+      <div className="bg-default relative mt-8 flex min-h-40 w-full flex-col rounded-b-2xl p-6 sm:mt-0 sm:min-h-[28rem] sm:rounded-r-2xl sm:rounded-bl-none md:p-8">
         {selectedDates[0] ? (
           <>
             <div className="mb-4 grow stack-y-4">
@@ -198,9 +195,17 @@ const DateOverrideForm = ({
             </div>
           </>
         ) : (
-          <div className="bottom-7 right-8 flex flex-row-reverse sm:absolute">
-            <DialogClose />
-          </div>
+          <>
+            <div className="flex flex-1 flex-col items-center justify-center text-center">
+              <p className="font-cal text-emphasis text-xl">{t("select_date")}</p>
+              <p className="text-subtle mt-2 max-w-64 text-sm leading-6">
+                {t("date_overrides_select_date_hint")}
+              </p>
+            </div>
+            <div className="mt-6 flex flex-row-reverse">
+              <DialogClose />
+            </div>
+          </>
         )}
       </div>
     </Form>
@@ -226,11 +231,17 @@ const DateOverrideInputDialog = ({
   isDryRun?: boolean;
 }) => {
   const [open, setOpen] = useState(false);
+  const { t } = useLocale();
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{Trigger}</DialogTrigger>
 
-      <DialogContent enableOverflow={true} size="md" className={cs("p-0", className)}>
+      <DialogContent
+        type={null}
+        title={t("date_overrides_dialog_title")}
+        enableOverflow={true}
+        size="md"
+        className={cs("p-0", className)}>
         <DateOverrideForm
           excludedDates={excludedDates}
           weekStart={weekStart}

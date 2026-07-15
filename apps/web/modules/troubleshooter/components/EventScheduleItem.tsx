@@ -25,8 +25,10 @@ export function EventScheduleItem(): JSX.Element {
       schedule={schedule ?? null}
       suffixSlot={
         schedule && (
-          <Link href={`/availability/${schedule.id}`} className="inline-flex">
-            <Badge color="orange" size="sm" className="invisible hover:cursor-pointer group-hover:visible">
+          <Link
+            href={`/availability/${schedule.id}`}
+            className="inline-flex rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emphasis">
+            <Badge variant="gray" size="sm" className="hover:cursor-pointer">
               {t("edit")}
             </Badge>
           </Link>

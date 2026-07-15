@@ -134,26 +134,27 @@ export function AvailabilityList({ availabilities }: AvailabilityListProps) {
         </div>
       ) : (
         <>
-          <div className="border-subtle bg-default overflow-hidden rounded-md border">
-            <ul className="divide-subtle divide-y" data-testid="schedules" ref={animationParentRef}>
-              {availabilities.schedules.map((schedule) => (
-                <ScheduleListItem
-                  redirectUrl={`/availability/${schedule.id}`}
-                  displayOptions={{
-                    hour12: user?.timeFormat ? user.timeFormat === 12 : undefined,
-                    timeZone: user?.timeZone,
-                    weekStart: user?.weekStart || "Sunday",
-                  }}
-                  key={schedule.id}
-                  schedule={schedule}
-                  isDeletable={availabilities.schedules.length !== 1}
-                  updateDefault={updateMutation.mutate}
-                  deleteFunction={deleteMutation.mutate}
-                  duplicateFunction={duplicateMutation.mutate}
-                />
-              ))}
-            </ul>
-          </div>
+          <ul
+            className="border-subtle divide-subtle divide-y border-b"
+            data-testid="schedules"
+            ref={animationParentRef}>
+            {availabilities.schedules.map((schedule) => (
+              <ScheduleListItem
+                redirectUrl={`/availability/${schedule.id}`}
+                displayOptions={{
+                  hour12: user?.timeFormat ? user.timeFormat === 12 : undefined,
+                  timeZone: user?.timeZone,
+                  weekStart: user?.weekStart || "Sunday",
+                }}
+                key={schedule.id}
+                schedule={schedule}
+                isDeletable={availabilities.schedules.length !== 1}
+                updateDefault={updateMutation.mutate}
+                deleteFunction={deleteMutation.mutate}
+                duplicateFunction={duplicateMutation.mutate}
+              />
+            ))}
+          </ul>
           <div className="text-default mb-16 mt-4 block text-center text-sm">
             {t("temporarily_out_of_office")}{" "}
             <Link href="settings/my-account/out-of-office" className="underline">

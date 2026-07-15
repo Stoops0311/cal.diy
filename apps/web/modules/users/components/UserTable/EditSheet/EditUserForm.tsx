@@ -7,7 +7,7 @@ import { trpc } from "@calcom/trpc/react";
 import { Avatar } from "@calcom/ui/components/avatar";
 import { Button } from "@calcom/ui/components/button";
 import { Divider } from "@calcom/ui/components/divider";
-import { Form, Label, SelectField, TextAreaField, TextField, ToggleGroup } from "@calcom/ui/components/form";
+import { Form, Label, TextAreaField, TextField, ToggleGroup } from "@calcom/ui/components/form";
 import { ImageUploader } from "@calcom/ui/components/image-uploader";
 import { SheetBody, SheetFooter, SheetHeader, SheetTitle } from "@calcom/ui/components/sheet";
 import { showToast } from "@calcom/ui/components/toast";
@@ -69,24 +69,8 @@ export function EditForm({
   });
 
   const isOwner = org?.role === MembershipRole.OWNER;
-  const teamRoles: { id: string; name: string }[] = [];
 
   const membershipOptions = useMemo<MembershipOption[]>(() => {
-    // Add custom roles if they exist
-    if (teamRoles?.length > 0) {
-      const roles: MembershipOption[] = [];
-      // Add custom roles
-      teamRoles.forEach((role) => {
-        roles.push({
-          value: role.id,
-          label: role.name,
-          isCustomRole: true,
-        });
-      });
-
-      return roles;
-    }
-
     const options: MembershipOption[] = [
       {
         value: MembershipRole.MEMBER,
@@ -106,7 +90,7 @@ export function EditForm({
     }
 
     return options;
-  }, [t, isOwner, teamRoles]);
+  }, [t, isOwner]);
 
   const mutation = { mutate: (..._args: unknown[]) => {}, mutateAsync: async () => ({}), isPending: false };
 
@@ -132,7 +116,13 @@ export function EditForm({
               name="avatar"
               render={({ field: { value } }) => (
                 <div className="flex items-center">
-                  <Avatar alt={`${selectedUser?.name} avatar`} imageSrc={value} size="mdLg" />
+                  <Avatar
+                    alt={t("avatar_of_name", {
+                      name: (selectedUser.name as string) || t("nameless_user"),
+                    })}
+                    imageSrc={value}
+                    size="mdLg"
+                  />
                   <div className="ml-4">
                     <ImageUploader
                       target="avatar"
@@ -156,30 +146,15 @@ export function EditForm({
             <TextAreaField label={t("about")} {...form.register("bio")} />
             <div>
               <Label>{t("role")}</Label>
-              {teamRoles?.length > 0 ? (
-                <SelectField
-                  defaultValue={membershipOptions.find(
-                    (option) => option.value === ((selectedUser?.role as string) ?? "MEMBER")
-                  )}
-                  value={membershipOptions.find((option) => option.value === form.watch("role"))}
-                  options={membershipOptions}
-                  onChange={(option: MembershipOption | null) => {
-                    if (option) {
-                      form.setValue("role", option.value);
-                    }
-                  }}
-                />
-              ) : (
-                <ToggleGroup
-                  isFullWidth
-                  defaultValue={(selectedUser?.role as string) ?? "MEMBER"}
-                  value={form.watch("role")}
-                  options={membershipOptions}
-                  onValueChange={(value) => {
-                    form.setValue("role", value);
-                  }}
-                />
-              )}
+              <ToggleGroup
+                isFullWidth
+                defaultValue={(selectedUser?.role as string) ?? "MEMBER"}
+                value={form.watch("role")}
+                options={membershipOptions}
+                onValueChange={(value) => {
+                  form.setValue("role", value);
+                }}
+              />
             </div>
             <div>
               <Label>{t("timezone")}</Label>

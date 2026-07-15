@@ -1,8 +1,15 @@
-import { WEBAPP_URL } from "@calcom/lib/constants";
+import { APP_NAME, WEBAPP_URL } from "@calcom/lib/constants";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
 import { Avatar } from "@calcom/ui/components/avatar";
-import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from "@calcom/ui/components/sheet";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@calcom/ui/components/sheet";
 import { Loader } from "@calcom/ui/components/skeleton";
 import type { Dispatch } from "react";
 import { shallow } from "zustand/shallow";
@@ -52,7 +59,7 @@ export function EditUserSheet({
 
   const schedulesNames = loadedUser?.schedules?.map((s) => s.name);
   const teamNames = (loadedUser?.teams as TeamWithAccepted[] | undefined)?.map(
-    (t) => `${t.name} ${!t.accepted ? "(pending)" : ""}`
+    (team) => `${team.name} ${!team.accepted ? `(${t("pending")})` : ""}`
   );
 
   return (
@@ -67,16 +74,21 @@ export function EditUserSheet({
           !editMode ? (
             <>
               <SheetHeader showCloseButton={false} className="w-full">
-                <div className="w-full rounded-xl border border-subtle bg-default p-4">
+                <div className="w-full rounded-2xl border border-subtle bg-subtle p-4 shadow-sm">
                   <OrganizationBanner />
-                  <div className="ml-3 w-fit translate-y-[-50%] rounded-full bg-default p-1 ring-1 ring-[#0000000F]">
-                    <Avatar asChild size="lg" alt={`${loadedUser?.name} avatar`} imageSrc={avatarURL} />
+                  <div className="ml-3 w-fit translate-y-[-50%] rounded-full bg-subtle p-1 ring-1 ring-subtle">
+                    <Avatar
+                      asChild
+                      size="lg"
+                      alt={t("avatar_of_name", { name: loadedUser.name || t("nameless_user") })}
+                      imageSrc={avatarURL}
+                    />
                   </div>
-                  <h2 className="-mt-8 font-sans font-semibold text-2xl text-emphasis">
-                    {loadedUser?.name || "Nameless User"}
-                  </h2>
+                  <SheetTitle className="font-cal -mt-8 text-2xl">
+                    {loadedUser.name || t("nameless_user")}
+                  </SheetTitle>
                   <p className="max-h-[3em] overflow-hidden text-ellipsis font-normal text-sm text-subtle">
-                    {loadedUser?.bio || "This user does not have a bio..."}
+                    {loadedUser.bio || t("user_has_no_bio")}
                   </p>
                 </div>
               </SheetHeader>
@@ -84,7 +96,7 @@ export function EditUserSheet({
                 <div className="stack-y-4 mb-4 flex flex-col">
                   <h3 className="mb-1 font-semibold text-base text-emphasis">{t("profile")}</h3>
                   <DisplayInfo
-                    label="Cal"
+                    label={APP_NAME}
                     value={removeProtocol(`${WEBAPP_URL}/${loadedUser?.username}`)}
                     icon="external-link"
                   />
@@ -120,7 +132,10 @@ export function EditUserSheet({
             />
           )
         ) : (
-          <Loader />
+          <>
+            <SheetTitle className="sr-only">{t("profile")}</SheetTitle>
+            <Loader />
+          </>
         )}
       </SheetContent>
     </Sheet>

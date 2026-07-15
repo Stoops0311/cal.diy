@@ -178,7 +178,6 @@ export function BookingActionsDropdown({
     return "upcoming";
   };
 
-
   const userEmail = booking.loggedInUser.userEmail;
   const userSeat = booking.seatsReferences.find((seat) => !!userEmail && seat.attendee?.email === userEmail);
   const isAttendee = !!userSeat;
@@ -276,12 +275,12 @@ export function BookingActionsDropdown({
       action.id === "reschedule_request"
         ? () => setIsOpenRescheduleDialog(true)
         : action.id === "change_location"
-            ? () => setIsOpenLocationDialog(true)
-            : action.id === "add_members"
-              ? () => setIsOpenAddGuestsDialog(true)
-              : action.id === "reassign"
-                ? () => setIsOpenReassignDialog(true)
-                : undefined,
+          ? () => setIsOpenLocationDialog(true)
+          : action.id === "add_members"
+            ? () => setIsOpenAddGuestsDialog(true)
+            : action.id === "reassign"
+              ? () => setIsOpenReassignDialog(true)
+              : undefined,
   })) as ActionType[];
 
   const baseAfterEventActions = getAfterEventActions(actionContext);
@@ -547,6 +546,7 @@ export function BookingActionsDropdown({
             color="secondary"
             size={size}
             StartIcon="ellipsis"
+            aria-label={t("more")}
             className={classNames("px-2", className)}
             // Prevent click from bubbling to parent row/container click handlers
             onClick={(e) => e.stopPropagation()}

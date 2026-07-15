@@ -1,13 +1,10 @@
-import { useState, useEffect } from "react";
-
 import { currencyOptions } from "@calcom/app-store/alby/lib/currencyOptions";
 import type { EventTypeAppSettingsComponent } from "@calcom/app-store/types";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Alert } from "@calcom/ui/components/alert";
-import { Select } from "@calcom/ui/components/form";
-import { TextField } from "@calcom/ui/components/form";
+import { Select, TextField } from "@calcom/ui/components/form";
 import { SatSymbol } from "@calcom/ui/components/icon";
-
+import { useEffect, useState } from "react";
 import { PaypalPaymentOptions as paymentOptions } from "../zod";
 
 type Option = { value: string; label: string };
@@ -50,14 +47,14 @@ const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
           <>
             <div className="mt-2 block items-center sm:flex">
               <TextField
-                label="Price"
+                label={t("price")}
                 labelSrOnly
                 addOnLeading={<SatSymbol className="h-4 w-4" />}
                 addOnSuffix={selectedCurrency.unit || selectedCurrency.value}
                 type="number"
                 required
-                className="block w-full rounded-sm border-gray-300 pl-2 pr-12 text-sm"
-                placeholder="Price"
+                className="block w-full rounded-sm pl-2 pr-12 text-sm"
+                placeholder={t("price")}
                 onChange={(e) => {
                   setAppData("price", Number(e.target.value));
                   if (currency) {
@@ -75,7 +72,6 @@ const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
                 variant="default"
                 options={currencyOptions}
                 value={selectedCurrency}
-                className="text-black"
                 defaultValue={selectedCurrency}
                 onChange={(e) => {
                   if (e) {

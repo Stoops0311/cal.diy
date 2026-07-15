@@ -1,10 +1,9 @@
 /* eslint-disable playwright/missing-playwright-await */
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
-import { vi, describe, expect } from "vitest";
 
 import type { AppFrontendPayload } from "@calcom/types/App";
-
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, vi } from "vitest";
 import { AppCard } from "./AppCard";
 
 vi.mock("next/navigation", () => ({
@@ -43,7 +42,7 @@ describe("Tests for AppCard component", () => {
   describe("Tests for app description", () => {
     it("Should render the app name correctly and display app logo with correct alt text", () => {
       renderAppCard();
-      const appLogo = screen.getByAltText("Test App Logo");
+      const appLogo = screen.getByAltText("app_logo");
       const appName = screen.getByText("Test App");
       expect(appLogo).toBeInTheDocument();
       expect(appLogo.getAttribute("src")).toBe("/path/to/logo.png");
@@ -67,7 +66,7 @@ describe("Tests for AppCard component", () => {
   describe("Tests for app categories", () => {
     it("Should show 'Template' badge if app is a template", () => {
       renderAppCard({ isTemplate: true });
-      const templateBadge = screen.getByText("Template");
+      const templateBadge = screen.getByText("template");
       expect(templateBadge).toBeInTheDocument();
     });
 

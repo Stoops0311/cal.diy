@@ -3,6 +3,7 @@ import { UserRepository } from "@calcom/features/users/repositories/UserReposito
 import { prisma } from "@calcom/prisma";
 import type { Params } from "app/_types";
 import { _generateMetadata, getTranslate } from "app/_utils";
+import { notFound } from "next/navigation";
 import { z } from "zod";
 import { UsersEditView } from "~/users/views/users-edit-view";
 
@@ -35,7 +36,7 @@ export const generateMetadata = async ({ params }: { params: Params }) => {
 const Page = async ({ params }: { params: Params }) => {
   const input = userIdSchema.safeParse(await params);
 
-  if (!input.success) throw new Error("Invalid access");
+  if (!input.success) notFound();
 
   const userRepo = new UserRepository(prisma);
   const user = await userRepo.adminFindById(input.data.id);

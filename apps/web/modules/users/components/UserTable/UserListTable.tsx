@@ -202,8 +202,7 @@ function UserListTableContent({
     org?.user?.role as import("@calcom/prisma/enums").MembershipRole | undefined
   );
 
-  //we must flatten the array of arrays from the useInfiniteQuery hook
-  const flatData = useMemo<UserTableUser[]>(() => data?.rows ?? [], [data]);
+  const flatData = data.rows;
 
   const memorisedColumns = useMemo(() => {
     // Use PBAC permissions if available, otherwise fall back to role-based check
@@ -302,14 +301,14 @@ function UserListTableContent({
           <Checkbox
             checked={table.getIsAllPageRowsSelected()}
             onCheckedChange={(value: boolean | "indeterminate") => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
+            aria-label={t("select_all")}
           />
         ),
         cell: ({ row }: CellContext<UserTableUser, unknown>) => (
           <Checkbox
             checked={row.getIsSelected()}
             onCheckedChange={(value: boolean | "indeterminate") => row.toggleSelected(!!value)}
-            aria-label="Select row"
+            aria-label={t("select_row")}
             className="translate-y-[2px]"
           />
         ),

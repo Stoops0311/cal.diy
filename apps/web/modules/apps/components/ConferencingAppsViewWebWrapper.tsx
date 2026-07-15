@@ -81,12 +81,12 @@ export const InstalledConferencingApps = ({
       { appSlug, appLink },
       {
         onSuccess: () => {
-          showToast("Default app updated successfully", "success");
+          showToast(t("default_app_updated_successfully"), "success");
           utils.viewer.apps.getUsersDefaultConferencingApp.invalidate();
           onSuccessCallback();
         },
         onError: (error) => {
-          showToast(`Error: ${error.message}`, "error");
+          showToast(t("default_app_update_failed", { error: error.message }), "error");
           onErrorCallback();
         },
       }

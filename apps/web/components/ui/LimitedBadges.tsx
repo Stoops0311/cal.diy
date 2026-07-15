@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import useMediaQuery from "@calcom/lib/hooks/useMediaQuery";
 import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
@@ -37,6 +38,7 @@ function LimitedBadges({
   className,
 }: LimitedBadgesProps): JSX.Element | null {
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useLocale();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const { visibleItems, hiddenItems } = useMemo(
@@ -76,7 +78,7 @@ function LimitedBadges({
             <Button
               color="minimal"
               className="h-auto p-0 border-0 hover:border-0"
-              aria-label={`Show ${hiddenItems.length} more items`}
+              aria-label={t("show_more_items", { count: hiddenItems.length })}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}>
               <Badge variant="gray">+{hiddenItems.length}</Badge>
@@ -89,14 +91,21 @@ function LimitedBadges({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}>
             <div className="flex flex-col gap-1">
-              {hiddenItems.map((item) => (
-                <span
-                  key={item.label}
-                  className="text-default cursor-pointer text-sm hover:text-emphasis"
-                  onClick={item.onClick}>
-                  {item.label}
-                </span>
-              ))}
+              {hiddenItems.map((item) =>
+                item.onClick ? (
+                  <button
+                    type="button"
+                    key={item.label}
+                    className="text-default rounded-sm text-left text-sm hover:text-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emphasis"
+                    onClick={item.onClick}>
+                    {item.label}
+                  </button>
+                ) : (
+                  <span key={item.label} className="text-default text-sm">
+                    {item.label}
+                  </span>
+                )
+              )}
             </div>
           </PopoverContent>
         </Popover>

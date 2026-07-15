@@ -1,6 +1,5 @@
 import { faker } from "@faker-js/faker";
 import { describe, expect, it, vi } from "vitest";
-
 import {
   getLocation,
   getPublicVideoCallUrl,
@@ -11,7 +10,7 @@ import { buildCalendarEvent, buildVideoCallData } from "./builder";
 
 vi.mock("@calcom/lib/constants", () => ({
   WEBAPP_URL: "http://localhost:3000",
-  APP_NAME: "Cal.diy",
+  APP_NAME: "Convenio",
 }));
 
 vi.mock("short-uuid", () => ({
@@ -37,6 +36,14 @@ describe("getLocation", () => {
     });
 
     expect(getLocation(calEvent)).toEqual(provideName);
+  });
+  it("should return the branded name for the built-in video provider", () => {
+    const calEvent = buildCalendarEvent({
+      videoCallData: undefined,
+      location: "integrations:daily",
+    });
+
+    expect(getLocation(calEvent)).toEqual("Convenio Video");
   });
   it("should return a real-world location from event", () => {
     const calEvent = buildCalendarEvent({

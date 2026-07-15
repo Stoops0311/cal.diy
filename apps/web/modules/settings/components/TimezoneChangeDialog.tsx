@@ -113,7 +113,7 @@ function TimezoneChangeDialogContainer() {
   );
 }
 
-export default function TimezoneChangeDialog() {
+export default function TimezoneChangeDialog({ disabled = false }: { disabled?: boolean }) {
   const [renderDialog, setRenderDialog] = useState(false);
   useEffect(() => {
     if (typeof window !== "undefined" && document) {
@@ -126,7 +126,7 @@ export default function TimezoneChangeDialog() {
     }
   }, []);
   // bail if the cookie exists or window/document is not available
-  if (!renderDialog) {
+  if (disabled || !renderDialog) {
     return null;
   }
   return <TimezoneChangeDialogContainer />;

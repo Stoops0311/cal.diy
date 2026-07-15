@@ -1,18 +1,16 @@
-import type { ReactNode } from "react";
-import React from "react";
-
 import { useEventTypeById } from "@calcom/atoms/hooks/event-types/private/useEventTypeById";
 import { useIsPlatform } from "@calcom/atoms/hooks/useIsPlatform";
 import { useBookerStoreContext } from "@calcom/features/bookings/Booker/BookerStoreProvider";
+import { useBookerTime } from "@calcom/features/bookings/Booker/hooks/useBookerTime";
+import { FromTime } from "@calcom/features/bookings/Booker/utils/dates";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Badge } from "@calcom/ui/components/badge";
 import { DialogContent } from "@calcom/ui/components/dialog";
-
-import { getDurationFormatted } from "../event-meta/Duration";
-import { FromTime } from "@calcom/features/bookings/Booker/utils/dates";
 import { useEvent } from "@calcom/web/modules/schedules/hooks/useEvent";
-import { useBookerTime } from "@calcom/features/bookings/Booker/hooks/useBookerTime";
+import type { ReactNode } from "react";
+import React from "react";
+import { getDurationFormatted } from "../event-meta/Duration";
 
 const BookEventFormWrapper = ({ children, onCancel }: { onCancel: () => void; children: ReactNode }) => {
   const { data } = useEvent();
@@ -94,11 +92,13 @@ export const BookFormAsModal = ({
   children: ReactNode;
 }) => {
   const isPlatform = useIsPlatform();
+  const { t } = useLocale();
 
   return (
     <Dialog open={visible} onOpenChange={onCancel}>
       <DialogContent
-        type={undefined}
+        type={null}
+        title={t("confirm_your_details")}
         enableOverflow
         className="[&_.modalsticky]:border-t-subtle [&_.modalsticky]:bg-default max-h-[80vh] pb-0 [&_.modalsticky]:sticky [&_.modalsticky]:bottom-0 [&_.modalsticky]:left-0 [&_.modalsticky]:right-0 [&_.modalsticky]:-mx-8 [&_.modalsticky]:border-t [&_.modalsticky]:px-8 [&_.modalsticky]:py-4">
         {!isPlatform ? (

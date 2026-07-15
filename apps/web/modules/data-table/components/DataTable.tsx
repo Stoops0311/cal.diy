@@ -98,9 +98,11 @@ export function DataTable<TData>({
       // temporarily larger than the actual height of the table, so we need to
       // wait for a short time before calling onScroll to ensure the scrollHeight
       // is correct.
-      setTimeout(() => {
+      const scrollTimeout = window.setTimeout(() => {
         onScroll?.({ target });
       }, 100);
+
+      return () => window.clearTimeout(scrollTimeout);
     }
   }, [virtualItemsCount, rows.length, tableContainerRef.current, paginationMode, onScroll]);
 
@@ -178,6 +180,9 @@ export function DataTable<TData>({
                       <TableHeadLabel header={header} />
                       {Boolean(enableColumnResizing) && header.column.getCanResize() && (
                         <div
+                          role="separator"
+                          aria-orientation="vertical"
+                          tabIndex={-1}
                           onMouseDown={header.getResizeHandler()}
                           onTouchStart={header.getResizeHandler()}
                           className={classNames(

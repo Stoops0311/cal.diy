@@ -53,12 +53,9 @@ const Page = async ({ params }: PageProps) => {
 
   return (
     <ShellMainAppDir
-      {...(!bookingsV3Enabled
-        ? {
-            heading: t("bookings"),
-            subtitle: t("bookings_description"),
-          }
-        : {})}>
+      eyebrow={t("bookings_eyebrow")}
+      heading={t("bookings")}
+      subtitle={t("bookings_description")}>
       <BookingsList
         status={parsed.data.status}
         userId={userId}

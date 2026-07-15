@@ -1,3 +1,4 @@
+import process from "node:process";
 import type {
   DefaultEventLocationType,
   EventLocationTypeFromApp,
@@ -26,7 +27,7 @@ function RenderIcon({
     <img
       src={`${isPlatform ? process.env.NEXT_PUBLIC_WEBAPP_URL : ""}${eventLocationType.iconUrl}`}
       className={classNames(invertLogoOnDark(eventLocationType?.iconUrl, isTooltip), "me-[10px] h-4 w-4")}
-      alt={`${eventLocationType.label} icon`}
+      alt=""
     />
   );
 }
@@ -103,7 +104,7 @@ export function AvailableEventLocations({ locations }: { locations: LocationObje
         <img
           src="/map-pin-dark.svg"
           className={classNames("me-[10px] h-4 w-4 opacity-70 dark:invert")}
-          alt="map-pin"
+          alt=""
         />
       )}
       <Tooltip content={<RenderLocationTooltip locations={locations} />}>

@@ -1,16 +1,14 @@
 "use client";
 
-import Link from "next/link";
-import { Controller, useForm } from "react-hook-form";
-
+import type { BlocklistScope, GroupedBookingReport } from "@calcom/features/blocklist/types";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { WatchlistType } from "@calcom/prisma/enums";
 import { Button } from "@calcom/ui/components/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "@calcom/ui/components/dialog";
 import { ToggleGroup } from "@calcom/ui/components/form";
 import { ExternalLinkIcon, GlobeIcon, MailIcon } from "@coss/ui/icons";
-
-import type { GroupedBookingReport, BlocklistScope } from "@calcom/features/blocklist/types";
+import Link from "next/link";
+import { Controller, useForm } from "react-hook-form";
 
 interface FormData {
   blockType: WatchlistType;
@@ -84,47 +82,43 @@ export function BookingReportDetailsModal<T extends GroupedBookingReport>({
               <h2 className="text-emphasis px-5 py-4 text-base font-semibold">{t("details")}</h2>
               <div className="bg-default space-y-4 rounded-xl p-5">
                 <div>
-                  <label className="text-emphasis mb-1 block text-sm font-semibold">{t("email")}</label>
+                  <p className="text-emphasis mb-1 block text-sm font-semibold">{t("email")}</p>
                   <p className="text-subtle text-sm">{entry.bookerEmail}</p>
                 </div>
 
                 {isSystem && entry.organization && (
                   <div>
-                    <label className="text-emphasis mb-1 block text-sm font-semibold">
-                      {t("organization")}
-                    </label>
+                    <p className="text-emphasis mb-1 block text-sm font-semibold">{t("organization")}</p>
                     <p className="text-subtle text-sm">{entry.organization.name}</p>
                   </div>
                 )}
 
                 {isSystem && !entry.organization && (
                   <div>
-                    <label className="text-emphasis mb-1 block text-sm font-semibold">
-                      {t("organization")}
-                    </label>
+                    <p className="text-emphasis mb-1 block text-sm font-semibold">{t("organization")}</p>
                     <p className="text-subtle text-sm">{t("individual")}</p>
                   </div>
                 )}
 
                 <div>
-                  <label className="text-emphasis mb-1 block text-sm font-semibold">{t("reason")}</label>
+                  <p className="text-emphasis mb-1 block text-sm font-semibold">{t("reason")}</p>
                   <p className="text-subtle text-sm">{reasonMap[entry.reason] || entry.reason}</p>
                 </div>
 
                 <div>
-                  <label className="text-emphasis mb-1 block text-sm font-semibold">{t("reported_by")}</label>
+                  <p className="text-emphasis mb-1 block text-sm font-semibold">{t("reported_by")}</p>
                   <p className="text-subtle text-sm">{entry.reporter?.email || "—"}</p>
                 </div>
 
                 <div>
-                  <label className="text-emphasis mb-1 block text-sm font-semibold">{t("description")}</label>
+                  <p className="text-emphasis mb-1 block text-sm font-semibold">{t("description")}</p>
                   <p className="text-subtle text-sm">{entry.description || t("no_description_provided")}</p>
                 </div>
 
                 <div>
-                  <label className="text-emphasis mb-1 block text-sm font-semibold">
+                  <p className="text-emphasis mb-1 block text-sm font-semibold">
                     {t("related_bookings")} ({entry.reports.length})
-                  </label>
+                  </p>
                   <div className="max-h-32 space-y-1 overflow-y-auto">
                     {entry.reports.map((report) => (
                       <Link key={report.id} href={`/booking/${report.booking.uid}`}>
@@ -192,6 +186,7 @@ export function BookingReportDetailsModal<T extends GroupedBookingReport>({
                 </Button>
                 <Button
                   type="submit"
+                  color="destructive"
                   loading={isSubmitting || isAddingToBlocklist}
                   disabled={isSubmitting || isAddingToBlocklist || isDismissing}>
                   {t(isSystem ? "add_to_system_blocklist" : "add_to_blocklist")}

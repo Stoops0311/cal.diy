@@ -1,16 +1,14 @@
+import classNames from "@calcom/ui/classNames";
 import type { VariantProps } from "class-variance-authority";
 import { cva } from "class-variance-authority";
 import React from "react";
-
-import classNames from "@calcom/ui/classNames";
-
-import { Icon } from "../icon";
 import type { IconName } from "../icon";
+import { Icon } from "../icon";
 
 export const badgeStyles = cva("font-medium inline-flex items-center justify-center rounded-[4px] gap-x-1", {
   variants: {
     variant: {
-      default: "bg-attention text-attention",
+      default: "bg-subtle text-emphasis",
       warning: "bg-attention text-attention",
       orange: "bg-attention text-attention",
       success: "bg-cal-success text-success",
@@ -19,8 +17,8 @@ export const badgeStyles = cva("font-medium inline-flex items-center justify-cen
       blue: "bg-cal-info text-info",
       red: "bg-error text-error",
       error: "bg-error text-error",
-      grayWithoutHover: "bg-gray-100 text-gray-800 dark:bg-darkgray-200 dark:text-darkgray-800",
-      purple: "bg-purple-50 text-purple-800",
+      grayWithoutHover: "bg-subtle text-emphasis",
+      purple: "bg-subtle text-emphasis",
     },
     size: {
       sm: "px-1 py-1 text-[10px] leading-none",

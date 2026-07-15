@@ -9,7 +9,6 @@ import { localeOptions } from "@calcom/lib/i18n";
 import { nameOfDay } from "@calcom/lib/weekday";
 import type { RouterOutputs } from "@calcom/trpc/react";
 import { trpc } from "@calcom/trpc/react";
-import classNames from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
 import { Form, Label, Select, SettingsToggle } from "@calcom/ui/components/form";
 import { Icon } from "@calcom/ui/components/icon";
@@ -150,7 +149,11 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
   const watchedTzSchedules = formMethods.watch("travelSchedules");
 
   return (
-    <SettingsHeader title={t("general")} description={t("general_description")} borderInShellHeader={true}>
+    <SettingsHeader
+      eyebrow={t("my_account")}
+      title={t("general")}
+      description={t("general_description")}
+      borderInShellHeader={true}>
       <div>
         <Form
           form={formMethods}
@@ -163,7 +166,7 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
               weekStart: values.weekStart.value,
             });
           }}>
-          <div className="border-subtle border-x border-y-0 px-4 py-8 sm:px-6">
+          <div className="py-8">
             <Controller
               name="locale"
               render={({ field: { value, onChange } }) => (
@@ -216,17 +219,12 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
               )}
             />
             {watchedTzSchedules.length > 0 && (
-              <div className="bg-cal-muted border-subtle mt-2 rounded-md border p-4">
+              <div className="mt-6">
                 <Label>{t("travel_schedule")}</Label>
-                <div className="border-subtle bg-default mt-4 rounded-md border text-sm">
+                <div className="border-subtle divide-subtle divide-y border-y text-sm">
                   {watchedTzSchedules.map((schedule, index) => {
                     return (
-                      <div
-                        className={classNames(
-                          "flex items-center p-4",
-                          index !== 0 ? "border-subtle border-t" : ""
-                        )}
-                        key={index}>
+                      <div className="flex items-center py-4" key={index}>
                         <div>
                           <div className="text-emphasis font-semibold">{`${formatLocalizedDateTime(
                             schedule.startDate,
@@ -241,7 +239,9 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
                                 )}`
                               : ``
                           }`}</div>
-                          <div className="text-subtle">{schedule.timeZone.replace(/_/g, " ")}</div>
+                          <div className="text-subtle font-mono text-xs">
+                            {schedule.timeZone.replace(/_/g, " ")}
+                          </div>
                         </div>
                         <Button
                           color="destructive"
@@ -287,7 +287,7 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
                 </>
               )}
             />
-            <div className="text-gray text-subtle mt-2 flex items-start text-xs">
+            <div className="text-subtle mt-2 flex items-start text-xs">
               <Icon name="info" className="mr-2 mt-0.25" />
               {t("timeformat_profile_hint")}
             </div>

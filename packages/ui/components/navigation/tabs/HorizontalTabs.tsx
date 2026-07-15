@@ -1,4 +1,5 @@
 import { useIsomorphicLayoutEffect } from "@calcom/lib/hooks/useIsomorphicLayoutEffect";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { useRef } from "react";
 import type { HorizontalTabItemProps } from "./HorizontalTabItem";
 import HorizontalTabItem from "./HorizontalTabItem";
@@ -19,6 +20,7 @@ const HorizontalTabs = ({
   scrollActiveTabIntoView,
   ...props
 }: NavTabProps): JSX.Element => {
+  const { t } = useLocale();
   const navRef = useRef<HTMLElement | null>(null);
   const lastScrolledActiveHrefRef = useRef<string | null>(null);
 
@@ -47,17 +49,11 @@ const HorizontalTabs = ({
     <div className="mb-4 max-w-full lg:mb-5">
       <nav
         className="no-scrollbar flex space-x-0.5 overflow-x-scroll rounded-md"
-        aria-label="Tabs"
+        aria-label={t("tabs")}
         ref={navRef}
-        {...props}
-      >
+        {...props}>
         {tabs.map((tab) => (
-          <HorizontalTabItem
-            {...tab}
-            key={tab.href}
-            linkShallow={linkShallow}
-            linkScroll={linkScroll}
-          />
+          <HorizontalTabItem key={tab.href} {...tab} linkShallow={linkShallow} linkScroll={linkScroll} />
         ))}
       </nav>
       {actions && actions}

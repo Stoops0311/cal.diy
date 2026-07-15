@@ -1,6 +1,8 @@
 "use client";
 
+import TimezoneChangeDialog from "@calcom/web/modules/settings/components/TimezoneChangeDialog";
 import { WelcomeToCalcomModal } from "./components/WelcomeToCalcomModal";
+import { useWelcomeToCalcomModal } from "./hooks/useWelcomeToCalcomModal";
 
 /**
  * Container for all query-param driven modals that should appear globally across the app.
@@ -13,9 +15,12 @@ import { WelcomeToCalcomModal } from "./components/WelcomeToCalcomModal";
  * 2. Import and add it here
  */
 export function DynamicModals() {
+  const welcomeModal = useWelcomeToCalcomModal();
+
   return (
     <>
-      <WelcomeToCalcomModal />
+      <TimezoneChangeDialog disabled={welcomeModal.isOpen} />
+      <WelcomeToCalcomModal {...welcomeModal} />
       {/* Add more query-param driven modals here */}
     </>
   );

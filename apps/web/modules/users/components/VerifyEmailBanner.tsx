@@ -23,14 +23,15 @@ function VerifyEmailBanner({ data }: VerifyEmailBannerProps) {
         text={t("verify_email_banner_body", { appName: APP_NAME })}
         variant="warning"
         actions={
-          <a
-            className="underline hover:cursor-pointer"
+          <button
+            type="button"
+            className="underline underline-offset-4"
             onClick={() => {
               mutation.mutate();
               showToast(t("email_sent"), "success");
             }}>
             {t("resend_email")}
-          </a>
+          </button>
         }
       />
     </>

@@ -118,7 +118,11 @@ const SlotItem = ({
   const bookingFull = !!(hasTimeSlots && slot.attendees && slot.attendees >= seatsPerTimeSlot);
   const isHalfFull = slot.attendees && seatsPerTimeSlot && slot.attendees / seatsPerTimeSlot >= 0.5;
   const isNearlyFull = slot.attendees && seatsPerTimeSlot && slot.attendees / seatsPerTimeSlot >= 0.83;
-  const colorClass = isNearlyFull ? "bg-rose-600" : isHalfFull ? "bg-yellow-500" : "bg-emerald-400";
+  const colorClass = isNearlyFull
+    ? "bg-semantic-error-emphasis"
+    : isHalfFull
+      ? "bg-semantic-attention-emphasis"
+      : "bg-semantic-success-emphasis";
 
   const nowDate = dayjs();
   const usersTimezoneDate = nowDate.tz(timezone);
@@ -176,7 +180,7 @@ const SlotItem = ({
               <span
                 className={classNames(
                   "inline-block h-2 w-2 rounded-full",
-                  isOverlapping ? "bg-rose-600" : "bg-emerald-400"
+                  isOverlapping ? "bg-semantic-error-emphasis" : "bg-semantic-success-emphasis"
                 )}
               />
             )}
@@ -237,11 +241,11 @@ const SlotItem = ({
             {isOverlapping && (
               <HoverCard.Portal>
                 <HoverCard.Content side="top" align="end" sideOffset={2}>
-                  <div className="text-emphasis bg-inverted w-(--booker-timeslots-width) rounded-md p-3">
+                  <div className="w-(--booker-timeslots-width) rounded-xl bg-inverted p-3 text-inverted">
                     <div className="flex items-center gap-2">
-                      <p>Busy</p>
+                      <p>{t("busy_time.busy")}</p>
                     </div>
-                    <p className="text-muted">
+                    <p className="text-inverted/55">
                       {overlappingTimeStart} - {overlappingTimeEnd}
                     </p>
                   </div>
@@ -278,7 +282,7 @@ export const AvailableTimes = ({
         {!slots.length && (
           <div
             data-testId="no-slots-available"
-            className="bg-subtle border-subtle flex h-full flex-col items-center rounded-md border p-6 dark:bg-transparent">
+            className="flex h-full flex-col items-center rounded-2xl border border-subtle bg-subtle p-6">
             <CalendarX2Icon className="text-muted mb-2 h-4 w-4" />
             <p className={classNames("text-muted", showTimeFormatToggle ? "-mt-1 text-lg" : "text-sm")}>
               {t("all_booked_today")}

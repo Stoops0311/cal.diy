@@ -1,10 +1,9 @@
-import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { useState } from "react";
-import { Controller, useFormContext } from "react-hook-form";
-
 import dayjs from "@calcom/dayjs";
-import type { EventTypeSetupProps } from "@calcom/features/eventtypes/lib/types";
-import type { FormValues, PrivateLinkWithOptions } from "@calcom/features/eventtypes/lib/types";
+import type {
+  EventTypeSetupProps,
+  FormValues,
+  PrivateLinkWithOptions,
+} from "@calcom/features/eventtypes/lib/types";
 import { generateHashedLink } from "@calcom/lib/generateHashedLink";
 import { isLinkExpired as utilsIsLinkExpired } from "@calcom/lib/hashedLinksUtils";
 import { useCopy } from "@calcom/lib/hooks/useCopy";
@@ -13,13 +12,14 @@ import { trpc } from "@calcom/trpc/react";
 import classNames from "@calcom/ui/classNames";
 import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
-import { Dialog, DialogContent } from "@calcom/ui/components/dialog";
-import { TextField } from "@calcom/ui/components/form";
-import { DatePicker } from "@calcom/ui/components/form";
-import { NumberInput } from "@calcom/ui/components/form";
+import { Dialog, DialogClose, DialogContent, DialogFooter } from "@calcom/ui/components/dialog";
+import { DatePicker, NumberInput, TextField } from "@calcom/ui/components/form";
 import { RadioAreaGroup as RadioArea } from "@calcom/ui/components/radio";
 import { showToast } from "@calcom/ui/components/toast";
 import { Tooltip } from "@calcom/ui/components/tooltip";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { useState } from "react";
+import { Controller, useFormContext } from "react-hook-form";
 
 export const MultiplePrivateLinksController = ({
   team,
@@ -269,7 +269,7 @@ export const MultiplePrivateLinksController = ({
                         disabled={isExpired}
                         value={singleUseURL}
                         readOnly
-                        className={classNames(isExpired ? "bg-red-50 text-gray-400" : "bg-gray-50")}
+                        className={classNames(isExpired ? "bg-error text-subtle" : "bg-subtle")}
                         data-testid="private-link-url"
                         addOnSuffix={
                           !isExpired ? (
@@ -279,6 +279,7 @@ export const MultiplePrivateLinksController = ({
                                 color="minimal"
                                 size="sm"
                                 StartIcon="copy"
+                                aria-label={t("copy_link")}
                                 onClick={() => {
                                   copyToClipboard(singleUseURL);
                                   showToast(t("link_copied"), "success");
@@ -304,6 +305,7 @@ export const MultiplePrivateLinksController = ({
                               href={singleUseURL}
                               target="_blank"
                               rel="noreferrer"
+                              aria-label={t("preview")}
                             />
                           </Tooltip>
                         )}
@@ -314,6 +316,7 @@ export const MultiplePrivateLinksController = ({
                             variant="icon"
                             StartIcon="settings"
                             data-testid="private-link-settings"
+                            aria-label={t("link_settings")}
                             onClick={() => openSettingsDialog(originalIndex, val)}
                           />
                         )}
@@ -324,11 +327,12 @@ export const MultiplePrivateLinksController = ({
                           StartIcon="trash-2"
                           color="destructive"
                           className="ml-1 border-none"
+                          aria-label={t("delete")}
                           onClick={() => removePrivateLink(originalIndex)}
                         />
                       </div>
                     </div>
-                    <div data-testid="private-link-description" className="mt-1 text-sm text-gray-500">
+                    <div data-testid="private-link-description" className="mt-1 text-subtle text-sm">
                       {linkDescription}
                     </div>
                   </li>
@@ -410,7 +414,8 @@ export const MultiplePrivateLinksController = ({
             </RadioArea.Group>
           </div>
 
-          <div className="mb-4 mt-4 flex justify-end">
+          <DialogFooter showDivider className="mt-6">
+            <DialogClose>{t("cancel")}</DialogClose>
             <Button
               type="button"
               color="primary"
@@ -426,7 +431,7 @@ export const MultiplePrivateLinksController = ({
               }}>
               {t("save")}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

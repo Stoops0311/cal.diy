@@ -1,15 +1,14 @@
-import type { Dispatch, SetStateAction } from "react";
-import { useState } from "react";
-
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import classNames from "@calcom/ui/classNames";
 import { Alert } from "@calcom/ui/components/alert";
 import { Button } from "@calcom/ui/components/button";
-import { DialogContent, DialogFooter, DialogClose } from "@calcom/ui/components/dialog";
+import { DialogClose, DialogContent, DialogFooter } from "@calcom/ui/components/dialog";
 import { Input } from "@calcom/ui/components/form";
-import { Icon } from "@calcom/ui/components/icon";
 import type { IconName } from "@calcom/ui/components/icon";
+import { Icon } from "@calcom/ui/components/icon";
+import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 
 interface ISearchDialog {
   isOpenDialog: boolean;
@@ -49,12 +48,12 @@ export const SearchDialog = (props: ISearchDialog) => {
     });
     const json = await res.json();
     if (!res.ok) {
-      setErrorMessage(json?.message || "Something went wrong");
+      setErrorMessage(json?.message || t("something_went_wrong"));
     } else {
       setGifImage(json.image || "");
       setNextOffset(json.nextOffset);
       if (!json.image) {
-        setErrorMessage("No Result found");
+        setErrorMessage(t("no_results"));
       }
     }
     setIsPending(false);
@@ -78,11 +77,11 @@ export const SearchDialog = (props: ISearchDialog) => {
     });
     const json = await res.json();
     if (!res.ok) {
-      setErrorMessage(json?.message || json?.[0]?.message || "Something went wrong");
+      setErrorMessage(json?.message || json?.[0]?.message || t("something_went_wrong"));
     } else {
       setGifImage(json.image || "");
       if (!json.image) {
-        setErrorMessage("No Result found");
+        setErrorMessage(t("no_results"));
       }
     }
     setIsPending(false);
@@ -90,7 +89,9 @@ export const SearchDialog = (props: ISearchDialog) => {
   };
 
   const renderTab = (iconName: IconName, text: string, mode: Mode) => (
-    <div
+    <button
+      type="button"
+      aria-pressed={selectedMode === mode}
       className={classNames(
         "flex cursor-pointer items-center border-b-2 p-2 text-sm ",
         selectedMode === mode ? "text-default border-emphasis" : "text-subtle border-transparent"
@@ -102,7 +103,7 @@ export const SearchDialog = (props: ISearchDialog) => {
       }}>
       <Icon name={iconName} className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
       {text}
-    </div>
+    </button>
   );
 
   const handleFormSubmit = async (event: React.SyntheticEvent) => {
@@ -143,7 +144,7 @@ export const SearchDialog = (props: ISearchDialog) => {
               }}
             />
           </div>
-          <Button type="submit" tabIndex={-1} color="secondary" loading={isPending}>
+          <Button type="submit" color="secondary" loading={isPending}>
             {t("search")}
           </Button>
         </form>
@@ -151,7 +152,7 @@ export const SearchDialog = (props: ISearchDialog) => {
           <div className="flex flex-col items-center space-x-2 stack-y-2 pt-3 rtl:space-x-reverse">
             <div className="bg-subtle flex w-full items-center justify-center">
               {isPending ? (
-                <div className="flex h-[200px] w-full items-center justify-center bg-gray-400 pb-3 pt-3">
+                <div className="bg-emphasis flex h-[200px] w-full items-center justify-center pb-3 pt-3">
                   <svg
                     className={classNames("mx-4 h-5 w-5 animate-spin", "text-inverted dark:text-emphasis")}
                     xmlns="http://www.w3.org/2000/svg"
@@ -173,7 +174,11 @@ export const SearchDialog = (props: ISearchDialog) => {
                   </svg>
                 </div>
               ) : (
-                <img className="h-[200px] pb-3 pt-3" src={gifImage} alt={`Gif from Giphy for ${keyword}`} />
+                <img
+                  className="h-[200px] pb-3 pt-3"
+                  src={gifImage}
+                  alt={t("giphy_result_for", { keyword })}
+                />
               )}
             </div>
           </div>
@@ -181,21 +186,20 @@ export const SearchDialog = (props: ISearchDialog) => {
         {errorMessage && <Alert severity="error" title={errorMessage} className="my-4" />}
         {gifImage && selectedMode === MODE_SEARCH && (
           <div className="mt-4 flex items-center justify-between space-x-2 rtl:space-x-reverse">
-            <div className="text-subtle text-sm font-light">Not the perfect GIF?</div>
+            <div className="text-subtle text-sm font-light">{t("not_the_perfect_gif")}</div>
             <Button
               size="sm"
               color="secondary"
               type="button"
               loading={isPending}
               onClick={() => searchGiphy(keyword, nextOffset)}>
-              Shuffle
+              {t("shuffle")}
             </Button>
           </div>
         )}
         <DialogFooter noSticky>
           <DialogClose
             color="minimal"
-            tabIndex={-1}
             onClick={() => {
               props.setIsOpenDialog(false);
             }}>

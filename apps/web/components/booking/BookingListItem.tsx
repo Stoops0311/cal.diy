@@ -1,11 +1,10 @@
-import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
-
 import { getPaymentAppData } from "@calcom/app-store/_utils/payments/getPaymentAppData";
 import type { getEventLocationValue } from "@calcom/app-store/locations";
 import { getSuccessPageLocationMessage, guessEventLocationType } from "@calcom/app-store/locations";
 import dayjs from "@calcom/dayjs";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 // TODO: Use browser locale, implement Intl in Dayjs maybe?
 import "@calcom/dayjs/locales";
 import { formatTime } from "@calcom/lib/dayjs";
@@ -29,36 +28,34 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuPortal,
 } from "@calcom/ui/components/dropdown";
 import { Icon } from "@calcom/ui/components/icon";
 import { MeetingTimeInTimezones } from "@calcom/ui/components/popover";
 import { showToast } from "@calcom/ui/components/toast";
 import { Tooltip } from "@calcom/ui/components/tooltip";
-
 import assignmentReasonBadgeTitleMap from "@lib/booking/assignmentReasonBadgeTitleMap";
-
-import { WrongAssignmentDialog } from "../dialog/WrongAssignmentDialog";
 import { buildBookingLink } from "../../modules/bookings/lib/buildBookingLink";
 import { useBookingDetailsSheetStore } from "../../modules/bookings/store/bookingDetailsSheetStore";
 import type { BookingAttendee } from "../../modules/bookings/types";
+import { WrongAssignmentDialog } from "../dialog/WrongAssignmentDialog";
 import { AcceptBookingButton } from "./AcceptBookingButton";
-import { RejectBookingButton } from "./RejectBookingButton";
 import { BookingActionsDropdown } from "./actions/BookingActionsDropdown";
 import {
-  useBookingActionsStoreContext,
   BookingActionsStoreProvider,
+  useBookingActionsStoreContext,
 } from "./actions/BookingActionsStoreProvider";
 import {
-  shouldShowPendingActions,
-  shouldShowRecurringCancelAction,
-  shouldShowIndividualReportButton,
   type BookingActionContext,
   getReportAction,
   isActionDisabled,
+  shouldShowIndividualReportButton,
+  shouldShowPendingActions,
+  shouldShowRecurringCancelAction,
 } from "./actions/bookingActions";
+import { RejectBookingButton } from "./RejectBookingButton";
 import type { BookingItemProps } from "./types";
 
 type ParsedBooking = ReturnType<typeof buildParsedBooking>;
@@ -101,23 +98,10 @@ const ConditionalLink = ({
   const { t } = useLocale();
 
   if (onClick) {
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        onClick();
-      }
-    };
-
     return (
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={onClick}
-        onKeyDown={handleKeyDown}
-        className={className}
-        aria-label={t("view_booking_details")}>
+      <button type="button" onClick={onClick} className={className} aria-label={t("view_booking_details")}>
         {children}
-      </div>
+      </button>
     );
   }
   return (
@@ -283,19 +267,20 @@ function BookingListItem(booking: BookingItemProps) {
       data-booking-list-item="true"
       data-booking-uid={booking.uid}
       className={classNames(
-        "group relative w-full transition-all duration-100 ease-out",
+        "group relative w-full transition-colors duration-100 ease-out",
         "hover:bg-cal-muted",
-        isSelected &&
-          "bg-cal-muted before:bg-brand-default rounded-r-md before:absolute before:left-0 before:top-0 before:h-full before:w-1"
+        isSelected && "bg-cal-muted"
       )}>
       <div className="flex flex-col sm:flex-row">
         <div className="sm:min-w-48 hidden align-top ltr:pl-3 rtl:pr-6 sm:table-cell">
           <div className="flex h-full items-center">
-            {eventTypeColor && <div className="h-[70%] w-0.5" style={{ backgroundColor: eventTypeColor }} />}
+            {eventTypeColor && (
+              <div className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: eventTypeColor }} />
+            )}
             <ConditionalLink onClick={onClick} bookingLink={bookingLink} className="ml-3">
               <div className="cursor-pointer py-4">
                 <div className="text-emphasis text-sm leading-6">{startTime}</div>
-                <div className="text-subtle text-sm">
+                <div className="text-subtle font-mono text-xs leading-6">
                   {formatTime(booking.startTime, userTimeFormat, userTimeZone)} -{" "}
                   {formatTime(booking.endTime, userTimeFormat, userTimeZone)}
                   <MeetingTimeInTimezones
@@ -317,7 +302,7 @@ function BookingListItem(booking: BookingItemProps) {
                           target="_blank"
                           title={locationToDisplay}
                           rel="noreferrer"
-                          className="text-sm leading-6 text-blue-600 hover:underline dark:text-blue-400">
+                          className="text-emphasis text-sm leading-6 underline">
                           <div className="flex items-center gap-2">
                             {provider?.iconUrl && (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -326,7 +311,7 @@ function BookingListItem(booking: BookingItemProps) {
                                 width={16}
                                 height={16}
                                 className="h-4 w-4 rounded-sm"
-                                alt={`${provider?.label} logo`}
+                                alt=""
                               />
                             )}
                             {provider?.label
@@ -349,7 +334,7 @@ function BookingListItem(booking: BookingItemProps) {
             <div className="w-full pb-2 pt-4 sm:hidden">
               <div className="flex w-full items-center justify-between sm:hidden">
                 <div className="text-emphasis text-sm leading-6">{startTime}</div>
-                <div className="text-subtle pr-2 text-sm">
+                <div className="text-subtle pr-2 font-mono text-xs leading-6">
                   {formatTime(booking.startTime, userTimeFormat, userTimeZone)} -{" "}
                   {formatTime(booking.endTime, userTimeFormat, userTimeZone)}
                   <MeetingTimeInTimezones
@@ -442,7 +427,7 @@ function BookingListItem(booking: BookingItemProps) {
                         target="_blank"
                         title={locationToDisplay}
                         rel="noreferrer"
-                        className="text-sm leading-6 text-blue-600 hover:underline dark:text-blue-400">
+                        className="text-emphasis text-sm leading-6 underline">
                         <div className="flex items-center gap-2">
                           {provider?.iconUrl && (
                             <img
@@ -450,7 +435,7 @@ function BookingListItem(booking: BookingItemProps) {
                               width={16}
                               height={16}
                               className="h-4 w-4 rounded-sm"
-                              alt={`${provider?.label} logo`}
+                              alt=""
                             />
                           )}
                           {provider?.label
@@ -590,7 +575,9 @@ const BookingItemBadges = ({
       )}
       {booking?.assignmentReasonSortedByCreatedAt.length > 0 && (
         <AssignmentReasonTooltip
-          assignmentReason={booking.assignmentReasonSortedByCreatedAt[booking.assignmentReasonSortedByCreatedAt.length - 1]}
+          assignmentReason={
+            booking.assignmentReasonSortedByCreatedAt[booking.assignmentReasonSortedByCreatedAt.length - 1]
+          }
           onClick={onAssignmentReasonClick}
         />
       )}
@@ -668,7 +655,7 @@ const RecurringBookingsTooltip = ({
       (booking.listingStatus === "recurring" ||
         booking.listingStatus === "unconfirmed" ||
         booking.listingStatus === "cancelled") && (
-        <div className="underline decoration-gray-400 decoration-dashed underline-offset-2">
+        <div className="underline decoration-subtle decoration-dashed underline-offset-2">
           <div className="flex">
             <Tooltip
               content={recurringDates.map((aDate, key) => {
@@ -678,7 +665,7 @@ const RecurringBookingsTooltip = ({
                     .map((date) => date.toString())
                     .includes(aDate.toString());
                 return (
-                  <p key={key} className={classNames(pastOrCancelled && "line-through")}>
+                  <p key={key} className={classNames("font-mono", pastOrCancelled && "line-through")}>
                     {formatTime(aDate, userTimeFormat, userTimeZone)}
                     {" - "}
                     {dayjs(aDate).locale(language).format("D MMMM YYYY")}
@@ -736,7 +723,7 @@ const FirstAttendee = ({
   return (
     <a
       key={user.email}
-      className="hover:text-blue-500"
+      className="hover:text-emphasis"
       href={`mailto:${user.email}`}
       onClick={(e) => e.stopPropagation()}>
       {user.name || user.email}
@@ -795,9 +782,10 @@ const Attendee = (
     <Dropdown open={openDropdown} onOpenChange={setOpenDropdown}>
       <DropdownMenuTrigger asChild>
         <button
+          type="button"
           data-testid="guest"
           onClick={(e) => e.stopPropagation()}
-          className="radix-state-open:text-blue-500 transition hover:text-blue-500">
+          className="transition radix-state-open:text-emphasis hover:text-emphasis">
           {noShow ? (
             <>
               {displayName} <Icon name="eye-off" className="inline h-4" />
@@ -907,9 +895,10 @@ const GroupedAttendees = (groupedAttendeeProps: GroupedAttendeeProps) => {
     <Dropdown open={openDropdown} onOpenChange={setOpenDropdown}>
       <DropdownMenuTrigger asChild>
         <button
+          type="button"
           data-testid="more-guests"
           onClick={(e) => e.stopPropagation()}
-          className="radix-state-open:text-blue-500 transition hover:text-blue-500 focus:outline-none">
+          className="rounded-sm transition radix-state-open:text-emphasis hover:text-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emphasis">
           {t("plus_more", { count: attendees.length - 1 })}
         </button>
       </DropdownMenuTrigger>
@@ -986,8 +975,9 @@ const GroupedGuests = ({ guests }: { guests: BookingAttendee[] }) => {
       }}>
       <DropdownMenuTrigger asChild>
         <button
+          type="button"
           onClick={(e) => e.stopPropagation()}
-          className="radix-state-open:text-blue-500 transition hover:text-blue-500 focus:outline-none">
+          className="rounded-sm transition radix-state-open:text-emphasis hover:text-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emphasis">
           {t("plus_more", { count: guests.length - 1 })}
         </button>
       </DropdownMenuTrigger>
@@ -1136,7 +1126,7 @@ const AssignmentReasonTooltip = ({
   return (
     <Tooltip content={<p>{assignmentReason.reasonString}</p>}>
       <Badge
-        className={classNames("ltr:mr-2 rtl:ml-2", onClick && "cursor-pointer hover:opacity-80")}
+        className={classNames("ltr:mr-2 rtl:ml-2", onClick && "cursor-pointer hover:bg-subtle")}
         variant="gray"
         onClick={onClick}>
         {t(badgeTitle)}

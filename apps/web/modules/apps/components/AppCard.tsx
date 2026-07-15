@@ -1,12 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import posthog from "posthog-js";
-
-import { InstallAppButton } from "@calcom/app-store/InstallAppButton";
 import { isRedirectApp } from "@calcom/app-store/_utils/redirectApps";
 import useAddAppMutation from "@calcom/app-store/_utils/useAddAppMutation";
+import { InstallAppButton } from "@calcom/app-store/InstallAppButton";
 import { doesAppSupportTeamInstall, isConferencing } from "@calcom/app-store/utils";
 import type { UserAdminTeams } from "@calcom/features/users/repositories/UserRepository";
 import { AppOnboardingSteps } from "@calcom/lib/apps/appOnboardingSteps";
@@ -18,9 +14,13 @@ import type { AppFrontendPayload as App } from "@calcom/types/App";
 import type { CredentialFrontendPayload as Credential } from "@calcom/types/Credential";
 import classNames from "@calcom/ui/classNames";
 import { Badge } from "@calcom/ui/components/badge";
-import { Button } from "@calcom/ui/components/button";
 import type { ButtonProps } from "@calcom/ui/components/button";
+import { Button } from "@calcom/ui/components/button";
 import { showToast } from "@calcom/ui/components/toast";
+import { normalizeAppBrandText } from "@calcom/web/modules/apps/lib/normalizeAppBrandText";
+import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
+import { useEffect, useState } from "react";
 
 interface AppCardProps {
   app: App;
@@ -32,6 +32,7 @@ interface AppCardProps {
 export function AppCard({ app, credentials, searchText, userAdminTeams }: AppCardProps) {
   const { t } = useLocale();
   const router = useRouter();
+  const appName = normalizeAppBrandText(app.name);
   const allowedMultipleInstalls = app.categories && app.categories.indexOf("calendar") > -1;
   const appAdded = (credentials && credentials.length) || 0;
   const enabledOnTeams = doesAppSupportTeamInstall({
@@ -55,8 +56,8 @@ export function AppCard({ app, credentials, searchText, userAdminTeams }: AppCar
   const [searchTextIndex, setSearchTextIndex] = useState<number | undefined>(undefined);
 
   useEffect(() => {
-    setSearchTextIndex(searchText ? app.name.toLowerCase().indexOf(searchText.toLowerCase()) : undefined);
-  }, [app.name, searchText]);
+    setSearchTextIndex(searchText ? appName.toLowerCase().indexOf(searchText.toLowerCase()) : undefined);
+  }, [appName, searchText]);
 
   const handleAppInstall = () => {
     posthog.capture("app_install_button_clicked", {
@@ -96,45 +97,56 @@ export function AppCard({ app, credentials, searchText, userAdminTeams }: AppCar
     }
   };
 
-  return (
-    <div className="border-subtle relative flex h-64 flex-col rounded-md border p-5">
-      <div className="flex">
-        <img
-          src={app.logo}
-          alt={`${app.name} Logo`}
-          className={classNames(
-            app.logo.includes("-dark") && "dark:invert",
-            "mb-4 h-12 w-12 rounded-sm" // TODO: Maybe find a better way to handle this @Hariom?
-          )}
-        />
-      </div>
-      <div className="flex items-center">
-        <h3 className="text-emphasis font-medium">
-          {searchTextIndex != undefined && searchText ? (
-            <>
-              {app.name.substring(0, searchTextIndex)}
-              <span className="bg-yellow-300" data-testid="highlighted-text">
-                {app.name.substring(searchTextIndex, searchTextIndex + searchText.length)}
-              </span>
-              {app.name.substring(searchTextIndex + searchText.length)}
-            </>
-          ) : (
-            app.name
-          )}
-        </h3>
-      </div>
-      {/* TODO: add reviews <div className="flex text-sm text-default">
-            <span>{props.rating} stars</span> <Icon name="star" className="ml-1 mt-0.5 h-4 w-4 text-yellow-600" />
-            <span className="pl-1 text-subtle">{props.reviews} reviews</span>
-          </div> */}
-      <p className="text-default mt-2 text-sm line-clamp-3">
-        {markdownToSafeHTML(app.description).replace(/<[^>]+>/g, "")}
-      </p>
+  const categoryLabel = app.categories?.[0] ?? app.category;
 
-      <div className="mt-auto flex max-w-full flex-row justify-between gap-2">
+  return (
+    <div className="hover:bg-muted flex min-h-[72px] items-center gap-4 px-3 py-4 transition-colors">
+      <img
+        src={app.logo}
+        alt={t("app_logo", { appName })}
+        className={classNames(app.logo.includes("-dark") && "dark:invert", "h-10 w-10 shrink-0 rounded-sm")}
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-x-2">
+          <h3 className="text-emphasis truncate text-sm font-medium">
+            {searchTextIndex != undefined && searchText ? (
+              <>
+                {appName.substring(0, searchTextIndex)}
+                <span className="bg-emphasis rounded-sm" data-testid="highlighted-text">
+                  {appName.substring(searchTextIndex, searchTextIndex + searchText.length)}
+                </span>
+                {appName.substring(searchTextIndex + searchText.length)}
+              </>
+            ) : (
+              appName
+            )}
+          </h3>
+          {appAdded > 0 && !isRedirectApp(app.slug) ? (
+            <Badge variant="green">{t("installed", { count: appAdded })}</Badge>
+          ) : null}
+          {app.isTemplate && (
+            <span className="text-subtle shrink-0 font-mono text-[11px] uppercase tracking-[0.18em]">
+              {t("template")}
+            </span>
+          )}
+          {(app.isDefault || (!app.isDefault && app.isGlobal)) && (
+            <span className="text-subtle shrink-0 font-mono text-[11px] uppercase tracking-[0.18em]">
+              {t("default")}
+            </span>
+          )}
+        </div>
+        <p className="text-default truncate text-sm">
+          {markdownToSafeHTML(normalizeAppBrandText(app.description)).replace(/<[^>]+>/g, "")}
+        </p>
+      </div>
+      {categoryLabel && (
+        <span className="text-muted hidden shrink-0 font-mono text-[11px] uppercase tracking-[0.18em] md:inline">
+          {categoryLabel}
+        </span>
+      )}
+      <div className="flex shrink-0 items-center gap-2">
         <Button
           color="secondary"
-          className="flex w-32 grow justify-center"
           href={`/apps/${app.slug}`}
           onClick={() => {
             posthog.capture("app_card_details_clicked", { slug: app.slug });
@@ -149,7 +161,6 @@ export function AppCard({ app, credentials, searchText, userAdminTeams }: AppCar
               <InstallAppButton
                 type={app.type}
                 disableInstall={!!app.dependencies && !app.dependencyData?.some((data) => !data.installed)}
-                wrapperClassName="[@media(max-width:260px)]:w-full"
                 render={({ useDefaultComponent, ...props }) => {
                   if (useDefaultComponent) {
                     props = {
@@ -184,7 +195,6 @@ export function AppCard({ app, credentials, searchText, userAdminTeams }: AppCar
             !appInstalled && (
               <InstallAppButton
                 type={app.type}
-                wrapperClassName="[@media(max-width:260px)]:w-full"
                 disableInstall={!!app.dependencies && app.dependencyData?.some((data) => !data.installed)}
                 render={({ useDefaultComponent, ...props }) => {
                   if (useDefaultComponent) {
@@ -218,19 +228,6 @@ export function AppCard({ app, credentials, searchText, userAdminTeams }: AppCar
               />
             )}
       </div>
-      <div className="max-w-44 absolute right-0 mr-4 flex flex-wrap justify-end gap-1">
-        {appAdded > 0 && !isRedirectApp(app.slug) ? (
-          <Badge variant="green">{t("installed", { count: appAdded })}</Badge>
-        ) : null}
-        {app.isTemplate && (
-          <span className="bg-error rounded-md px-2 py-1 text-sm font-normal text-red-800">Template</span>
-        )}
-        {(app.isDefault || (!app.isDefault && app.isGlobal)) && (
-          <span className="bg-subtle text-emphasis flex items-center rounded-md px-2 py-1 text-sm font-normal">
-            {t("default")}
-          </span>
-        )}
-      </div>
     </div>
   );
 }
@@ -246,12 +243,7 @@ const InstallAppButtonChild = ({
   const { t } = useLocale();
   if (isRedirect) {
     return (
-      <Button
-        color="secondary"
-        className="[@media(max-width:260px)]:w-full [@media(max-width:260px)]:justify-center"
-        StartIcon="external-link"
-        {...props}
-        size="base">
+      <Button color="secondary" StartIcon="external-link" {...props} size="base">
         {t("visit")}
       </Button>
     );
@@ -260,12 +252,7 @@ const InstallAppButtonChild = ({
   // Also, cal.ai(the only paid app at the moment) doesn't support team install either
   if (paid) {
     return (
-      <Button
-        color="secondary"
-        className="[@media(max-width:260px)]:w-full [@media(max-width:260px)]:justify-center"
-        StartIcon="plus"
-        data-testid="install-app-button"
-        {...props}>
+      <Button color="secondary" StartIcon="plus" data-testid="install-app-button" {...props}>
         {paid.trial ? t("start_paid_trial") : t("subscribe")}
       </Button>
     );

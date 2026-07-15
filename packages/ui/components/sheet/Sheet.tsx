@@ -1,10 +1,9 @@
 "use client";
 
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import classNames from "@calcom/ui/classNames";
 import * as SheetPrimitives from "@radix-ui/react-dialog";
 import * as React from "react";
-
-import classNames from "@calcom/ui/classNames";
-
 import { Button } from "../button";
 
 const Sheet = (props: React.ComponentPropsWithoutRef<typeof SheetPrimitives.Root>) => {
@@ -43,9 +42,9 @@ const SheetOverlay = React.forwardRef<
         // base
         "fixed inset-0 z-50 overflow-y-auto",
         // background color
-        "bg-black/30",
+        "bg-neutral-950/60 backdrop-blur-[2px]",
         // transition
-        "data-[state=closed]:animate-hide data-[state=open]:animate-dialogOverlayShow",
+        "data-[state=closed]:animate-hide data-[state=open]:animate-dialogOverlayShow motion-reduce:animate-none",
         className
       )}
       {...props}
@@ -70,14 +69,14 @@ const SheetContent = React.forwardRef<
       ref={forwardedRef}
       className={classNames(
         // base
-        "fixed inset-x-0 inset-y-4 mx-auto flex w-[95vw] flex-1 flex-col overflow-y-auto rounded-xl border p-4 shadow-lg focus:outline-none sm:inset-x-auto sm:right-2 sm:max-w-lg sm:p-6",
+        "fixed inset-x-0 inset-y-4 mx-auto flex w-[95vw] flex-1 flex-col overflow-y-auto overscroll-contain rounded-2xl border p-4 shadow-2xl focus-visible:outline-none sm:inset-x-auto sm:right-2 sm:max-w-lg sm:p-6",
         // "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm sm:p-6 p-4 shadow-lg rounded-xl border ",
         // border color
         "border-subtle",
         // background color
-        "bg-default",
+        "bg-subtle",
         // transition
-        "data-[state=closed]:animate-SheetSlideRightAndFade data-[state=open]:animate-SheetSlideLeftAndFade",
+        "data-[state=closed]:animate-SheetSlideRightAndFade data-[state=open]:animate-SheetSlideLeftAndFade motion-reduce:animate-none",
         // Increase z-index when no overlay to ensure it's above other content
         hideOverlay && "z-50",
         className
@@ -95,12 +94,20 @@ const SheetHeader = React.forwardRef<
   HTMLDivElement,
   React.ComponentPropsWithoutRef<"div"> & { showCloseButton?: boolean }
 >(({ children, className, showCloseButton = true, ...props }, ref) => {
+  const { t } = useLocale();
+
   return (
     <div ref={ref} className="flex items-start justify-between gap-x-4 pb-2" {...props}>
       <div className={classNames("mt-1 flex flex-col gap-y-1", className)}>{children}</div>
       {showCloseButton && (
         <SheetPrimitives.Close asChild>
-          <Button variant="icon" StartIcon="x" color="minimal" className="aspect-square p-1" />
+          <Button
+            variant="icon"
+            StartIcon="x"
+            color="minimal"
+            className="aspect-square p-1"
+            aria-label={t("close")}
+          />
         </SheetPrimitives.Close>
       )}
     </div>
@@ -117,7 +124,7 @@ const SheetTitle = React.forwardRef<
     ref={forwardedRef}
     className={classNames(
       // base
-      "font-sans text-xl font-semibold",
+      "font-cal text-xl font-semibold",
       // text color
       "text-emphasis",
       className
@@ -154,8 +161,9 @@ SheetDescription.displayName = "SheetDescription";
 const SheetFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
+      data-testid="sheet-footer"
       className={classNames(
-        "border-muted flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end",
+        "bg-default border-muted -mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-2xl border-t px-4 py-4 sm:-mx-6 sm:-mb-6 sm:flex-row sm:justify-end sm:px-6",
         className
       )}
       {...props}

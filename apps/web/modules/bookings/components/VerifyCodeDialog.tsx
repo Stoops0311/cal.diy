@@ -1,15 +1,13 @@
-import type { Dispatch, SetStateAction } from "react";
-import { useCallback, useEffect, useState } from "react";
-import useDigitInput from "react-digit-input";
-
 import { useBookerStoreContext } from "@calcom/features/bookings/Booker/BookerStoreProvider";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "@calcom/ui/components/button";
-import { DialogContent, DialogFooter, DialogHeader, DialogClose } from "@calcom/ui/components/dialog";
-import { Input } from "@calcom/ui/components/form";
-import { Label } from "@calcom/ui/components/form";
+import { DialogClose, DialogContent, DialogFooter, DialogHeader } from "@calcom/ui/components/dialog";
+import { Input, Label } from "@calcom/ui/components/form";
 import { InfoIcon } from "@coss/ui/icons";
+import type { Dispatch, SetStateAction } from "react";
+import { useCallback, useEffect, useState } from "react";
+import useDigitInput from "react-digit-input";
 
 export const VerifyCodeDialog = ({
   isOpenDialog,
@@ -80,7 +78,10 @@ export const VerifyCodeDialog = ({
     verifyCode();
   }, [error, isPending, value, hasVerified]);
 
-  useEffect(() => setValue(""), [isOpenDialog]);
+  useEffect(() => {
+    setValue("");
+    setHasVerified(false);
+  }, [isOpenDialog]);
 
   const digitClassName =
     "h-12 w-12 text-center text-xl! text-emphasis caret-emphasis [-webkit-text-fill-color:currentColor]";
@@ -88,8 +89,9 @@ export const VerifyCodeDialog = ({
   return (
     <Dialog
       open={isOpenDialog}
-      onOpenChange={() => {
+      onOpenChange={(open) => {
         resetErrors();
+        setIsOpenDialog(open);
       }}>
       <DialogContent className="sm:max-w-md">
         <div className="flex flex-row">
@@ -99,20 +101,52 @@ export const VerifyCodeDialog = ({
             <div className="flex flex-row justify-between">
               <Input
                 className={digitClassName}
+                id="code"
                 name="2fa1"
+                aria-label={`${t("code")} 1`}
                 inputMode="decimal"
                 {...digits[0]}
                 autoFocus
                 autoComplete="one-time-code"
               />
-              <Input className={digitClassName} name="2fa2" inputMode="decimal" {...digits[1]} />
-              <Input className={digitClassName} name="2fa3" inputMode="decimal" {...digits[2]} />
-              <Input className={digitClassName} name="2fa4" inputMode="decimal" {...digits[3]} />
-              <Input className={digitClassName} name="2fa5" inputMode="decimal" {...digits[4]} />
-              <Input className={digitClassName} name="2fa6" inputMode="decimal" {...digits[5]} />
+              <Input
+                className={digitClassName}
+                name="2fa2"
+                inputMode="decimal"
+                aria-label={`${t("code")} 2`}
+                {...digits[1]}
+              />
+              <Input
+                className={digitClassName}
+                name="2fa3"
+                inputMode="decimal"
+                aria-label={`${t("code")} 3`}
+                {...digits[2]}
+              />
+              <Input
+                className={digitClassName}
+                name="2fa4"
+                inputMode="decimal"
+                aria-label={`${t("code")} 4`}
+                {...digits[3]}
+              />
+              <Input
+                className={digitClassName}
+                name="2fa5"
+                inputMode="decimal"
+                aria-label={`${t("code")} 5`}
+                {...digits[4]}
+              />
+              <Input
+                className={digitClassName}
+                name="2fa6"
+                inputMode="decimal"
+                aria-label={`${t("code")} 6`}
+                {...digits[5]}
+              />
             </div>
             {error && (
-              <div className="mt-2 flex items-center gap-x-2 text-sm text-red-700">
+              <div className="text-error mt-2 flex items-center gap-x-2 text-sm" role="alert">
                 <div>
                   <InfoIcon className="h-3 w-3" />
                 </div>
@@ -121,7 +155,7 @@ export const VerifyCodeDialog = ({
             )}
             <DialogFooter noSticky>
               <DialogClose onClick={() => setIsOpenDialog(false)} />
-              <Button type="submit" onClick={verifyCode} loading={isPending}>
+              <Button type="button" onClick={verifyCode} loading={isPending}>
                 {t("submit")}
               </Button>
             </DialogFooter>

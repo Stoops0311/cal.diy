@@ -1,8 +1,5 @@
-import { usePathname, useSearchParams } from "next/navigation";
-import { useState, useMemo } from "react";
-
-import { useAppContextWithSchema } from "@calcom/app-store/EventTypeAppContext";
 import AppCard from "@calcom/app-store/_components/AppCard";
+import { useAppContextWithSchema } from "@calcom/app-store/EventTypeAppContext";
 import {
   currencyOptions,
   currencySymbols,
@@ -11,16 +8,20 @@ import {
 import type { EventTypeAppCardComponent } from "@calcom/app-store/types";
 import { WEBAPP_URL } from "@calcom/lib/constants";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
-import { Select } from "@calcom/ui/components/form";
-import { TextField } from "@calcom/ui/components/form";
 import { Alert } from "@calcom/ui/components/alert";
-
+import { Select, TextField } from "@calcom/ui/components/form";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 import type { appDataSchema } from "../zod";
 import { paymentOptions } from "../zod";
 
 type Option = { value: string; label: string };
 
-const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({ app, eventType, onAppInstallSuccess }) {
+const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({
+  app,
+  eventType,
+  onAppInstallSuccess,
+}) {
   const searchParams = useSearchParams();
   /** TODO "pathname" no longer contains square-bracket expressions. Rewrite the code relying on them if required. **/
   const pathname = usePathname();
@@ -58,7 +59,7 @@ const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({ 
       switchOnClick={(enabled) => {
         setRequirePayment(enabled);
       }}
-      description={<>Add a mock payment to your events</>}>
+      description={t("mock_payment_description")}>
       <>
         {recurringEventDefined ? (
           <Alert className="mt-2" severity="warning" title={t("warning_recurring_event_payment")} />
@@ -68,7 +69,7 @@ const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({ 
               <div className="mt-2 block items-center sm:flex">
                 <TextField
                   id="test-mock-payment-app-price"
-                  label="Price"
+                  label={t("price")}
                   labelSrOnly
                   addOnLeading={currencySymbol}
                   addOnSuffix={currency}
@@ -77,7 +78,7 @@ const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({ 
                   type="number"
                   required
                   className="block w-full rounded-sm pl-2 text-sm"
-                  placeholder="Price"
+                  placeholder={t("price")}
                   onChange={(e) => {
                     setAppData("price", Number(e.target.value) * 100);
                     if (selectedCurrency) {
@@ -96,7 +97,6 @@ const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({ 
                   variant="default"
                   options={currencyOptions}
                   value={selectedCurrency}
-                  className="text-black"
                   defaultValue={selectedCurrency}
                   onChange={(e) => {
                     if (e) {

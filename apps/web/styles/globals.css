@@ -20,6 +20,34 @@ body {
 }
 
 /*
+ * Convenio display type: CalSans was intrinsically semibold, Archivo is not.
+ * Base layer keeps this below Tailwind utilities so font-* classes still win.
+ */
+@layer base {
+  .font-cal {
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+}
+
+/*
+ * Convenio: coss-ui primary actions follow the brand ink (pure black/white
+ * inverted pills) instead of coss-ui's neutral defaults. Declared for both
+ * modes because coss-ui redefines these under .dark.
+ */
+:root {
+  --primary: var(--cal-brand);
+  --primary-foreground: var(--cal-brand-text);
+  --ring: var(--cal-border-emphasis);
+}
+
+.dark {
+  --primary: var(--cal-brand);
+  --primary-foreground: var(--cal-brand-text);
+  --ring: var(--cal-border-emphasis);
+}
+
+/*
   Desktop App specific CSS
     https://docs.todesktop.com/
 */
@@ -75,7 +103,7 @@ html.todesktop.light {
 }
 
 html.todesktop.dark {
-  --cal-bg-emphasis: hsla(220, 2%, 26%, 0.3);
+  --cal-bg-emphasis: hsla(0, 0%, 26%, 0.3);
 }
 
 /*
@@ -168,23 +196,23 @@ html.todesktop.dark {
   }
 
   .slider > .slider-track {
-    @apply relative h-1 grow rounded-md bg-gray-400;
+    @apply relative h-1 grow rounded-md bg-emphasis;
   }
 
   .slider .slider-range {
-    @apply absolute h-full rounded-full bg-gray-700;
+    @apply absolute h-full rounded-full bg-inverted;
   }
 
   .slider .slider-thumb {
-    @apply block h-3 w-3 cursor-pointer rounded-full bg-gray-700 transition-all;
+    @apply block h-3 w-3 cursor-pointer rounded-full bg-inverted transition-[transform,background-color,box-shadow] motion-reduce:transition-none;
   }
 
   .slider .slider-thumb:hover {
-    @apply bg-gray-600;
+    @apply scale-110;
   }
 
   .slider .slider-thumb:focus {
-    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.2);
+    @apply shadow-outline-gray-focused outline-none;
   }
 }
 

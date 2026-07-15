@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { Controller, useForm } from "react-hook-form";
-
+import type { BlocklistScope, CreateBlocklistEntryFormData } from "@calcom/features/blocklist/types";
 import { domainRegex, emailRegex } from "@calcom/lib/emailSchema";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { WatchlistType } from "@calcom/prisma/enums";
@@ -11,8 +9,8 @@ import { Button } from "@calcom/ui/components/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from "@calcom/ui/components/dialog";
 import { Input, Label, TextArea, ToggleGroup } from "@calcom/ui/components/form";
 import { GlobeIcon, MailIcon } from "@coss/ui/icons";
-
-import type { BlocklistScope, CreateBlocklistEntryFormData } from "@calcom/features/blocklist/types";
+import { useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
 
 export interface CreateBlocklistEntryModalProps {
   isOpen: boolean;
@@ -121,7 +119,11 @@ export function CreateBlocklistEntryModal({
                   />
                 )}
               />
-              {errors.type && <p className="text-destructive mt-1 text-sm">{errors.type.message}</p>}
+              {errors.type && (
+                <p className="text-destructive mt-1 text-sm" role="alert">
+                  {errors.type.message}
+                </p>
+              )}
             </div>
 
             <div>
@@ -138,11 +140,16 @@ export function CreateBlocklistEntryModal({
                 render={({ field }) => (
                   <Input
                     {...field}
+                    id="value"
                     placeholder={watchType === WatchlistType.EMAIL ? "user@example.com" : "spammer.com"}
                   />
                 )}
               />
-              {errors.value && <p className="text-destructive mt-1 text-sm">{errors.value.message}</p>}
+              {errors.value && (
+                <p className="text-destructive mt-1 text-sm" role="alert">
+                  {errors.value.message}
+                </p>
+              )}
             </div>
 
             <div>
@@ -153,7 +160,12 @@ export function CreateBlocklistEntryModal({
                 name="description"
                 control={control}
                 render={({ field }) => (
-                  <TextArea {...field} placeholder={t("reason_for_adding_to_blocklist")} rows={3} />
+                  <TextArea
+                    {...field}
+                    id="description"
+                    placeholder={t("reason_for_adding_to_blocklist")}
+                    rows={3}
+                  />
                 )}
               />
             </div>
@@ -167,7 +179,11 @@ export function CreateBlocklistEntryModal({
               disabled={isSubmitting || isPending}>
               {t("cancel")}
             </Button>
-            <Button type="submit" loading={isSubmitting || isPending} disabled={isSubmitting || isPending}>
+            <Button
+              type="submit"
+              color="destructive"
+              loading={isSubmitting || isPending}
+              disabled={isSubmitting || isPending}>
               {t(isSystem ? "add_to_system_blocklist" : "add_to_blocklist")}
             </Button>
           </DialogFooter>

@@ -1,7 +1,3 @@
-import type { BaseSyntheticEvent } from "react";
-import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-
 import { ErrorCode } from "@calcom/features/auth/lib/ErrorCode";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useCallbackRef } from "@calcom/lib/hooks/useCallbackRef";
@@ -10,9 +6,11 @@ import { Button } from "@calcom/ui/components/button";
 import { DialogContent, DialogFooter } from "@calcom/ui/components/dialog";
 import { Form, PasswordField } from "@calcom/ui/components/form";
 import { showToast } from "@calcom/ui/components/toast";
-
 import TwoFactor from "@components/auth/TwoFactor";
-
+import type React from "react";
+import type { BaseSyntheticEvent } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import TwoFactorAuthAPI from "./TwoFactorAuthAPI";
 
 interface EnableTwoFactorModalProps {
@@ -183,7 +181,7 @@ const EnableTwoFactorModal = ({ onEnable, onCancel, open, onOpenChange }: Enable
                 value={password}
                 onInput={(e) => setPassword(e.currentTarget.value)}
               />
-              {errorMessage && <p className="mt-1 text-sm text-red-700">{errorMessage}</p>}
+              {errorMessage && <p className="text-error mt-1 text-sm">{errorMessage}</p>}
             </div>
           </form>
         </WithStep>
@@ -215,7 +213,7 @@ const EnableTwoFactorModal = ({ onEnable, onCancel, open, onOpenChange }: Enable
               <TwoFactor center />
 
               {errorMessage && (
-                <p data-testid="error-submitting-code" className="mt-1 text-sm text-red-700">
+                <p data-testid="error-submitting-code" className="text-error mt-1 text-sm">
                   {errorMessage}
                 </p>
               )}
@@ -283,11 +281,13 @@ const EnableTwoFactorModal = ({ onEnable, onCancel, open, onOpenChange }: Enable
                   }}>
                   {t("copy")}
                 </Button>
-                <a download="cal-backup-codes.txt" href={backupCodesUrl}>
-                  <Button color="primary" data-testid="backup-codes-download">
-                    {t("download")}
-                  </Button>
-                </a>
+                <Button
+                  color="primary"
+                  data-testid="backup-codes-download"
+                  download="convenio-backup-codes.txt"
+                  href={backupCodesUrl}>
+                  {t("download")}
+                </Button>
               </>
             </WithStep>
           </DialogFooter>

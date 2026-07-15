@@ -1,8 +1,8 @@
-import { useState } from "react";
-
+import process from "node:process";
 import { BOOKER_NUMBER_OF_DAYS_TO_LOAD } from "@calcom/lib/constants";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { ArrowRightIcon, InfoIcon } from "@coss/ui/icons";
+import { useState } from "react";
 
 type Props = {
   onButtonClick: () => void;
@@ -35,6 +35,7 @@ export function HavingTroubleFindingTime(props: Props) {
       </div>
       {/* TODO: we should give this more of a touch target on mobile */}
       <button
+        type="button"
         className="inline-flex items-center gap-2 font-medium"
         onClick={(e) => {
           e.preventDefault();

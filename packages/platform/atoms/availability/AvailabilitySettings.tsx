@@ -1,22 +1,8 @@
 "use client";
 
-import type { SetStateAction, Dispatch } from "react";
-import React from "react";
-import {
-  useMemo,
-  useState,
-  useEffect,
-  forwardRef,
-  useImperativeHandle,
-  useRef,
-  useCallback,
-} from "react";
-import { Controller, useFieldArray, useForm, useFormContext, useWatch } from "react-hook-form";
-
 import dayjs from "@calcom/dayjs";
 import { BookerStoreProvider } from "@calcom/features/bookings/Booker/BookerStoreProvider";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
-import { TimezoneSelect as WebTimezoneSelect } from "@calcom/web/modules/timezone/components/TimezoneSelect";
 import type {
   BulkUpdatParams,
   EventTypes,
@@ -24,32 +10,32 @@ import type {
 import { BulkEditDefaultForEventsModal } from "@calcom/features/eventtypes/components/BulkEditDefaultForEventsModal";
 import DateOverrideInputDialog from "@calcom/features/schedules/components/DateOverrideInputDialog";
 import DateOverrideList from "@calcom/features/schedules/components/DateOverrideList";
-import {
-  ScheduleComponent as PlatformSchedule,
-} from "@calcom/features/schedules/components/ScheduleComponent";
-import WebSchedule from "@calcom/web/modules/schedules/components/Schedule";
+import { ScheduleComponent as PlatformSchedule } from "@calcom/features/schedules/components/ScheduleComponent";
+import type { TravelScheduleRepository } from "@calcom/features/travelSchedule/repositories/TravelScheduleRepository";
 import { availabilityAsString } from "@calcom/lib/availability";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { sortAvailabilityStrings } from "@calcom/lib/weekstart";
-import type { TravelScheduleRepository } from "@calcom/features/travelSchedule/repositories/TravelScheduleRepository";
 import type { TimeRange, WorkingHours } from "@calcom/types/schedule";
 import classNames from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
-import { DialogTrigger, ConfirmationDialogContent } from "@calcom/ui/components/dialog";
+import { ConfirmationDialogContent, DialogTrigger } from "@calcom/ui/components/dialog";
 import { VerticalDivider } from "@calcom/ui/components/divider";
 import { EditableHeading } from "@calcom/ui/components/editable-heading";
-import { Form } from "@calcom/ui/components/form";
-import { Label } from "@calcom/ui/components/form";
-import { Switch } from "@calcom/ui/components/form";
+import { Form, Label, Switch } from "@calcom/ui/components/form";
 import { Icon } from "@calcom/ui/components/icon";
-import { SkeletonText, SelectSkeletonLoader, Skeleton } from "@calcom/ui/components/skeleton";
+import { SelectSkeletonLoader, Skeleton, SkeletonText } from "@calcom/ui/components/skeleton";
 import { Tooltip } from "@calcom/ui/components/tooltip";
+import WebSchedule from "@calcom/web/modules/schedules/components/Schedule";
 import WebShell from "@calcom/web/modules/shell/Shell";
-
+import { TimezoneSelect as WebTimezoneSelect } from "@calcom/web/modules/timezone/components/TimezoneSelect";
+import type React from "react";
+import type { Dispatch, SetStateAction } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { Controller, useFieldArray, useForm, useFormContext, useWatch } from "react-hook-form";
 import { Shell as PlatformShell } from "../src/components/ui/shell";
 import { cn } from "../src/lib/utils";
 import { Timezone as PlatformTimzoneSelect } from "../timezone/index";
-import type { AvailabilityFormValues, scheduleClassNames, AvailabilitySettingsFormRef } from "./types";
+import type { AvailabilityFormValues, AvailabilitySettingsFormRef, scheduleClassNames } from "./types";
 
 export type Schedule = {
   id: number;
@@ -280,7 +266,7 @@ const SmallScreenSideBar = ({ open, children }: { open: boolean; children: JSX.E
   return (
     <div
       className={classNames(
-        open ? "fadeIn fixed inset-0 z-50 bg-neutral-800/70 transition-opacity sm:hidden" : ""
+        open ? "fadeIn fixed inset-0 z-50 bg-overlay transition-opacity sm:hidden" : ""
       )}>
       <div
         className={classNames(
@@ -342,7 +328,10 @@ export const AvailabilitySettings = forwardRef<AvailabilitySettingsFormRef, Avai
     const formHasChanges = useMemo(() => {
       if (!initialValuesRef.current) return false;
       try {
-        return (JSON.stringify(form.watch("schedule")) !== JSON.stringify(initialValuesRef.current.availability) || JSON.stringify(watchedValues) !== JSON.stringify(initialValuesRef.current));
+        return (
+          JSON.stringify(form.watch("schedule")) !== JSON.stringify(initialValuesRef.current.availability) ||
+          JSON.stringify(watchedValues) !== JSON.stringify(initialValuesRef.current)
+        );
       } catch {
         return form.formState.isDirty;
       }
@@ -507,144 +496,130 @@ export const AvailabilitySettings = forwardRef<AvailabilitySettingsFormRef, Avai
             )}
             <SmallScreenSideBar open={openSidebar}>
               <>
-                <div
-                  className={classNames(
-                    openSidebar
-                      ? "fadeIn fixed inset-0 z-50 bg-neutral-800/70 transition-opacity sm:hidden"
-                      : ""
-                  )}>
-                  <div
-                    className={classNames(
-                      "bg-default stack-y-2 fixed right-0 z-20 flex h-screen w-80 flex-col overflow-x-hidden rounded-md px-2 pb-3 transition-transform",
-                      openSidebar ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
-                    )}>
-                    <div className="flex flex-row items-center pt-16">
-                      <Button StartIcon="arrow-left" color="minimal" onClick={() => setOpenSidebar(false)} />
-                      <p className="-ml-2">{t("availability_settings")}</p>
-                      {allowDelete && (
-                        <DeleteDialogButton
-                          buttonClassName={cn("ml-16 inline", customClassNames?.deleteButtonClassname)}
-                          disabled={schedule.isLastSchedule}
-                          isPending={isDeleting}
-                          handleDelete={handleDelete}
-                          onDeleteConfirmed={() => {
-                            setOpenSidebar(false);
-                          }}
-                        />
-                      )}
-                    </div>
-                    <div className="flex flex-col px-2 py-2">
-                      <Skeleton as={Label} waitForTranslation={!isPlatform}>
-                        {t("name")}
+                <div className="flex flex-row items-center pt-16">
+                  <Button StartIcon="arrow-left" color="minimal" onClick={() => setOpenSidebar(false)} />
+                  <p className="-ml-2">{t("availability_settings")}</p>
+                  {allowDelete && (
+                    <DeleteDialogButton
+                      buttonClassName={cn("ml-16 inline", customClassNames?.deleteButtonClassname)}
+                      disabled={schedule.isLastSchedule}
+                      isPending={isDeleting}
+                      handleDelete={handleDelete}
+                      onDeleteConfirmed={() => {
+                        setOpenSidebar(false);
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="flex flex-col px-2 py-2">
+                  <Skeleton as={Label} waitForTranslation={!isPlatform}>
+                    {t("name")}
+                  </Skeleton>
+                  <Controller
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <input
+                        className="hover:border-emphasis dark:focus:border-emphasis border-default bg-default placeholder:text-muted text-emphasis focus:ring-brand-default disabled:bg-subtle disabled:hover:border-subtle focus:border-subtle mb-2 block h-9 w-full rounded-md border px-3 py-2 text-sm leading-4 focus:outline-none focus:ring-2 disabled:cursor-not-allowed"
+                        {...field}
+                      />
+                    )}
+                  />
+                </div>
+                <div className="flex h-9 flex-row-reverse items-center justify-end gap-3 px-2">
+                  {allowSetToDefault && (
+                    <>
+                      <Skeleton
+                        as={Label}
+                        htmlFor="hiddenSwitch"
+                        className="mt-2 cursor-pointer self-center pr-2 sm:inline"
+                        waitForTranslation={!isPlatform}>
+                        {t("set_to_default")}
                       </Skeleton>
                       <Controller
                         control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                          <input
-                            className="hover:border-emphasis dark:focus:border-emphasis border-default bg-default placeholder:text-muted text-emphasis focus:ring-brand-default disabled:bg-subtle disabled:hover:border-subtle focus:border-subtle mb-2 block h-9 w-full rounded-md border px-3 py-2 text-sm leading-4 focus:outline-none focus:ring-2 disabled:cursor-not-allowed"
-                            {...field}
+                        name="isDefault"
+                        render={({ field: { value, onChange } }) => (
+                          <Switch
+                            classNames={{
+                              container: cn(customClassNames?.hiddenSwitchClassname?.container),
+                              thumb: cn(customClassNames?.hiddenSwitchClassname?.thumb),
+                            }}
+                            id="hiddenSwitch"
+                            disabled={isSaving || value}
+                            checked={value}
+                            onCheckedChange={onChange}
                           />
                         )}
                       />
-                    </div>
-                    <div className="flex h-9 flex-row-reverse items-center justify-end gap-3 px-2">
-                      {allowSetToDefault && (
-                        <>
-                          <Skeleton
-                            as={Label}
-                            htmlFor="hiddenSwitch"
-                            className="mt-2 cursor-pointer self-center pr-2 sm:inline"
-                            waitForTranslation={!isPlatform}>
-                            {t("set_to_default")}
-                          </Skeleton>
-                          <Controller
-                            control={form.control}
-                            name="isDefault"
-                            render={({ field: { value, onChange } }) => (
-                              <Switch
-                                classNames={{
-                                  container: cn(customClassNames?.hiddenSwitchClassname?.container),
-                                  thumb: cn(customClassNames?.hiddenSwitchClassname?.thumb),
-                                }}
-                                id="hiddenSwitch"
-                                disabled={isSaving || value}
-                                checked={value}
-                                onCheckedChange={onChange}
-                              />
-                            )}
-                          />
-                        </>
-                      )}
-                    </div>
+                    </>
+                  )}
+                </div>
 
-                    <div className="min-w-40 stack-y-2 col-span-3 px-2 py-4 lg:col-span-1">
-                      <div className="xl:max-w-80 w-full pr-4 sm:ml-0 sm:mr-36 sm:p-0">
-                        <div>
-                          <Skeleton
-                            as={Label}
-                            htmlFor="timeZone-sm-viewport"
-                            className="mb-0 inline-block leading-none"
-                            waitForTranslation={!isPlatform}>
-                            {t("timezone")}
-                          </Skeleton>
-                          <Controller
-                            control={form.control}
-                            name="timeZone"
-                            render={({ field: { onChange, value } }) =>
-                              value ? (
-                                <TimezoneSelect
-                                  inputId="timeZone-sm-viewport"
-                                  value={value}
-                                  className={cn(
-                                    "focus:border-brand-default border-default mt-1 block w-72 rounded-md text-sm",
-                                    customClassNames?.timezoneSelectClassName
-                                  )}
-                                  onChange={(timezone) => onChange(timezone.value)}
-                                />
-                              ) : (
-                                <SelectSkeletonLoader className="mt-1 w-72" />
-                              )
-                            }
-                          />
-                        </div>
-                        {!isPlatform && (
-                          <>
-                            <hr className="border-subtle my-8" />
-                            <div className="border-subtle rounded-md border p-4 md:block">
-                              <Skeleton
-                                as="h3"
-                                className="mb-0 inline-block text-sm font-medium"
-                                waitForTranslation={!isPlatform}>
-                                {t("something_doesnt_look_right")}
-                              </Skeleton>
-                              <div className="mt-3 flex">
-                                <Skeleton
-                                  as={Button}
-                                  href="/availability/troubleshoot"
-                                  color="secondary"
-                                  waitForTranslation={!isPlatform}>
-                                  {t("launch_troubleshooter")}
-                                </Skeleton>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                <div className="min-w-40 stack-y-2 col-span-3 px-2 py-4 lg:col-span-1">
+                  <div className="xl:max-w-80 w-full pr-4 sm:ml-0 sm:mr-36 sm:p-0">
+                    <div>
+                      <Skeleton
+                        as={Label}
+                        htmlFor="timeZone-sm-viewport"
+                        className="mb-0 inline-block leading-none"
+                        waitForTranslation={!isPlatform}>
+                        {t("timezone")}
+                      </Skeleton>
+                      <Controller
+                        control={form.control}
+                        name="timeZone"
+                        render={({ field: { onChange, value } }) =>
+                          value ? (
+                            <TimezoneSelect
+                              inputId="timeZone-sm-viewport"
+                              value={value}
+                              className={cn(
+                                "focus:border-brand-default border-default mt-1 block w-72 rounded-md text-sm",
+                                customClassNames?.timezoneSelectClassName
+                              )}
+                              onChange={(timezone) => onChange(timezone.value)}
+                            />
+                          ) : (
+                            <SelectSkeletonLoader className="mt-1 w-72" />
+                          )
+                        }
+                      />
                     </div>
+                    {!isPlatform && (
+                      <>
+                        <hr className="border-subtle my-8" />
+                        <div className="bg-subtle border-subtle rounded-xl border p-4 md:block">
+                          <Skeleton
+                            as="h3"
+                            className="mb-0 inline-block text-sm font-medium"
+                            waitForTranslation={!isPlatform}>
+                            {t("something_doesnt_look_right")}
+                          </Skeleton>
+                          <div className="mt-3 flex">
+                            <Skeleton
+                              as={Button}
+                              href="/availability/troubleshoot"
+                              color="secondary"
+                              waitForTranslation={!isPlatform}>
+                              {t("launch_troubleshooter")}
+                            </Skeleton>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </>
             </SmallScreenSideBar>
-            <div className="border-default border-l-2" />
+            <VerticalDivider />
             <Button
               ref={saveButtonRef}
               className="ml-4 lg:ml-0"
               type="submit"
               form="availability-form"
               loading={isSaving}
-              disabled={isLoading || !formHasChanges}
-            >
+              disabled={isLoading || !formHasChanges}>
               {t("save")}
             </Button>
             <Button
@@ -667,7 +642,7 @@ export const AvailabilitySettings = forwardRef<AvailabilitySettingsFormRef, Avai
             <div className="flex-1">
               <div
                 className={cn(
-                  "border-subtle mb-6 rounded-md border",
+                  "bg-subtle border-subtle mb-6 rounded-xl border",
                   customClassNames?.scheduleClassNames?.scheduleContainer
                 )}>
                 <div>
@@ -700,7 +675,7 @@ export const AvailabilitySettings = forwardRef<AvailabilitySettingsFormRef, Avai
                 </div>
               </div>
               {enableOverrides && (
-                <div className="border-subtle rounded-md border mb-6">
+                <div className="bg-subtle border-subtle mb-6 rounded-xl border">
                   <BookerStoreProvider>
                     <DateOverride
                       isDryRun={isDryRun}
@@ -757,7 +732,7 @@ export const AvailabilitySettings = forwardRef<AvailabilitySettingsFormRef, Avai
                 ) : (
                   <>
                     <hr className="border-subtle my-8 mr-8" />
-                    <div className="border-subtle rounded-md border p-4">
+                    <div className="bg-subtle border-subtle rounded-xl border p-4">
                       <Skeleton
                         as="h3"
                         className="mb-0 inline-block text-sm font-medium"

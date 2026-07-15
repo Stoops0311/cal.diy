@@ -5,8 +5,7 @@ import { IconSprites } from "@calcom/ui/components/icon";
 import { ClerkProvider } from "@clerk/nextjs";
 import { buildLegacyRequest } from "@lib/buildLegacyCtx";
 import { dir } from "i18next";
-import { Inter } from "next/font/google";
-import localFont from "next/font/local";
+import { Archivo, Azeret_Mono, Inter } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import Script from "next/script";
 import type React from "react";
@@ -22,12 +21,19 @@ const ClerkProviderCompat = ClerkProvider as unknown as React.ComponentType<{
 }>;
 
 const interFont = Inter({ subsets: ["latin"], variable: "--font-sans", preload: true, display: "swap" });
-const calFont = localFont({
-  src: "../fonts/CalSans-SemiBold.woff2",
+// Convenio display face — geometric sans per brand spec; keeps the --font-cal
+// variable name so every existing font-cal usage picks it up without a rename.
+const calFont = Archivo({
+  subsets: ["latin"],
   variable: "--font-cal",
   preload: true,
-  display: "block",
-  weight: "600",
+  display: "swap",
+});
+const monoFont = Azeret_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+  weight: ["400", "500"],
 });
 
 export const viewport = {
@@ -39,11 +45,11 @@ export const viewport = {
   themeColor: [
     {
       media: "(prefers-color-scheme: light)",
-      color: "#f9fafb",
+      color: "#ffffff",
     },
     {
       media: "(prefers-color-scheme: dark)",
-      color: "#1C1C1C",
+      color: "#050505",
     },
   ],
 };
@@ -72,7 +78,7 @@ export const metadata = {
   },
   manifest: "/site.webmanifest",
   other: {
-    "application-TileColor": "#ff0000",
+    "application-TileColor": "#050505",
   },
   twitter: {
     site: "@calcom",
@@ -131,6 +137,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           :root {
             --font-sans: ${interFont.style.fontFamily.replace(/'/g, "")}, system-ui;
             --font-cal: ${calFont.style.fontFamily.replace(/'/g, "")};
+            --font-mono: ${monoFont.style.fontFamily.replace(/'/g, "")}, monospace;
+            --font-cv-display: ${calFont.style.fontFamily.replace(/'/g, "")};
+            --font-cv-mono: ${monoFont.style.fontFamily.replace(/'/g, "")}, monospace;
           }
         `}</style>
           {process.env.NODE_ENV === "development" && (

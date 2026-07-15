@@ -1,16 +1,15 @@
-import { useMemo } from "react";
-import { shallow } from "zustand/shallow";
-
 import type { Dayjs } from "@calcom/dayjs";
 import dayjs from "@calcom/dayjs";
 import { useTimePreferences } from "@calcom/features/bookings/lib";
-import classNames from "@calcom/ui/classNames";
-
-import { OutOfOfficeInSlots } from "@calcom/web/modules/bookings/components/OutOfOfficeInSlots";
 import { useCalendarStore } from "@calcom/features/calendars/weeklyview/state/store";
 import type { CalendarAvailableTimeslots } from "@calcom/features/calendars/weeklyview/types/state";
 import type { GridCellToDateProps } from "@calcom/features/calendars/weeklyview/utils";
 import { gridCellToDateTime } from "@calcom/features/calendars/weeklyview/utils";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import classNames from "@calcom/ui/classNames";
+import { OutOfOfficeInSlots } from "@calcom/web/modules/bookings/components/OutOfOfficeInSlots";
+import { useMemo } from "react";
+import { shallow } from "zustand/shallow";
 
 type EmptyCellProps = GridCellToDateProps & {
   isDisabled?: boolean;
@@ -139,6 +138,7 @@ type CellProps = {
 
 function Cell({ isDisabled, topOffsetMinutes, timeSlot }: CellProps) {
   const { timeFormat } = useTimePreferences();
+  const { t } = useLocale();
 
   const { onEmptyCellClick, hoverEventDuration } = useCalendarStore(
     (state) => ({
@@ -149,11 +149,14 @@ function Cell({ isDisabled, topOffsetMinutes, timeSlot }: CellProps) {
   );
 
   return (
-    <div
+    <button
+      type="button"
+      disabled={isDisabled}
+      aria-label={t("create_event_at", { time: timeSlot.format(timeFormat) })}
       className={classNames(
         "group flex w-[calc(100%-1px)] items-center justify-center",
         isDisabled && "pointer-events-none",
-        !isDisabled && "bg-default dark:bg-cal-muted",
+        !isDisabled && "bg-default",
         topOffsetMinutes && "absolute"
       )}
       data-disabled={isDisabled}
@@ -184,7 +187,7 @@ function Cell({ isDisabled, topOffsetMinutes, timeSlot }: CellProps) {
           <div className="text-ellipsis leading-0">{timeSlot.format(timeFormat)}</div>
         </div>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -197,7 +200,7 @@ function CustomCell({
   return (
     <div
       className={classNames(
-        "bg-default dark:bg-cal-muted group absolute z-65 flex w-[calc(100%-1px)] items-center justify-center"
+        "group absolute z-65 flex w-[calc(100%-1px)] items-center justify-center bg-default"
       )}
       data-slot={timeSlot.toISOString()}
       style={{
@@ -206,7 +209,7 @@ function CustomCell({
       }}>
       <div
         className={classNames(
-          "dark:border-emphasis bg-default dark:bg-cal-muted cursor-pointer rounded-[4px] p-[6px] text-xs font-semibold dark:text-white"
+          "cursor-pointer rounded-[4px] bg-default p-[6px] font-semibold text-default text-xs"
         )}
         style={{
           height: `calc(${startEndTimeDuration}*var(--one-minute-height) - 2px)`,

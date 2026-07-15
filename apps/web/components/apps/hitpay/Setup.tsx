@@ -9,13 +9,11 @@ import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
 import { Switch } from "@calcom/ui/components/form";
 import { showToast } from "@calcom/ui/components/toast";
-import { InfoIcon } from "@coss/ui/icons";
+import SetupShell from "@calcom/web/components/apps/SetupShell";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Toaster } from "sonner";
 import { z } from "zod";
 
 export default function HitPaySetup(props: IHitPaySetupProps) {
@@ -28,6 +26,7 @@ export default function HitPaySetup(props: IHitPaySetupProps) {
 }
 
 function HitPaySetupCallback() {
+  const { t } = useLocale();
   const [error, setError] = useState<string | null>(null);
   const searchParams = useCompatSearchParams();
 
@@ -61,8 +60,8 @@ function HitPaySetupCallback() {
 
   return (
     <div>
-      {error && <p>Authorization failed: {error}</p>}
-      {!error && <p>Connecting...</p>}
+      {error && <p>{t("authorization_failed", { error })}</p>}
+      {!error && <p>{t("connecting")}</p>}
     </div>
   );
 }
@@ -186,116 +185,102 @@ function HitPaySetupPage(props: IHitPaySetupProps) {
     deleteMutation.mutate({ id: credentialId });
   };
 
-  const hitpayIcon = (
-    <>
-      <img className="h-5 w-5" src="/app-store/hitpay/icon.svg" alt="HitPay Icon" />
-    </>
-  );
+  const hitpayIcon = <img className="h-5 w-5" src="/app-store/hitpay/icon.svg" alt="HitPay Icon" />;
 
   if (session.status === "loading") return <></>;
 
   if (integrations.isPending) {
-    return <div className="absolute z-50 flex h-screen w-full items-center bg-gray-200" />;
+    return (
+      <div
+        className="bg-default text-subtle flex min-h-screen items-center justify-center"
+        aria-live="polite">
+        {t("loading")}
+      </div>
+    );
+  }
+
+  if (!showContent) {
+    return (
+      <div className="bg-default flex min-h-screen p-4 sm:p-8">
+        <AppNotInstalledMessage appName="hitpay" />
+      </div>
+    );
   }
 
   return (
-    <>
-      <div className="bg-default flex h-screen items-center justify-center">
-        {showContent ? (
-          <div className="flex w-full w-full max-w-[43em] flex-col items-center justify-center stack-y-4 p-4 lg:stack-y-5">
-            <div className="rounded bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-              <InfoIcon className="mb-0.5 inline-flex h-4 w-4" /> Create or connect to an existing HitPay
-              account to receive payments for your paid bookings.
-            </div>
+    <SetupShell
+      logo={<img className="h-12 w-12" src="/app-store/hitpay/icon.svg" alt="HitPay Icon" />}
+      name="HitPay"
+      description={t("hitpay_connect_description")}>
+      <form className="w-full stack-y-4" onSubmit={onSubmit}>
+        <div className="flex items-center justify-end">
+          <Switch
+            onCheckedChange={(value) => SetIsSandbox(value as boolean)}
+            checked={isSandbox}
+            label={t("sandbox")}
+          />
+        </div>
+        <div className="w-full">
+          <KeyField
+            {...register("apiKey", {
+              required: true,
+            })}
+            id="apiKey"
+            name="apiKey"
+            containerClassName="w-full"
+            label={t("api_key")}
+            autoComplete="off"
+            autoCorrect="off"
+            defaultValue={keyData?.apiKey || ""}
+          />
 
-            <form className="w-full stack-y-4" onSubmit={onSubmit}>
-              <div className="bg-default border-subtle overflow-auto rounded border">
-                <div className="border-subtle flex items-center justify-between border-b p-4 md:p-5">
-                  <h2 className="text-2xl font-semibold">Account Information</h2>
-                  <div className="ml-auto flex items-center">
-                    <Switch
-                      onCheckedChange={(value) => SetIsSandbox(value as boolean)}
-                      checked={isSandbox}
-                      label="Sandbox"
-                    />
-                  </div>
-                </div>
-                <div className="w-full stack-y-4 p-4 md:p-5">
-                  <div className="w-full">
-                    <KeyField
-                      {...register("apiKey", {
-                        required: true,
-                      })}
-                      id="apiKey"
-                      name="apiKey"
-                      containerClassName="w-full"
-                      label={t("api_key")}
-                      autoComplete="off"
-                      autoCorrect="off"
-                      defaultValue={keyData?.apiKey || ""}
-                    />
+          {errors.apiKey && (
+            <p data-testid="required" className="py-2 text-error text-xs" role="alert">
+              {errors.apiKey?.message}
+            </p>
+          )}
+        </div>
+        <div className="w-full">
+          <KeyField
+            {...register("saltKey", {
+              required: true,
+            })}
+            id="saltKey"
+            name="saltKey"
+            containerClassName="w-full"
+            label={t("salt")}
+            autoComplete="off"
+            autoCorrect="off"
+            defaultValue={keyData?.saltKey || ""}
+          />
 
-                    {errors.apiKey && (
-                      <p data-testid="required" className="py-2 text-xs text-red-500">
-                        {errors.apiKey?.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="w-full">
-                    <KeyField
-                      {...register("saltKey", {
-                        required: true,
-                      })}
-                      id="saltKey"
-                      name="saltKey"
-                      containerClassName="w-full"
-                      label="Salt"
-                      autoComplete="off"
-                      autoCorrect="off"
-                      defaultValue={keyData?.saltKey || ""}
-                    />
-
-                    {errors.saltKey && (
-                      <p data-testid="required" className="py-2 text-xs text-red-500">
-                        {errors.saltKey?.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              {!props.prod && !props.sandbox ? (
-                <div className="flex justify-end gap-4">
-                  <Button color="secondary" className="h-10 text-base" onClick={onCancel}>
-                    Cancel
-                  </Button>
-                  <button
-                    className="font-body flex h-10 w-56 items-center justify-center gap-2 rounded-md font-bold text-black shadow transition-all hover:brightness-90 active:scale-95"
-                    style={{
-                      background: "linear-gradient(180deg, #FFDE6E 63.72%, #F8C455 95.24%)",
-                    }}
-                    type="submit"
-                    disabled={loading}>
-                    {hitpayIcon}
-                    <span className="mr-2">Connect with HitPay</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="flex justify-end gap-4">
-                  <Link href="/apps/hitpay" className="inline-block">
-                    <Button color="secondary">Go to App Store</Button>
-                  </Link>
-                  <Button color="primary" type="submit" disabled={!updatable}>
-                    Update
-                  </Button>
-                </div>
-              )}
-            </form>
+          {errors.saltKey && (
+            <p data-testid="required" className="text-error py-2 text-xs" role="alert">
+              {errors.saltKey?.message}
+            </p>
+          )}
+        </div>
+        {!props.prod && !props.sandbox ? (
+          <div className="flex justify-end gap-2">
+            <Button color="secondary" className="h-10" onClick={onCancel}>
+              {t("cancel")}
+            </Button>
+            <Button className="h-10 justify-center gap-2" type="submit" loading={loading} disabled={loading}>
+              {hitpayIcon}
+              <span className="mr-2">{t("connect_with_provider", { provider: "HitPay" })}</span>
+            </Button>
           </div>
         ) : (
-          <AppNotInstalledMessage appName="hitpay" />
+          <div className="flex justify-end gap-2">
+            <Button color="secondary" href="/apps/hitpay">
+              {t("go_to_app_store")}
+            </Button>
+            <Button color="primary" type="submit" disabled={!updatable}>
+              {t("update")}
+            </Button>
+          </div>
         )}
-        <Toaster position="bottom-right" />
-      </div>
-    </>
+      </form>
+    </SetupShell>
   );
 }

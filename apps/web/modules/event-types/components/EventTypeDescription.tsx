@@ -1,17 +1,16 @@
-import { useMemo } from "react";
-
 import { getPaymentAppData } from "@calcom/app-store/_utils/payments/getPaymentAppData";
 import { eventTypeMetaDataSchemaWithTypedApps } from "@calcom/app-store/zod-utils";
 import { Price } from "@calcom/features/bookings/components/event-meta/Price";
-import { PriceIcon } from "@calcom/web/modules/bookings/components/event-meta/PriceIcon";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { parseRecurringEvent } from "@calcom/lib/isRecurringEvent";
 import { markdownToSafeHTML } from "@calcom/lib/markdownToSafeHTML";
 import type { baseEventTypeSelect } from "@calcom/prisma";
-import type { Prisma, EventType } from "@calcom/prisma/client";
+import type { EventType, Prisma } from "@calcom/prisma/client";
 import { SchedulingType } from "@calcom/prisma/enums";
 import classNames from "@calcom/ui/classNames";
 import { Badge } from "@calcom/ui/components/badge";
+import { PriceIcon } from "@calcom/web/modules/bookings/components/event-meta/PriceIcon";
+import { useMemo } from "react";
 
 export type EventTypeDescriptionProps = {
   eventType: Pick<
@@ -54,7 +53,7 @@ export const EventTypeDescription = ({
         {eventType.descriptionAsSafeHTML && (
           <div
             className={classNames(
-              "text-subtle line-clamp-3 wrap-break-word py-1 text-sm sm:max-w-[650px] [&_a]:text-blue-500 [&_a]:underline [&_a]:hover:text-blue-600",
+              "text-subtle line-clamp-3 wrap-break-word py-1 text-sm sm:max-w-[650px] [&_a]:text-emphasis [&_a]:underline",
               shortenDescription ? "line-clamp-4 [&>*:not(:first-child)]:hidden" : ""
             )}
             // eslint-disable-next-line react/no-danger
@@ -68,14 +67,14 @@ export const EventTypeDescription = ({
           {metadata?.multipleDuration ? (
             metadata.multipleDuration.map((dur, idx) => (
               <li key={idx}>
-                <Badge variant="gray" startIcon="clock">
+                <Badge variant="gray" startIcon="clock" className="font-mono">
                   {dur}m
                 </Badge>
               </li>
             ))
           ) : (
             <li>
-              <Badge variant="gray" startIcon="clock">
+              <Badge variant="gray" startIcon="clock" className="font-mono">
                 {eventType.length}m
               </Badge>
             </li>
@@ -101,6 +100,7 @@ export const EventTypeDescription = ({
             <li>
               <Badge
                 variant="gray"
+                className="font-mono"
                 customStartIcon={
                   <PriceIcon currency={paymentAppData.currency} className="h-3 w-3 stroke-[3px]" />
                 }>
@@ -122,9 +122,9 @@ export const EventTypeDescription = ({
             </li>
           )}
           {/* TODO: Maybe add a tool tip to this? */}
-          {eventType.requiresConfirmation || (recurringEvent?.count) ? (
+          {eventType.requiresConfirmation || recurringEvent?.count ? (
             <li className="block xl:hidden">
-              <Badge variant="gray" startIcon="plus">
+              <Badge variant="gray" startIcon="plus" className="font-mono">
                 <p>{[eventType.requiresConfirmation, recurringEvent?.count].filter(Boolean).length}</p>
               </Badge>
             </li>
@@ -133,7 +133,7 @@ export const EventTypeDescription = ({
           )}
           {eventType?.seatsPerTimeSlot ? (
             <li>
-              <Badge variant="gray" startIcon="user">
+              <Badge variant="gray" startIcon="user" className="font-mono">
                 <p>{t("event_type_seats", { numberOfSeats: eventType.seatsPerTimeSlot })} </p>
               </Badge>
             </li>

@@ -1,6 +1,3 @@
-import { noop } from "@tanstack/react-table";
-import { formatInTimeZone } from "date-fns-tz";
-
 import { useIsPlatform } from "@calcom/atoms/hooks/useIsPlatform";
 import dayjs from "@calcom/dayjs";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -8,7 +5,8 @@ import type { TimeRange, WorkingHours } from "@calcom/types/schedule";
 import { Button } from "@calcom/ui/components/button";
 import { DialogTrigger } from "@calcom/ui/components/dialog";
 import { Tooltip } from "@calcom/ui/components/tooltip";
-
+import { noop } from "@tanstack/react-table";
+import { formatInTimeZone } from "date-fns-tz";
 import DateOverrideInputDialog from "./DateOverrideInputDialog";
 
 const sortByDate = (a: { ranges: TimeRange[]; id: string }, b: { ranges: TimeRange[]; id: string }) => {
@@ -106,7 +104,7 @@ const DateOverrideList = ({
               ))
             )}
           </div>
-          <div className="flex flex-row-reverse gap-5 space-x-2 rtl:space-x-reverse">
+          <div className="flex flex-row-reverse items-start gap-2">
             <DateOverrideInputDialog
               userTimeFormat={userTimeFormat}
               excludedDates={excludedDates}
@@ -128,7 +126,7 @@ const DateOverrideList = ({
                 <DialogTrigger asChild>
                   <Button
                     tooltip={t("edit")}
-                    className="text-default h-5"
+                    className="text-default"
                     color="minimal"
                     variant="icon"
                     StartIcon="pencil"
@@ -136,9 +134,9 @@ const DateOverrideList = ({
                 </DialogTrigger>
               }
             />
-            <Tooltip content="Delete">
+            <Tooltip content={t("delete")}>
               <Button
-                className="text-default h-5"
+                className="text-default"
                 data-testid="delete-button"
                 title={t("date_overrides_delete_on_date", {
                   date: isPlatform

@@ -1,6 +1,5 @@
-import type { ReactNode } from "react";
-
 import classNames from "@calcom/ui/classNames";
+import type { ReactNode } from "react";
 
 const SectionBottomActions = ({
   align = "start",
@@ -13,11 +12,7 @@ const SectionBottomActions = ({
 }) => {
   return (
     <div
-      className={classNames(
-        "border-subtle bg-cal-muted flex rounded-b-lg border px-6 py-4",
-        align === "end" && "justify-end",
-        className
-      )}>
+      className={classNames("border-subtle flex border-t py-4", align === "end" && "justify-end", className)}>
       {children}
     </div>
   );

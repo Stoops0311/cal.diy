@@ -1,11 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
-import type { FC } from "react";
-
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import type { CALENDARS } from "@calcom/platform-constants";
 import { Button } from "@calcom/ui/components/button";
-
+import type { FC, ReactNode } from "react";
 import type { OnCheckErrorType, UseCheckProps } from "../hooks/connect/useCheck";
 import { useCheck } from "../hooks/connect/useCheck";
 import { useConnect } from "../hooks/connect/useConnect";
@@ -122,15 +120,18 @@ export const ConnectedCalendarsTooltip = ({
 }: {
   calendarInstance: (typeof CALENDARS)[number];
 }) => {
+  const { t } = useLocale();
   const { data: connectedCalendars, isLoading: isConnectedCalendarsLoading } = useConnectedCalendars({});
 
   if (isConnectedCalendarsLoading)
     return (
-      <div className="bg-subtle flex flex-col rounded-md border border-gray-300 px-4 py-2">Loading...</div>
+      <div className="border-subtle bg-subtle flex flex-col rounded-xl border px-4 py-2 shadow-sm">
+        {t("loading")}
+      </div>
     );
 
   return (
-    <div className="bg-subtle flex flex-col rounded-md border border-gray-300">
+    <div className="flex flex-col rounded-2xl border border-subtle bg-subtle">
       {connectedCalendars?.connectedCalendars
         .filter((calendar) => calendar.integration.slug === `${calendarInstance}-calendar`)
         .map((calendar, index, arr) => {

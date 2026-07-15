@@ -1,14 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { Fragment, useState } from "react";
-
+import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { availabilityAsString } from "@calcom/lib/availability";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { sortAvailabilityStrings } from "@calcom/lib/weekstart";
-import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
+import { ConfirmationDialogContent } from "@calcom/ui/components/dialog";
 import {
   Dropdown,
   DropdownItem,
@@ -16,9 +14,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@calcom/ui/components/dropdown";
-import { ConfirmationDialogContent } from "@calcom/ui/components/dialog";
 import { showToast } from "@calcom/ui/components/toast";
 import { GlobeIcon } from "@coss/ui/icons";
+import Link from "next/link";
+import { Fragment, useState } from "react";
 
 interface Schedule {
   id: number;
@@ -65,17 +64,17 @@ export function ScheduleListItem({
 
   return (
     <li key={schedule.id}>
-      <div className="hover:bg-cal-muted flex items-center justify-between px-3 py-5 transition sm:px-4">
+      <div className="hover:bg-muted flex items-center justify-between px-3 py-5 transition sm:px-4">
         <Link href={redirectUrl} className="grow truncate text-sm" title={schedule.name}>
           <div className="space-x-2 rtl:space-x-reverse">
             <span className="text-emphasis truncate font-medium">{schedule.name}</span>
             {schedule.isDefault && (
-              <Badge variant="gray" className="text-xs">
+              <Badge variant="gray" className="font-mono text-[11px] uppercase tracking-[0.18em]">
                 {t("default")}
               </Badge>
             )}
           </div>
-          <p className="text-subtle mt-1">
+          <p className="text-subtle mt-1 font-mono text-xs">
             {schedule.availability
               .filter((availability: AvailabilityItem) => !!availability.days.length)
               .map((availability: AvailabilityItem) =>

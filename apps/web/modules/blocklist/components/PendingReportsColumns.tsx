@@ -1,8 +1,6 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
-import { useMemo } from "react";
-
+import type { BlocklistScope, GroupedBookingReport } from "@calcom/features/blocklist/types";
 import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
 import {
@@ -13,8 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@calcom/ui/components/dropdown";
 import { Checkbox } from "@calcom/ui/components/form";
-
-import type { GroupedBookingReport, BlocklistScope } from "@calcom/features/blocklist/types";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useMemo } from "react";
 
 interface UsePendingReportsColumnsProps<T extends GroupedBookingReport> {
   t: (key: string) => string;
@@ -41,14 +39,14 @@ export function usePendingReportsColumns<T extends GroupedBookingReport>({
           <Checkbox
             checked={table.getIsAllPageRowsSelected()}
             onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
+            aria-label={t("select_all")}
           />
         ),
         cell: ({ row }) => (
           <Checkbox
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
+            aria-label={t("select_row")}
           />
         ),
         enableSorting: false,
@@ -140,7 +138,13 @@ export function usePendingReportsColumns<T extends GroupedBookingReport>({
           <div className="flex items-center justify-end">
             <Dropdown modal={false}>
               <DropdownMenuTrigger asChild>
-                <Button type="button" variant="icon" color="secondary" StartIcon="ellipsis" />
+                <Button
+                  type="button"
+                  variant="icon"
+                  color="secondary"
+                  StartIcon="ellipsis"
+                  tooltip={t("more_actions")}
+                />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem>

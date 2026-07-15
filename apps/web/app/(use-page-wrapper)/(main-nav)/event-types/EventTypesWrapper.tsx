@@ -5,7 +5,6 @@ import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { ShellMainAppDir } from "app/(use-page-wrapper)/(main-nav)/ShellMainAppDir";
 import type { ReactElement } from "react";
 import { useState } from "react";
-
 import EventTypes, { EventTypesCTA, SearchContext } from "~/event-types/views/event-types-listing-view";
 
 type GetUserEventGroupsResponse = Parameters<typeof EventTypesCTA>[0]["userEventGroupsData"];
@@ -35,6 +34,7 @@ export function EventTypesWrapper({
   return (
     <SearchContext.Provider value={{ searchTerm, setSearchTerm, debouncedSearchTerm }}>
       <ShellMainAppDir
+        eyebrow={t("event_types_eyebrow")}
         heading={t("event_types_page_title")}
         subtitle={t("event_types_page_subtitle")}
         CTA={<CTAWithContext userEventGroupsData={userEventGroupsData} />}>

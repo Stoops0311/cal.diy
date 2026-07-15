@@ -1,8 +1,6 @@
-import type { ReactNode } from "react";
-import React from "react";
-
 import classNames from "@calcom/ui/classNames";
-
+import type React from "react";
+import type { ReactNode } from "react";
 import { Button } from "../button";
 import type { IconName } from "../icon";
 import { Icon } from "../icon";
@@ -42,7 +40,7 @@ export function EmptyScreen({
       <div
         data-testid="empty-screen"
         className={classNames(
-          "flex w-full select-none flex-col items-center justify-center rounded-lg p-7 lg:p-20",
+          "bg-subtle flex w-full select-none flex-col items-center justify-center rounded-2xl p-7 lg:p-20",
           border && "border-subtle border",
           dashedBorder && "border-dashed",
           className
@@ -53,8 +51,9 @@ export function EmptyScreen({
 
         {!icon ? null : (
           <div
+            data-testid="empty-screen-icon"
             className={classNames(
-              "bg-emphasis flex h-[72px] w-[72px] items-center justify-center rounded-full ",
+              "bg-default border-subtle flex h-[72px] w-[72px] items-center justify-center rounded-full border",
               iconWrapperClassName
             )}>
             <Icon

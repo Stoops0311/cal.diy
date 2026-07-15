@@ -1,6 +1,3 @@
-import type { Dispatch, SetStateAction } from "react";
-import { useState } from "react";
-
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
@@ -9,6 +6,8 @@ import { DialogContent, DialogFooter, DialogHeader } from "@calcom/ui/components
 import { TextArea } from "@calcom/ui/components/form";
 import { showToast } from "@calcom/ui/components/toast";
 import { ClockIcon } from "@coss/ui/icons";
+import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 
 interface IRescheduleDialog {
   isOpenDialog: boolean;
@@ -38,7 +37,7 @@ export const RescheduleDialog = (props: IRescheduleDialog) => {
     <Dialog open={isOpenDialog} onOpenChange={setIsOpenDialog}>
       <DialogContent enableOverflow data-testid="reschedule-dialog">
         <div className="flex flex-row md:space-x-3">
-          <div className="bg-subtle hidden h-10 w-10 shrink-0 justify-center rounded-full md:flex">
+          <div className="border-subtle bg-default hidden h-10 w-10 shrink-0 justify-center rounded-full border shadow-sm md:flex">
             <ClockIcon className="m-auto h-6 w-6" />
           </div>
           <div className="w-full md:pt-1">
@@ -46,7 +45,7 @@ export const RescheduleDialog = (props: IRescheduleDialog) => {
             <p className="text-subtle text-sm">{t("reschedule_modal_description")}</p>
             <p className="text-emphasis mb-2 mt-6 text-sm font-bold">
               {t("reason_for_reschedule_request")}
-              <span className="text-subtle font-normal"> (Optional)</span>
+              <span className="text-subtle font-normal"> ({t("optional")})</span>
             </p>
             <TextArea
               data-testid="reschedule_reason"

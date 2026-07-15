@@ -1,15 +1,12 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-
 import { ErrorCode } from "@calcom/features/auth/lib/ErrorCode";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "@calcom/ui/components/button";
 import { DialogContent } from "@calcom/ui/components/dialog";
 import { Form, PasswordField } from "@calcom/ui/components/form";
-
 import TwoFactor from "@components/auth/TwoFactor";
-
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import TwoFactorAuthAPI from "./TwoFactorAuthAPI";
 import TwoFactorModalHeader from "./TwoFactorModalHeader";
 
@@ -66,7 +63,7 @@ const DisableTwoFactorAuthModal = ({ onDisable, onCancel }: DisableTwoFactorAuth
 
   return (
     <Dialog open={true}>
-      <DialogContent>
+      <DialogContent type={null} title={t("disable_2fa")}>
         <Form form={form} handleSubmit={handleDisable}>
           <TwoFactorModalHeader title={t("disable_2fa")} description={t("disable_2fa_recommendation")} />
 
@@ -76,10 +73,10 @@ const DisableTwoFactorAuthModal = ({ onDisable, onCancel }: DisableTwoFactorAuth
                 className: "block text-sm font-medium text-default",
               }}
               {...form.register("password")}
-              className="border-default mt-1 block w-full rounded-md border px-3 py-2 text-sm focus:border-black focus:outline-none focus:ring-black"
+              className="border-default focus:border-emphasis focus:ring-emphasis mt-1 block w-full rounded-md border px-3 py-2 text-sm focus:outline-none"
             />
             <TwoFactor center={false} />
-            {errorMessage && <p className="mt-1 text-sm text-red-700">{errorMessage}</p>}
+            {errorMessage && <p className="text-error mt-1 text-sm">{errorMessage}</p>}
           </div>
 
           <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">

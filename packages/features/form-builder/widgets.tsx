@@ -1,14 +1,11 @@
 "use client";
 
-import type { ChangeEvent } from "react";
-
-import { TextArea } from "@calcom/ui/components/form";
-import { TextField } from "@calcom/ui/components/form";
-
-import type { TextLikeComponentPropsRAQB, SelectLikeComponentPropsRAQB } from "./widget-types";
-
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import { TextArea, TextField } from "@calcom/ui/components/form";
 // Dynamic import for Select to avoid SSR issues
 import dynamic from "next/dynamic";
+import { type ChangeEvent, useEffect } from "react";
+import type { SelectLikeComponentPropsRAQB, TextLikeComponentPropsRAQB } from "./widget-types";
 
 const Select = dynamic(
   async () => (await import("@calcom/ui/components/form")).SelectWithValidation
@@ -38,8 +35,16 @@ const TextAreaWidget = (props: TextLikeComponentPropsRAQB) => {
 };
 
 const TextWidget = (props: TextLikeComponentPropsRAQB) => {
-  const { value, noLabel, setValue, readOnly, placeholder, customProps, type = "text", ...remainingProps } =
-    props;
+  const {
+    value,
+    noLabel,
+    setValue,
+    readOnly,
+    placeholder,
+    customProps,
+    type = "text",
+    ...remainingProps
+  } = props;
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setValue(val);
@@ -84,10 +89,8 @@ const MultiSelectWidget = ({
   value,
   ...remainingProps
 }: SelectLikeComponentPropsRAQB<string[]>) => {
-  if (!listValues) {
-    return null;
-  }
-  const selectItems = listValues.map((item) => {
+  const { t } = useLocale();
+  const selectItems = (listValues ?? []).map((item) => {
     return {
       label: item.title,
       value: item.value,
@@ -96,14 +99,16 @@ const MultiSelectWidget = ({
 
   const optionsFromList = selectItems.filter((item) => value?.includes(item.value));
 
-  if (optionsFromList.length === 0 && value?.length) {
-    setValue([]);
-  }
+  useEffect(() => {
+    if (optionsFromList.length === 0 && value?.length) setValue([]);
+  }, [optionsFromList.length, setValue, value]);
+
+  if (!listValues) return null;
 
   return (
     <Select
       size="sm"
-      aria-label="multi-select-dropdown"
+      aria-label={t("multi_select_dropdown")}
       className="mb-2"
       onChange={(items) => {
         setValue(items?.map((item) => item.value));

@@ -37,7 +37,7 @@ export function InvalidAppCredentialBanner({ name, slug }: InvalidAppCredentialB
       text={` ${t("invalid_credential", { appName: name })} `}
       variant="warning"
       actions={
-        <button className="border-b border-b-black" onClick={handleClick}>
+        <button type="button" className="border-emphasis border-b" onClick={handleClick}>
           {t("invalid_credential_action")}
         </button>
       }

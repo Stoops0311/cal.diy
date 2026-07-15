@@ -1,11 +1,9 @@
-import React from "react";
-
 import dayjs from "@calcom/dayjs";
-import { useLocale } from "@calcom/lib/hooks/useLocale";
-import classNames from "@calcom/ui/classNames";
-
 import { useCalendarStore } from "@calcom/features/calendars/weeklyview/state/store";
 import type { BorderColor } from "@calcom/features/calendars/weeklyview/types/common";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import classNames from "@calcom/ui/classNames";
+import type React from "react";
 
 type Props = {
   showBorder: boolean;
@@ -52,7 +50,7 @@ export function DateValues({ showBorder, borderColor, days, containerNavRef }: P
     <div
       ref={containerNavRef}
       className={classNames(
-        "bg-default dark:bg-cal-muted top-(--calendar-dates-sticky-offset,0px) z-80 sticky flex-none border-b",
+        "top-(--calendar-dates-sticky-offset,0px) z-80 sticky flex-none border-b bg-default",
         borderColor === "subtle" ? "border-b-subtle" : "border-b-default",
         showBorder && (borderColor === "subtle" ? "border-r-subtle border-r" : "border-r-default border-r")
       )}>

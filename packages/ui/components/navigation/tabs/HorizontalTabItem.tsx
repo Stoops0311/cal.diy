@@ -1,12 +1,10 @@
-import Link from "next/link";
-
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { useUrlMatchesCurrentUrl } from "@calcom/lib/hooks/useUrlMatchesCurrentUrl";
 import classNames from "@calcom/ui/classNames";
-
+import Link from "next/link";
 import { Avatar } from "../../avatar";
-import { Icon } from "../../icon";
 import type { IconName } from "../../icon";
+import { Icon } from "../../icon";
 
 export type HorizontalTabItemProps = {
   name: string;
@@ -24,7 +22,7 @@ export type HorizontalTabItemProps = {
   matchFullPath?: boolean;
 };
 
-const HorizontalTabItem = function ({
+const HorizontalTabItem = ({
   name,
   href,
   linkShallow,
@@ -32,7 +30,7 @@ const HorizontalTabItem = function ({
   avatar,
   matchFullPath,
   ...props
-}: HorizontalTabItemProps) {
+}: HorizontalTabItemProps) => {
   const isCurrent = useUrlMatchesCurrentUrl(href, matchFullPath) || props?.isActive;
   const { t } = useLocale();
 
@@ -65,7 +63,15 @@ const HorizontalTabItem = function ({
           aria-hidden="true"
         />
       )}
-      {avatar && <Avatar size="xs" imageSrc={avatar} alt="avatar" className="-ml-0.5 me-1" />} {t(name)}
+      {avatar && (
+        <Avatar
+          size="xs"
+          imageSrc={avatar}
+          alt={t("avatar_of_name", { name: t(name) })}
+          className="-ml-0.5 me-1"
+        />
+      )}{" "}
+      {t(name)}
     </Link>
   );
 };

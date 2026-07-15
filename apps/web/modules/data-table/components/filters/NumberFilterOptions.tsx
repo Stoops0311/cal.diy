@@ -66,7 +66,7 @@ export function NumberFilterOptions({ column }: NumberFilterOptionsProps) {
             )}
           />
 
-          <div className="bg-subtle -mx-3 my-2 h-px" role="separator" />
+          <hr className="border-subtle -mx-3 my-2" />
 
           <div className="flex items-center justify-between">
             <Button

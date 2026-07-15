@@ -75,4 +75,13 @@ describe("UserPage Component", () => {
 
     expect(() => render(<UserPage {...mockData.props} />)).not.toThrow();
   });
+
+  it("presents the host and scheduling choices as opposing planes", () => {
+    vi.mocked(useRouterQuery).mockReturnValue({});
+
+    const { getByTestId } = render(<UserPage {...mockedUserPageComponentProps({})} />);
+
+    expect(getByTestId("profile-plane")).toHaveClass("bg-inverted", "text-inverted");
+    expect(getByTestId("event-types")).toHaveClass("bg-subtle");
+  });
 });

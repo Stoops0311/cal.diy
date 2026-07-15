@@ -42,7 +42,6 @@ import type { BaseSyntheticEvent } from "react";
 import { useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
-import { CompanyEmailOrganizationBanner } from "./components/CompanyEmailOrganizationBanner";
 
 interface DeleteAccountValues {
   totpCode: string;
@@ -138,14 +137,13 @@ const ProfileView = ({ user }: Props) => {
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [hasDeleteErrors, setHasDeleteErrors] = useState(false);
   const [deleteErrorMessage, setDeleteErrorMessage] = useState("");
-  const [isCompanyEmailAlertDismissed, setIsCompanyEmailAlertDismissed] = useState(false);
   const form = useForm<DeleteAccountValues>();
 
   const onDeleteMeSuccessMutation = async () => {
     await utils.viewer.me.invalidate();
     revalidateSettingsProfile();
 
-    showToast(t("Your account was deleted"), "success");
+    showToast(t("account_deleted"), "success");
 
     setHasDeleteErrors(false); // dismiss any open errors
     if (process.env.NEXT_PUBLIC_WEBAPP_URL === "https://app.cal.com") {
@@ -251,16 +249,9 @@ const ProfileView = ({ user }: Props) => {
     ],
   };
 
-  // Check if user should see company email alert
-  const shouldShowCompanyEmailAlert =
-    !isCompanyEmailAlertDismissed &&
-    !session.data?.user?.org?.id &&
-    !user.organization?.id &&
-    userEmail &&
-    false;
-
   return (
     <SettingsHeader
+      eyebrow={t("my_account")}
       title={t("profile")}
       description={t("profile_description", { appName: APP_NAME })}
       borderInShellHeader={true}>
@@ -310,25 +301,19 @@ const ProfileView = ({ user }: Props) => {
         isCALIdentityProvider={isCALIdentityProvider}
       />
 
-      {shouldShowCompanyEmailAlert && (
-        <div className="mt-6">
-          <CompanyEmailOrganizationBanner onDismissAction={() => setIsCompanyEmailAlertDismissed(true)} />
-        </div>
-      )}
-
-      <div className="mt-6 rounded-lg rounded-b-none border border-subtle border-b-0 p-6">
-        <Label className="mb-0 font-semibold text-base text-red-700">{t("danger_zone")}</Label>
+      <div className="border-subtle mt-8 border-t pt-6">
+        <Label className="text-error mb-0 font-semibold text-base">{t("danger_zone")}</Label>
         <p className="text-sm text-subtle">{t("account_deletion_cannot_be_undone")}</p>
       </div>
       {/* Delete account Dialog */}
       <Dialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
-        <SectionBottomActions align="end">
+        <div className="flex justify-end py-4">
           <DialogTrigger asChild>
             <Button data-testid="delete-account" color="destructive" className="mt-1" StartIcon="trash-2">
               {t("delete_account")}
             </Button>
           </DialogTrigger>
-        </SectionBottomActions>
+        </div>
         <DialogContent
           title={t("delete_account_modal_title")}
           description={t("confirm_delete_account_modal", { appName: APP_NAME })}
@@ -343,7 +328,7 @@ const ProfileView = ({ user }: Props) => {
                 id="password"
                 autoComplete="current-password"
                 required
-                label="Password"
+                label={t("password")}
                 ref={passwordRef}
               />
             )}
@@ -397,13 +382,14 @@ const ProfileView = ({ user }: Props) => {
               id="password"
               autoComplete="current-password"
               required
-              label="Password"
+              label={t("password")}
               ref={passwordRef}
             />
 
             {confirmPasswordErrorMessage && <Alert severity="error" title={confirmPasswordErrorMessage} />}
           </div>
           <DialogFooter showDivider>
+            <DialogClose />
             <Button
               data-testid="profile-update-email-submit-button"
               color="primary"
@@ -411,7 +397,6 @@ const ProfileView = ({ user }: Props) => {
               onClick={(e) => onConfirmPassword(e)}>
               {t("confirm")}
             </Button>
-            <DialogClose />
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -435,6 +420,7 @@ const ProfileView = ({ user }: Props) => {
           type="creation"
           Icon="triangle-alert">
           <DialogFooter>
+            <DialogClose />
             <Button
               color="primary"
               onClick={() => {
@@ -443,7 +429,6 @@ const ProfileView = ({ user }: Props) => {
               }}>
               {t("confirm")}
             </Button>
-            <DialogClose />
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -610,7 +595,7 @@ const ProfileForm = ({
   const isDisabled = isSubmitting || !isDirty;
   return (
     <Form form={formMethods} handleSubmit={handleFormSubmit}>
-      <div className="border-subtle border-x px-4 pt-8 pb-10 sm:px-6">
+      <div className="pt-8 pb-10">
         <div className="flex items-center">
           <Controller
             control={formMethods.control}
@@ -737,7 +722,7 @@ const ProfileForm = ({
         so essentially there's no point in allowing them to disconnect, since when they log in they will get logged into the same account */}
         {!isCALIdentityProvider && user.email !== user.identityProviderEmail && (
           <div className="mt-6">
-            <Label>Connected accounts</Label>
+            <Label>{t("connected_accounts")}</Label>
             <div className="flex items-center">
               <span className="text-default text-sm capitalize">{user.identityProvider.toLowerCase()}</span>
               {user.identityProviderEmail && (

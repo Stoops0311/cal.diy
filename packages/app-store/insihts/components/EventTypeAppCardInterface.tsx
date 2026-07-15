@@ -1,12 +1,17 @@
-import { useAppContextWithSchema } from "@calcom/app-store/EventTypeAppContext";
 import AppCard from "@calcom/app-store/_components/AppCard";
 import useIsAppEnabled from "@calcom/app-store/_utils/useIsAppEnabled";
+import { useAppContextWithSchema } from "@calcom/app-store/EventTypeAppContext";
 import type { EventTypeAppCardComponent } from "@calcom/app-store/types";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { TextField } from "@calcom/ui/components/form";
-
 import type { appDataSchema } from "../zod";
 
-const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({ app, eventType, onAppInstallSuccess }) {
+const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({
+  app,
+  eventType,
+  onAppInstallSuccess,
+}) {
+  const { t } = useLocale();
   const { getAppData, setAppData, disabled } = useAppContextWithSchema<typeof appDataSchema>();
   const siteId = getAppData("SITE_ID");
   const { enabled, updateEnabled } = useIsAppEnabled(app);
@@ -23,9 +28,10 @@ const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({ 
       <fieldset className="stack-y-2" disabled={disabled}>
         <TextField
           disabled={disabled}
-          name="Site ID"
+          name="siteId"
+          label={t("site_id")}
           value={siteId}
-          placeholder="Enter your Site ID"
+          placeholder={t("site_id_placeholder")}
           onChange={(e) => {
             setAppData("SITE_ID", e.target.value);
           }}

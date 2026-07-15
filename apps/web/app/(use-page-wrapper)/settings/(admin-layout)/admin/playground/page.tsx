@@ -5,8 +5,8 @@ import Link from "next/link";
 
 const LINKS = [
   {
-    title: "Date Range Filter",
-    description: "Test date range selection and filtering components",
+    titleKey: "date_range_playground_title",
+    descriptionKey: "date_range_playground_description",
     href: "/settings/admin/playground/date-range-filter",
     icon: "calendar-days" as const,
   },
@@ -29,15 +29,15 @@ const Page = async () => {
         <div className="bg-default border-subtle divide-subtle flex flex-col divide-y rounded-md border">
           {LINKS.map((link) => (
             <Link
-              key={link.title}
+              key={link.href}
               href={link.href}
               className="hover:bg-muted group flex items-center gap-4 p-5 transition-colors">
               <div className="bg-emphasis/10 group-hover:bg-emphasis/20 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md transition-colors">
                 <Icon name={link.icon} className="text-emphasis h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-emphasis text-sm font-semibold leading-none">{link.title}</h3>
-                <p className="text-subtle mt-2 text-sm">{link.description}</p>
+                <h3 className="text-emphasis text-sm font-semibold leading-none">{t(link.titleKey)}</h3>
+                <p className="text-subtle mt-2 text-sm">{t(link.descriptionKey)}</p>
               </div>
               <Icon
                 name="arrow-right"

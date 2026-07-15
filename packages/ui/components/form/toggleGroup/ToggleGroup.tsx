@@ -1,9 +1,7 @@
+import classNames from "@calcom/ui/classNames";
 import * as RadixToggleGroup from "@radix-ui/react-toggle-group";
 import type { ReactNode } from "react";
 import { useState } from "react";
-
-import classNames from "@calcom/ui/classNames";
-
 import { Tooltip } from "../../tooltip/Tooltip";
 
 interface ToggleGroupProps extends Omit<RadixToggleGroup.ToggleGroupSingleProps, "type"> {
@@ -86,7 +84,7 @@ export const ToggleGroup = ({
               className={classNames(
                 "aria-checked:bg-default aria-checked:border-subtle rounded-lg border border-transparent p-1.5 text-sm leading-none transition aria-checked:shadow-[0px_2px_3px_0px_rgba(0,0,0,0.03),0px_2px_2px_-1px_rgba(0,0,0,0.03)]",
                 option.disabled
-                  ? "text-gray-400 hover:cursor-not-allowed"
+                  ? "text-muted hover:cursor-not-allowed"
                   : "text-default [&[aria-checked='false']]:hover:text-emphasis [&[aria-checked='false']]:hover:bg-subtle cursor-pointer",
                 isFullWidth && "w-full"
               )}>

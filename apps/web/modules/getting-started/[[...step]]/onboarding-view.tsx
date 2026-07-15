@@ -8,19 +8,19 @@ import type { RouterOutputs } from "@calcom/trpc/react";
 import classNames from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
 import { StepCard } from "@calcom/ui/components/card";
-import { Steps } from "@calcom/ui/components/form";
+import { StepConnectionLoader } from "@components/getting-started/components/StepConnectionLoader";
 import { ConnectedCalendars } from "@components/getting-started/steps-views/ConnectCalendars";
 import { ConnectedVideoStep } from "@components/getting-started/steps-views/ConnectedVideoStep";
 import { SetupAvailability } from "@components/getting-started/steps-views/SetupAvailability";
 import UserProfile from "@components/getting-started/steps-views/UserProfile";
 import { UserSettings } from "@components/getting-started/steps-views/UserSettings";
-import { LoaderIcon } from "@coss/ui/icons";
 import type { TFunction } from "i18next";
 import { usePathname, useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { Suspense, useTransition } from "react";
 import { Toaster } from "sonner";
 import { z } from "zod";
+import { ConvenioMark } from "../../auth/components/AuthShell";
 
 const INITIAL_STEP = "user-settings";
 const BASE_STEPS = [
@@ -32,6 +32,14 @@ const BASE_STEPS = [
 ] as const;
 
 type StepType = (typeof BASE_STEPS)[number];
+
+const STEP_RAIL_LABELS: Record<StepType, string> = {
+  "user-settings": "onboarding_step_basics",
+  "connected-calendar": "onboarding_step_calendars",
+  "connected-video": "onboarding_step_video",
+  "setup-availability": "onboarding_step_availability",
+  "user-profile": "onboarding_step_profile",
+};
 
 const getStepsAndHeadersForUser = (t: TFunction) => {
   const baseHeaders: {
@@ -147,35 +155,73 @@ const OnboardingPage = (props: PageProps) => {
   };
 
   return (
-    <div
-      className={classNames(
-        "text-emphasis min-h-screen [--cal-brand:#111827] dark:[--cal-brand:#FFFFFF]",
-        "[--cal-brand-emphasis:#101010] dark:[--cal-brand-emphasis:#e1e1e1]",
-        "[--cal-brand-subtle:#9CA3AF]",
-        "[--cal-brand-text:#FFFFFF]  dark:[--cal-brand-text:#000000]",
-        "[--cal-brand-accent:#FFFFFF] dark:[--cal-brand-accent:#000000]"
-      )}
-      data-testid="onboarding"
-      key={pathname}>
-      <div className="mx-auto py-6 sm:px-4 md:py-24">
-        <div className="relative">
-          <div className="sm:mx-auto sm:w-full sm:max-w-[600px]">
-            <div className="mx-auto px-4 sm:max-w-[520px]">
-              <header>
-                <p className="font-cal mb-3 text-[28px] font-medium leading-7">
-                  {headers[currentStepIndex]?.title || "Undefined title"}
+    <div className="bg-default text-emphasis min-h-screen" data-testid="onboarding" key={pathname}>
+      <div className="mx-auto flex w-full max-w-5xl gap-14 px-4 py-8 md:py-20">
+        {/* Agenda rail — the sequence is real, so the numbering carries information */}
+        <aside className="sticky top-20 hidden w-56 shrink-0 self-start lg:block">
+          <div className="mb-10 flex items-center gap-2.5">
+            <ConvenioMark className="h-6 w-6" />
+            <span className="font-cal text-base tracking-tight">Convenio</span>
+          </div>
+          <ol>
+            {steps.map((step, index) => {
+              const isDone = index < currentStepIndex;
+              const isCurrent = index === currentStepIndex;
+              return (
+                <li key={step} className="border-subtle border-t last:border-b">
+                  <button
+                    type="button"
+                    disabled={!isDone}
+                    onClick={() => goToStep(index)}
+                    className={classNames(
+                      "flex w-full items-baseline gap-3 py-3 text-left",
+                      isDone && "cursor-pointer"
+                    )}>
+                    <span
+                      className={classNames(
+                        "font-mono text-[11px] tracking-[0.1em]",
+                        isCurrent ? "text-emphasis" : "text-muted"
+                      )}>
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span
+                      className={classNames(
+                        "text-sm",
+                        isCurrent ? "text-emphasis font-medium" : isDone ? "text-subtle" : "text-muted"
+                      )}>
+                      {t(STEP_RAIL_LABELS[step])}
+                    </span>
+                    {isDone && <span className="bg-inverted ml-auto h-1.5 w-1.5 self-center rounded-full" />}
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </aside>
+
+        <div className="relative mx-auto w-full max-w-xl">
+          <div>
+            <div>
+              <header className="mb-8">
+                <p className="font-mono text-subtle text-[11px] uppercase tracking-[0.22em]">
+                  {t("current_step_of_total", {
+                    currentStep: currentStepIndex + 1,
+                    maxSteps: steps.length,
+                  })}
+                </p>
+                <p className="font-cal mt-3 text-3xl leading-tight">
+                  {headers[currentStepIndex]?.title ?? ""}
                 </p>
 
                 {headers[currentStepIndex]?.subtitle.map((subtitle, index) => (
-                  <p className="text-subtle font-sans text-sm font-normal" key={index}>
+                  <p className="text-subtle mt-2 font-sans text-sm font-normal" key={index}>
                     {subtitle}
                   </p>
                 ))}
               </header>
-              <Steps maxSteps={steps.length} currentStep={currentStepIndex + 1} navigateToStep={goToStep} />
             </div>
             <StepCard>
-              <Suspense fallback={<LoaderIcon />}>
+              <Suspense fallback={<StepConnectionLoader />}>
                 {currentStep === "user-settings" && (
                   <UserSettings nextStep={goToNextStep} hideUsername={from === "signup"} user={user} />
                 )}

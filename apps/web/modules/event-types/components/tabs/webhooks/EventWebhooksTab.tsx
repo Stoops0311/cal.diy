@@ -16,8 +16,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { WebhookForm } from "~/webhooks/components";
-import WebhookListItem from "~/webhooks/components/WebhookListItem";
 import type { TWebhook, WebhookFormSubmitData } from "~/webhooks/components/WebhookForm";
+import WebhookListItem from "~/webhooks/components/WebhookListItem";
 
 export const EventWebhooksTab = ({ eventType }: Pick<EventTypeSetupProps, "eventType">) => {
   const { t } = useLocale();
@@ -143,7 +143,7 @@ export const EventWebhooksTab = ({ eventType }: Pick<EventTypeSetupProps, "event
                 />
               )}
               {webhooks.length ? (
-                <div className="mb-2 rounded-md border border-subtle p-8">
+                <div className="mb-2 rounded-xl border border-subtle bg-subtle p-8">
                   <div className="flex justify-between">
                     <div>
                       <div className="font-semibold text-default text-sm">{t("webhooks")}</div>
@@ -160,15 +160,19 @@ export const EventWebhooksTab = ({ eventType }: Pick<EventTypeSetupProps, "event
                     )}
                   </div>
 
-                  <div className="my-8 rounded-md border border-subtle">
+                  <div className="my-8 divide-y divide-subtle border-y border-subtle">
                     {webhooks.map((webhook, index) => {
                       return (
                         <WebhookListItem
                           key={webhook.id}
                           webhook={webhook}
                           permissions={{
-                            canEditWebhook: !(isChildrenManagedEventType && webhook.eventTypeId !== eventType.id),
-                            canDeleteWebhook: !(isChildrenManagedEventType && webhook.eventTypeId !== eventType.id),
+                            canEditWebhook: !(
+                              isChildrenManagedEventType && webhook.eventTypeId !== eventType.id
+                            ),
+                            canDeleteWebhook: !(
+                              isChildrenManagedEventType && webhook.eventTypeId !== eventType.id
+                            ),
                           }}
                           onEditWebhookAction={() => {
                             setEditModalOpen(true);

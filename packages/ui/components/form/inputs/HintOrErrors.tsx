@@ -1,6 +1,5 @@
 import type { FieldValues } from "react-hook-form";
 import { useFormContext } from "react-hook-form";
-
 import { Icon } from "../../icon";
 import { InputError } from "./InputError";
 
@@ -20,17 +19,17 @@ export function HintsOrErrors<T extends FieldValues = FieldValues>({
   if (!methods) return null;
   const { formState } = methods;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
+  // @ts-expect-error
   const fieldErrors: FieldErrors<T> | undefined = formState.errors[fieldName];
 
   if (!hintErrors && fieldErrors && !fieldErrors.message) {
     // no hints passed, field errors exist and they are custom ones
     return (
-      <div className="text-gray text-default mt-2 flex items-center text-sm">
+      <div className="mt-2 flex items-center text-default text-sm">
         <ul className="ml-2">
           {Object.keys(fieldErrors).map((key: string) => {
             return (
-              <li key={key} className="text-blue-700">
+              <li key={key} className="text-error">
                 {t(`${fieldName}_hint_${key}`)}
               </li>
             );
@@ -43,7 +42,7 @@ export function HintsOrErrors<T extends FieldValues = FieldValues>({
   if (hintErrors && fieldErrors) {
     // hints passed, field errors exist
     return (
-      <div className="text-gray text-default mt-2 flex items-center text-sm">
+      <div className="mt-2 flex items-center text-default text-sm">
         <ul className="ml-2">
           {hintErrors.map((key: string) => {
             const submitted = formState.isSubmitted;
@@ -52,7 +51,7 @@ export function HintsOrErrors<T extends FieldValues = FieldValues>({
               <li
                 key={key}
                 data-testid="hint-error"
-                className={error !== undefined ? (submitted ? "text-error" : "") : "text-green-600"}>
+                className={error !== undefined ? (submitted ? "text-error" : "") : "text-success"}>
                 {error !== undefined ? (
                   submitted ? (
                     <Icon
@@ -95,14 +94,14 @@ export function HintsOrErrors<T extends FieldValues = FieldValues>({
 
   // hints passed, no errors exist, proceed to just show hints
   return (
-    <div className="text-gray text-default mt-2 flex items-center text-sm">
+    <div className="mt-2 flex items-center text-default text-sm">
       <ul className="ml-2">
         {hintErrors.map((key: string) => {
           // if field was changed, as no error exist, show checked status and color
           const dirty = formState.dirtyFields[fieldName];
           return (
-            <li key={key} className={!!dirty ? "text-green-600" : ""}>
-              {!!dirty ? (
+            <li key={key} className={dirty ? "text-success" : ""}>
+              {dirty ? (
                 <Icon
                   name="check"
                   size="12"

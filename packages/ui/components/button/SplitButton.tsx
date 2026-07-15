@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { ChevronDownIcon } from "@coss/ui/icons";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import type { ReactNode } from "react";
@@ -24,6 +25,8 @@ export const SplitButton = forwardRef<HTMLButtonElement, SplitButtonProps>(funct
   { children, dropdown, StartIcon, color = "primary", ...mainButtonProps },
   forwardedRef
 ) {
+  const { t } = useLocale();
+
   if (!dropdown) {
     return (
       <Button ref={forwardedRef} StartIcon={StartIcon} color={color} {...mainButtonProps}>
@@ -45,13 +48,17 @@ export const SplitButton = forwardRef<HTMLButtonElement, SplitButtonProps>(funct
       <DropdownMenuPrimitive.Root>
         <DropdownMenuPrimitive.Trigger asChild>
           <button
+            type="button"
+            aria-label={
+              typeof children === "string" ? t("more_options_for", { item: children }) : t("more_options")
+            }
             className={buttonClasses({
               variant: "button",
               color,
               size: mainButtonProps.size,
               className: "rounded-l-none px-2",
             })}>
-            <ChevronDownIcon className="h-4 w-4" />
+            <ChevronDownIcon aria-hidden="true" className="h-4 w-4" />
           </button>
         </DropdownMenuPrimitive.Trigger>
 

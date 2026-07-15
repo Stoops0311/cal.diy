@@ -170,7 +170,7 @@ const destinationCalendarComponents = {
     );
     const selectedSecondaryEmailId = formMethods.getValues("secondaryEmailId") || -1;
     return (
-      <div className="stack-y-6 rounded-lg border border-subtle p-6">
+      <div className="stack-y-6 rounded-xl border border-subtle bg-subtle p-6">
         <div className="stack-y-4 lg:stack-y-0 flex flex-col lg:flex-row lg:space-x-4">
           {showConnectedCalendarSettings && (
             <div
@@ -215,7 +215,7 @@ const destinationCalendarComponents = {
                 <Button
                   color="minimal"
                   size="sm"
-                  aria-label="edit custom name"
+                  aria-label={t("edit")}
                   className="-mr-1.5 min-w-fit px-1.5 py-0! hover:bg-transparent hover:stroke-3 hover:text-emphasis"
                   onClick={() => setShowEventNameTip((old) => !old)}>
                   <PencilIcon className="h-4 w-4" />
@@ -261,7 +261,7 @@ const destinationCalendarComponents = {
                   placeholder={
                     selectedSecondaryEmailId === -1 && (
                       <span className="min-w-0 overflow-hidden truncate whitespace-nowrap text-default">
-                        <Badge variant="blue">{t("default")}</Badge> {userEmail}
+                        <Badge variant="gray">{t("default")}</Badge> {userEmail}
                       </span>
                     )
                   }
@@ -291,7 +291,7 @@ const destinationCalendarComponents = {
   },
   DestinationCalendarSettingsSkeleton() {
     return (
-      <div className="stack-y-6 rounded-lg border border-subtle p-6">
+      <div className="stack-y-6 rounded-xl border border-subtle bg-subtle p-6">
         <div className="stack-y-4 lg:stack-y-0 flex flex-col lg:flex-row lg:space-x-4">
           <div className="flex w-full flex-col">
             <div className="h-4 w-32 animate-pulse rounded-md bg-emphasis" />
@@ -627,7 +627,7 @@ export const EventAdvancedTab = ({
         />
       )}
 
-      <div className="rounded-lg border border-subtle bg-cal-muted p-1">
+      <div className="rounded-2xl border border-subtle bg-subtle p-1">
         <div className="p-5">
           <div className="font-semibold text-default text-sm leading-none ltr:mr-1 rtl:ml-1">
             {t("booking_questions_title")}
@@ -640,7 +640,7 @@ export const EventAdvancedTab = ({
             />
           </p>
         </div>
-        <div className="rounded-lg border border-subtle bg-default p-5">
+        <div className="rounded-xl border border-subtle bg-default p-5">
           <FormBuilder
             showPhoneAndEmailToggle
             title={t("confirmation")}
@@ -669,7 +669,9 @@ export const EventAdvancedTab = ({
       {!isPlatform && (
         <Controller
           name="requiresCancellationReason"
-          defaultValue={eventType.requiresCancellationReason ?? CancellationReasonRequirement.MANDATORY_HOST_ONLY}
+          defaultValue={
+            eventType.requiresCancellationReason ?? CancellationReasonRequirement.MANDATORY_HOST_ONLY
+          }
           render={({ field: { value, onChange } }) => {
             const cancellationReasonOptions = [
               { value: CancellationReasonRequirement.MANDATORY_BOTH, label: t("mandatory_for_both") },
@@ -684,7 +686,7 @@ export const EventAdvancedTab = ({
               { value: CancellationReasonRequirement.OPTIONAL_BOTH, label: t("optional_for_both") },
             ];
             return (
-              <div className="border-subtle rounded-lg border px-4 py-6 sm:px-6">
+              <div className="border-subtle rounded-xl border bg-subtle px-4 py-6 sm:px-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-default text-sm font-semibold">{t("require_cancellation_reason")}</p>
@@ -965,7 +967,7 @@ export const EventAdvancedTab = ({
                 </div>
                 <div
                   className={classNames(
-                    "p-1 text-orange-600 text-sm",
+                    "text-attention p-1 text-sm",
                     formMethods.getValues("successRedirectUrl") ? "block" : "hidden",
                     customClassNames?.bookingRedirect?.error
                   )}

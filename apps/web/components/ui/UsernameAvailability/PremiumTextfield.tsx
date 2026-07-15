@@ -180,14 +180,14 @@ const PremiumTextfield = (props: ICustomUsernameProps) => {
   };
 
   let paymentMsg = !currentUsername ? (
-    <span className="text-xs text-orange-400">
+    <span className="text-attention text-xs">
       You need to reserve your premium username for {getPremiumPlanPriceValue()}
     </span>
   ) : null;
 
   if (recentAttemptPaymentStatus && recentAttemptPaymentStatus !== "paid") {
     paymentMsg = (
-      <span className="text-sm text-red-500">
+      <span className="text-error text-sm">
         Your payment could not be completed. Your username is still not reserved
       </span>
     );
@@ -201,7 +201,7 @@ const PremiumTextfield = (props: ICustomUsernameProps) => {
       <div className="flex rounded-md">
         <span
           className={classNames(
-            isInputUsernamePremium ? "border border-orange-400 " : "",
+            isInputUsernamePremium ? "border-semantic-attention-subtle border" : "",
             "border-default bg-cal-muted text-subtle hidden h-8 items-center rounded-l-md border border-r-0 px-3 text-sm md:inline-flex"
           )}>
           {process.env.NEXT_PUBLIC_WEBSITE_URL.replace("https://", "").replace("http://", "")}/
@@ -218,10 +218,10 @@ const PremiumTextfield = (props: ICustomUsernameProps) => {
             className={classNames(
               "border-l my-0 rounded-md font-sans text-sm leading-4 focus:ring-0! sm:rounded-l-none",
               isInputUsernamePremium
-                ? "border border-orange-400 focus:border focus:border-orange-400"
+                ? "border-semantic-attention-subtle focus:border-semantic-attention-subtle border focus:border"
                 : "border focus:border",
               markAsError
-                ? "focus:shadow-0 focus:ring-shadow-0 border-red-500  focus:border-red-500 focus:outline-none"
+                ? "focus:shadow-0 focus:ring-shadow-0 border-error focus:border-error focus:outline-none"
                 : "border-l-default",
               disabled ? "bg-subtle text-muted focus:border-0" : ""
             )}
@@ -246,7 +246,7 @@ const PremiumTextfield = (props: ICustomUsernameProps) => {
                 usernameIsAvailable ? "" : ""
               )}>
               {isInputUsernamePremium ? (
-                <Icon name="star" className="mt-[2px] h-4 w-4 fill-orange-400" />
+                <Icon name="star" className="text-emphasis mt-[2px] h-4 w-4 fill-current" />
               ) : (
                 <></>
               )}
@@ -266,7 +266,7 @@ const PremiumTextfield = (props: ICustomUsernameProps) => {
         )}
       </div>
       {paymentMsg}
-      {markAsError && <p className="mt-1 text-xs text-red-500">{t("username_already_taken")}</p>}
+      {markAsError && <p className="text-error mt-1 text-xs">{t("username_already_taken")}</p>}
 
       <Dialog open={openDialogSaveUsername}>
         <DialogContent

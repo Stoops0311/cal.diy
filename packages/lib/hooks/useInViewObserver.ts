@@ -35,7 +35,7 @@ export const useInViewObserver = (onInViewCallback: () => void, root?: Element |
         observer.disconnect();
       }
     };
-  }, [node]);
+  }, [node, root]);
 
   return {
     ref: setRef,

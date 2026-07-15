@@ -1,12 +1,11 @@
-import type { GroupBase, Props, SingleValue } from "react-select";
-import { components } from "react-select";
-
 import type { EventLocationType } from "@calcom/app-store/locations";
 import { useIsPlatform } from "@calcom/atoms/hooks/useIsPlatform";
 import invertLogoOnDark from "@calcom/lib/invertLogoOnDark";
-import { Select } from "@calcom/ui/components/form";
 import classNames from "@calcom/ui/classNames";
+import { Select } from "@calcom/ui/components/form";
 import { LinkIcon, MapIcon, MapPinIcon, PhoneIcon, VideoIcon } from "@coss/ui/icons";
+import type { GroupBase, Props, SingleValue } from "react-select";
+import { components } from "react-select";
 
 export type LocationSelectCustomClassNames = {
   optionIcon?: string;
@@ -74,7 +73,7 @@ const OptionWithIcon = ({
 
   return (
     <div className="flex items-center gap-3">
-      {icon && <img src={icon} alt="cover" className={classNames("h-3.5 w-3.5", invertLogoOnDark(icon))} />}
+      {icon && <img src={icon} alt="" className={classNames("h-3.5 w-3.5", invertLogoOnDark(icon))} />}
       <span className={classNames(" text-sm font-medium")}>{label}</span>
     </div>
   );
@@ -134,7 +133,7 @@ export default function LocationSelect({
           {e.icon && !isPlatform && (
             <img
               src={e.icon}
-              alt="app-icon"
+              alt=""
               className={classNames(e.icon.includes("-dark") && "dark:invert", "h-5 w-5")}
             />
           )}

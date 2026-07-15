@@ -2,6 +2,7 @@
 
 import type { DateRangeFilterOptions } from "@calcom/features/data-table/lib/types";
 import { ColumnFilterType } from "@calcom/features/data-table/lib/types";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { createColumnHelper, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { useMemo } from "react";
 import { DateRangeFilter } from "~/data-table/components/filters/DateRangeFilter";
@@ -26,45 +27,45 @@ type ScenarioProps = {
 const scenarios: ScenarioProps[] = [
   {
     id: "past",
-    title: 'Range: "past"',
-    description: "Restricts date selection to past dates only. Shows presets that are past-compatible.",
-    expected:
-      "Presets visible: Today, Last 7 days, Last 30 days, Month to date, Year to date, Custom. Calendar maxDate = today.",
+    title: "date_range_playground_past_title",
+    description: "date_range_playground_past_description",
+    expected: "date_range_playground_past_expected",
     range: "past",
   },
   {
     id: "future",
-    title: 'Range: "future"',
-    description: "Restricts date selection to future dates only. Shows only future-compatible presets.",
-    expected: "Presets visible: Custom only (presets with direction 'any'). Calendar minDate = today.",
+    title: "date_range_playground_future_title",
+    description: "date_range_playground_future_description",
+    expected: "date_range_playground_future_expected",
     range: "future",
   },
   {
     id: "any",
-    title: 'Range: "any"',
-    description: "No date restrictions. Shows all presets.",
-    expected: "All presets visible. No calendar date restrictions.",
+    title: "date_range_playground_any_title",
+    description: "date_range_playground_any_description",
+    expected: "date_range_playground_any_expected",
     range: "any",
   },
   {
     id: "customOnly",
-    title: 'Range: "customOnly"',
-    description: "Forces custom date picker only. Always hides presets dropdown.",
-    expected: "No presets dropdown. Only calendar picker visible when opened. No date restrictions.",
+    title: "date_range_playground_custom_title",
+    description: "date_range_playground_custom_description",
+    expected: "date_range_playground_custom_expected",
     range: "customOnly",
   },
 ];
 
 function ScenarioCard({ scenario }: { scenario: ScenarioProps }) {
+  const { t } = useLocale();
   const columns = useMemo(
     () => [
       columnHelper.accessor("name", {
-        header: "Name",
+        header: t("name"),
         cell: (info) => info.getValue(),
       }),
       columnHelper.accessor("date", {
         id: "dateRange",
-        header: "Date Range",
+        header: t("date_range"),
         cell: (info) => info.getValue(),
         enableColumnFilter: true,
         meta: {
@@ -77,15 +78,15 @@ function ScenarioCard({ scenario }: { scenario: ScenarioProps }) {
         },
       }),
     ],
-    [scenario.range]
+    [scenario.range, t]
   );
 
   const data = useMemo<DemoRow[]>(
     () => [
-      { id: 1, name: "Demo Item 1", date: "2024-01-15" },
-      { id: 2, name: "Demo Item 2", date: "2024-02-20" },
+      { id: 1, name: t("date_range_playground_demo_item", { number: 1 }), date: "2024-01-15" },
+      { id: 2, name: t("date_range_playground_demo_item", { number: 2 }), date: "2024-02-20" },
     ],
-    []
+    [t]
   );
 
   const table = useReactTable({
@@ -94,7 +95,6 @@ function ScenarioCard({ scenario }: { scenario: ScenarioProps }) {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  // Get the column definition to pass to DateRangeFilter
   const dateRangeColumn = table.getAllColumns().find((col) => col.id === "dateRange");
   const columnMeta = dateRangeColumn?.columnDef.meta as
     | { filter?: { type: string; dateRangeOptions?: DateRangeFilterOptions } }
@@ -102,11 +102,13 @@ function ScenarioCard({ scenario }: { scenario: ScenarioProps }) {
   const dateRangeOptions = columnMeta?.filter?.dateRangeOptions;
 
   return (
-    <div className="border-subtle mb-8 rounded-lg border p-6" data-testid={`drf-scenario-${scenario.id}`}>
-      <h3 className="text-emphasis mb-2 text-lg font-semibold">{scenario.title}</h3>
-      <p className="text-default mb-2 text-sm">{scenario.description}</p>
+    <section
+      className="border-subtle bg-subtle mb-6 rounded-2xl border p-6 shadow-sm"
+      data-testid={`drf-scenario-${scenario.id}`}>
+      <h2 className="font-cal text-emphasis mb-2 text-xl font-semibold">{t(scenario.title)}</h2>
+      <p className="text-default mb-2 text-sm">{t(scenario.description)}</p>
       <p className="text-subtle mb-4 text-xs">
-        <strong>Expected:</strong> {scenario.expected}
+        <strong>{t("expected")}:</strong> {t(scenario.expected)}
       </p>
 
       <div className="mt-4">
@@ -125,27 +127,29 @@ function ScenarioCard({ scenario }: { scenario: ScenarioProps }) {
           )}
         </DataTableProvider>
       </div>
-    </div>
+    </section>
   );
 }
 
 export default function DateRangeFilterPlayground() {
+  const { t } = useLocale();
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-emphasis text-2xl font-bold">DateRangeFilter Playground</h1>
-        <p className="text-default mt-2">
-          This page demonstrates the different <code>range</code> options for the DateRangeFilter component.
+    <main className="mx-auto max-w-4xl space-y-8 pb-12">
+      <header className="border-subtle border-b pb-6">
+        <p className="font-mono text-subtle mb-2 text-xs uppercase tracking-[0.18em]">
+          {t("admin_playground")}
         </p>
-        <p className="text-subtle mt-1 text-sm">
-          The <code>range</code> option controls both date restrictions and presets visibility. Presets
-          visibility is derived automatically based on compatible presets.
-        </p>
-      </div>
+        <h1 className="font-cal text-emphasis text-3xl font-semibold tracking-tight">
+          {t("date_range_playground_title")}
+        </h1>
+        <p className="text-default mt-2">{t("date_range_playground_description")}</p>
+        <p className="text-subtle mt-1 text-sm">{t("date_range_playground_explanation")}</p>
+      </header>
 
       {scenarios.map((scenario) => (
         <ScenarioCard key={scenario.id} scenario={scenario} />
       ))}
-    </div>
+    </main>
   );
 }

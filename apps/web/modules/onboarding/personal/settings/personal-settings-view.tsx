@@ -178,7 +178,11 @@ export const PersonalSettingsView = ({
 
               {/* Name */}
               <div className="flex w-full flex-col gap-1.5">
-                <TextField label={t("your_name")} {...form.register("name")} placeholder="John Doe" />
+                <TextField
+                  label={t("your_name")}
+                  {...form.register("name")}
+                  placeholder={t("name_placeholder")}
+                />
                 {form.formState.errors.name && (
                   <p className="text-error text-sm">{form.formState.errors.name.message}</p>
                 )}

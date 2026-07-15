@@ -42,12 +42,9 @@ import { BookingActionsStoreProvider } from "../../../components/booking/actions
 import { RejectBookingButton } from "../../../components/booking/RejectBookingButton";
 import type { BookingListingStatus } from "../../../components/booking/types";
 import { usePaymentStatus } from "../hooks/usePaymentStatus";
+import { checkSheetActive, createBookingSheetKeydownHandler } from "../lib/bookingSheetKeyboardHandler";
 import { useBookingDetailsSheetStore } from "../store/bookingDetailsSheetStore";
 import type { BookingOutput } from "../types";
-import {
-  checkSheetActive,
-  createBookingSheetKeydownHandler,
-} from "../lib/bookingSheetKeyboardHandler";
 import { JoinMeetingButton } from "./JoinMeetingButton";
 
 type BookingMetaData = z.infer<typeof bookingMetadataSchema>;
@@ -107,9 +104,10 @@ interface BookingDetailsSheetInnerProps {
 }
 
 function useActiveSegment(bookingAuditEnabled: boolean) {
-  const [activeSegment, setActiveSegmentInStore] = useBookingDetailsSheetStore(
-    (state) => [state.activeSegment, state.setActiveSegment]
-  );
+  const [activeSegment, setActiveSegmentInStore] = useBookingDetailsSheetStore((state) => [
+    state.activeSegment,
+    state.setActiveSegment,
+  ]);
 
   const getDerivedActiveSegment = ({
     activeSegment,
@@ -130,9 +128,7 @@ function useActiveSegment(bookingAuditEnabled: boolean) {
   });
 
   const setDerivedActiveSegment = (segment: "info" | "history") => {
-    setActiveSegmentInStore(
-      getDerivedActiveSegment({ activeSegment: segment, bookingAuditEnabled })
-    );
+    setActiveSegmentInStore(getDerivedActiveSegment({ activeSegment: segment, bookingAuditEnabled }));
   };
 
   return [derivedActiveSegment, setDerivedActiveSegment] as const;
@@ -147,18 +143,16 @@ function BookingDetailsSheetInner({
   bookingAuditEnabled = false,
 }: BookingDetailsSheetInnerProps) {
   const { t } = useLocale();
-  const [activeSegment, setActiveSegment] =
-    useActiveSegment(bookingAuditEnabled);
+  const [activeSegment, setActiveSegment] = useActiveSegment(bookingAuditEnabled);
 
   // Fetch additional booking details for reschedule information
-  const { data: bookingDetails } =
-    trpc.viewer.bookings.getBookingDetails.useQuery(
-      { uid: booking.uid },
-      {
-        // Keep data fresh but don't refetch too aggressively
-        staleTime: 5 * 60 * 1000, // 5 minutes
-      }
-    );
+  const { data: bookingDetails } = trpc.viewer.bookings.getBookingDetails.useQuery(
+    { uid: booking.uid },
+    {
+      // Keep data fresh but don't refetch too aggressively
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    }
+  );
 
   // Get navigation state from the store in a single selector
   const navigation = useBookingDetailsSheetStore((state) => {
@@ -173,12 +167,8 @@ function BookingDetailsSheetInner({
       isTransitioning: state.isTransitioning,
       setSelectedBookingUid: state.setSelectedBookingUid,
       setActiveSegment: state.setActiveSegment,
-      canGoNext:
-        hasNextInArray ||
-        (isLastInArray && state.capabilities?.canNavigateToNextPeriod()),
-      canGoPrev:
-        hasPreviousInArray ||
-        (isFirstInArray && state.capabilities?.canNavigateToPreviousPeriod()),
+      canGoNext: hasNextInArray || (isLastInArray && state.capabilities?.canNavigateToNextPeriod()),
+      canGoPrev: hasPreviousInArray || (isFirstInArray && state.capabilities?.canNavigateToPreviousPeriod()),
     };
   });
 
@@ -231,7 +221,7 @@ function BookingDetailsSheetInner({
   const statusBadge = useMemo(() => {
     if (booking.rescheduled) {
       return {
-        variant: "red" as const,
+        variant: "orange" as const,
         label: t("rescheduled"),
       };
     }
@@ -252,9 +242,7 @@ function BookingDetailsSheetInner({
 
   const isPending = booking.status === BookingStatus.PENDING;
 
-  const parsedMetadata = bookingMetadataSchema.safeParse(
-    booking.metadata ?? null
-  );
+  const parsedMetadata = bookingMetadataSchema.safeParse(booking.metadata ?? null);
   const bookingMetadata = parsedMetadata.success ? parsedMetadata.data : null;
 
   const recurringInfo =
@@ -302,8 +290,7 @@ function BookingDetailsSheetInner({
                   <div className="flex items-center gap-1.5">
                     <span>{t("previous_shortcut")}</span>
                   </div>
-                }
-              >
+                }>
                 <Button
                   variant="icon"
                   size="sm"
@@ -322,8 +309,7 @@ function BookingDetailsSheetInner({
                   <div className="flex items-center gap-1.5">
                     <span>{t("next_shortcut")}</span>
                   </div>
-                }
-              >
+                }>
                 <Button
                   variant="icon"
                   size="sm"
@@ -342,8 +328,7 @@ function BookingDetailsSheetInner({
                   <div className="flex items-center gap-1.5">
                     <span>{t("close_shortcut")}</span>
                   </div>
-                }
-              >
+                }>
                 <Button
                   variant="icon"
                   size="sm"
@@ -363,8 +348,7 @@ function BookingDetailsSheetInner({
         <SheetBody className="-mt-3">
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-1">
-              <SheetTitle className="flex items-center gap-3 font-semibold text-emphasis text-xl">
-                <div className="w-0.5 shrink-0 self-stretch rounded-lg bg-emphasis"></div>
+              <SheetTitle className="font-cal text-emphasis text-xl font-semibold tracking-tight">
                 <span data-testid="booking-sheet-title">{booking.title}</span>
               </SheetTitle>
             </div>
@@ -407,12 +391,7 @@ function BookingDetailsSheetInner({
 
                 <AssignmentReasonSection booking={booking} />
 
-                {booking.payment?.[0] && (
-                  <PaymentSection
-                    booking={booking}
-                    payment={booking.payment[0]}
-                  />
-                )}
+                {booking.payment?.[0] && <PaymentSection booking={booking} payment={booking.payment[0]} />}
 
                 <SlotsSection booking={booking} />
 
@@ -455,8 +434,7 @@ function BookingDetailsSheetInner({
                     <div className="flex items-center gap-1.5">
                       <span>{t("join_shortcut")}</span>
                     </div>
-                  }
-                >
+                  }>
                   <div ref={joinButtonWrapperRef}>
                     <JoinMeetingButton
                       location={booking.location}
@@ -471,8 +449,7 @@ function BookingDetailsSheetInner({
             <BookingActionsDropdown
               booking={{
                 ...booking,
-                listingStatus:
-                  booking.status.toLowerCase() as BookingListingStatus,
+                listingStatus: booking.status.toLowerCase() as BookingListingStatus,
                 recurringInfo: undefined,
                 loggedInUser: {
                   userId,
@@ -522,13 +499,8 @@ function WhenSection({
         className={classNames(
           "flex flex-col font-medium text-emphasis text-sm",
           rescheduled && "line-through"
-        )}
-      >
-        <DisplayTimestamp
-          startTime={startTime}
-          endTime={endTime}
-          timeZone={timeZone}
-        />
+        )}>
+        <DisplayTimestamp startTime={startTime} endTime={endTime} timeZone={timeZone} />
       </div>
     </Section>
   );
@@ -555,7 +527,7 @@ function DisplayTimestamp({
   return (
     <>
       <span>{start.format("dddd, MMMM D, YYYY")}</span>
-      <span>
+      <span className="text-subtle font-mono text-xs leading-5">
         {start.format("h:mma")} - {end.format("h:mma")} ({localizedTimezone})
       </span>
     </>
@@ -574,10 +546,7 @@ function WhoSection({ booking }: { booking: BookingOutput }) {
               imageSrc={
                 booking.user.avatarUrl
                   ? getUserAvatarUrl(booking.user)
-                  : getPlaceholderAvatar(
-                      null,
-                      booking.user.name || booking.user.email
-                    )
+                  : getPlaceholderAvatar(null, booking.user.name || booking.user.email)
               }
               alt={booking.user.name || booking.user.email || ""}
             />
@@ -588,25 +557,19 @@ function WhoSection({ booking }: { booking: BookingOutput }) {
                     ? booking.user.name || t("organizer")
                     : booking.user.name || booking.user.email}
                 </p>
-                <Badge variant="purple" size="sm" className="capitalize">
+                <Badge variant="gray" size="sm" className="capitalize">
                   {t("host")}
                 </Badge>
               </div>
               {!booking.eventType?.hideOrganizerEmail && (
-                <p className="truncate text-default text-sm leading-[1.2]">
-                  {booking.user.email}
-                </p>
+                <p className="truncate text-default text-sm leading-[1.2]">{booking.user.email}</p>
               )}
             </div>
           </div>
         )}
 
         {booking.attendees.map((attendee, idx) => {
-          const name =
-            attendee.user?.name ||
-            attendee.name ||
-            attendee.user?.email ||
-            attendee.email;
+          const name = attendee.user?.name || attendee.name || attendee.user?.email || attendee.email;
           return (
             <div key={idx} className="flex items-center gap-4">
               <Avatar
@@ -633,13 +596,7 @@ function WhoSection({ booking }: { booking: BookingOutput }) {
   );
 }
 
-function WhereSection({
-  booking,
-  meta,
-}: {
-  booking: BookingOutput;
-  meta: BookingMetaData | null;
-}) {
+function WhereSection({ booking, meta }: { booking: BookingOutput; meta: BookingMetaData | null }) {
   const { t } = useLocale();
 
   const { locationToDisplay, provider, isLocationURL } = useBookingLocation({
@@ -670,22 +627,15 @@ function WhereSection({
       <div className="flex items-center gap-2 text-sm">
         {provider?.iconUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={provider.iconUrl}
-            className="h-4 w-4 shrink-0 rounded-sm"
-            alt={`${provider?.label} logo`}
-          />
+          <img src={provider.iconUrl} className="h-4 w-4 shrink-0 rounded-sm" alt="" />
         )}
         <div className="flex min-w-0 items-baseline gap-1">
-          <span className="shrink-0 font-medium text-emphasis">
-            {provider?.label}:
-          </span>
+          <span className="shrink-0 font-medium text-emphasis">{provider?.label}:</span>
           <a
             href={locationToDisplay}
             target="_blank"
             rel="noopener noreferrer"
-            className="truncate text-blue-600 hover:underline"
-          >
+            className="text-emphasis truncate underline">
             {locationToDisplay}
           </a>
         </div>
@@ -721,26 +671,19 @@ function RecurringInfoSection({
 function AssignmentReasonSection({ booking }: { booking: BookingOutput }) {
   const { t } = useLocale();
 
-  if (
-    !booking.assignmentReasonSortedByCreatedAt ||
-    booking.assignmentReasonSortedByCreatedAt.length === 0
-  ) {
+  if (!booking.assignmentReasonSortedByCreatedAt || booking.assignmentReasonSortedByCreatedAt.length === 0) {
     return null;
   }
 
   const reason =
-    booking.assignmentReasonSortedByCreatedAt[
-      booking.assignmentReasonSortedByCreatedAt.length - 1
-    ];
+    booking.assignmentReasonSortedByCreatedAt[booking.assignmentReasonSortedByCreatedAt.length - 1];
   if (!reason.reasonString) {
     return null;
   }
 
   return (
     <Section title={t("assignment_reason")}>
-      <div className="font-medium text-emphasis text-sm">
-        {reason.reasonString}
-      </div>
+      <div className="font-medium text-emphasis text-sm">{reason.reasonString}</div>
     </Section>
   );
 }
@@ -758,9 +701,7 @@ function PaymentSection({
   const parsedEventTypeMetadata = booking.eventType?.metadata
     ? EventTypeMetaDataSchema.safeParse(booking.eventType.metadata)
     : null;
-  const eventTypeMetadata = parsedEventTypeMetadata?.success
-    ? parsedEventTypeMetadata.data
-    : null;
+  const eventTypeMetadata = parsedEventTypeMetadata?.success ? parsedEventTypeMetadata.data : null;
 
   const refundPolicy = eventTypeMetadata?.apps?.stripe?.refundPolicy;
   const refundDaysCount = eventTypeMetadata?.apps?.stripe?.refundDaysCount;
@@ -779,10 +720,8 @@ function PaymentSection({
 
   return (
     <Section title={t("payment")}>
-      <p className="font-medium text-emphasis text-sm">{formattedPrice}</p>
-      {paymentStatusMessage && (
-        <p className="text-subtle text-xs">{paymentStatusMessage}</p>
-      )}
+      <p className="font-medium text-emphasis font-mono text-sm">{formattedPrice}</p>
+      {paymentStatusMessage && <p className="text-subtle text-xs">{paymentStatusMessage}</p>}
     </Section>
   );
 }
@@ -803,7 +742,7 @@ function SlotsSection({ booking }: { booking: BookingOutput }) {
 
   return (
     <Section title={t("slots")}>
-      <p className="font-medium text-emphasis text-sm">
+      <p className="font-medium text-emphasis font-mono text-sm">
         {t("slots_taken", { takenSeats, totalSeats })}
       </p>
     </Section>
@@ -868,8 +807,7 @@ function OldRescheduledBookingInfo({
     return null;
   }
 
-  const cancellationReason =
-    booking.cancellationReason || booking.rejectionReason;
+  const cancellationReason = booking.cancellationReason || booking.rejectionReason;
   const rescheduledBy = booking.rescheduledBy;
   const cancelledBy = booking.cancelledBy;
 
@@ -892,9 +830,7 @@ function OldRescheduledBookingInfo({
       )}
       {cancellationReason && (
         <Section title={t("reason")}>
-          <p className="whitespace-pre-wrap font-medium text-emphasis text-sm">
-            {cancellationReason}
-          </p>
+          <p className="whitespace-pre-wrap font-medium text-emphasis text-sm">{cancellationReason}</p>
         </Section>
       )}
       {cancelledBy && (
@@ -915,16 +851,13 @@ function NewRescheduledBookingInfo({ booking }: { booking: BookingOutput }) {
     return null;
   }
 
-  const cancellationReason =
-    booking.cancellationReason || booking.rejectionReason;
+  const cancellationReason = booking.cancellationReason || booking.rejectionReason;
   const rescheduledBy = booking.rescheduler;
 
   return (
     <>
       <Section title={t("rescheduled_by")}>
-        {rescheduledBy && (
-          <p className="font-medium text-emphasis text-sm">{rescheduledBy}</p>
-        )}
+        {rescheduledBy && <p className="font-medium text-emphasis text-sm">{rescheduledBy}</p>}
         <Link href={`/booking/${booking.fromReschedule}`}>
           <div className="flex items-center gap-1 text-default text-sm underline">
             {t("original_booking")}
@@ -934,9 +867,7 @@ function NewRescheduledBookingInfo({ booking }: { booking: BookingOutput }) {
       </Section>
       {cancellationReason && (
         <Section title={t("reschedule_reason")}>
-          <p className="whitespace-pre-wrap font-medium text-emphasis text-sm">
-            {cancellationReason}
-          </p>
+          <p className="whitespace-pre-wrap font-medium text-emphasis text-sm">{cancellationReason}</p>
         </Section>
       )}
     </>
@@ -948,17 +879,14 @@ function CancelledBookingInfo({ booking }: { booking: BookingOutput }) {
   const { t } = useLocale();
 
   // Only show for cancelled/rejected bookings that were NOT rescheduled
-  const isCancelled =
-    booking.status === BookingStatus.CANCELLED ||
-    booking.status === BookingStatus.REJECTED;
+  const isCancelled = booking.status === BookingStatus.CANCELLED || booking.status === BookingStatus.REJECTED;
   const wasRescheduled = booking.rescheduled === true;
 
   if (!isCancelled || wasRescheduled) {
     return null;
   }
 
-  const cancellationReason =
-    booking.cancellationReason || booking.rejectionReason;
+  const cancellationReason = booking.cancellationReason || booking.rejectionReason;
   const cancelledBy = booking.cancelledBy;
 
   if (!cancellationReason && !cancelledBy) {
@@ -974,9 +902,7 @@ function CancelledBookingInfo({ booking }: { booking: BookingOutput }) {
       )}
       {cancellationReason && (
         <Section title={t("reason")}>
-          <p className="whitespace-pre-wrap font-medium text-emphasis text-sm">
-            {cancellationReason}
-          </p>
+          <p className="whitespace-pre-wrap font-medium text-emphasis text-sm">{cancellationReason}</p>
         </Section>
       )}
     </>
@@ -992,9 +918,7 @@ function AdditionalNotesSection({ booking }: { booking: BookingOutput }) {
 
   return (
     <Section title={t("additional_notes")}>
-      <p className="whitespace-pre-wrap font-medium text-emphasis text-sm">
-        {booking.description}
-      </p>
+      <p className="whitespace-pre-wrap font-medium text-emphasis text-sm">{booking.description}</p>
     </Section>
   );
 }
@@ -1023,9 +947,7 @@ function BookingHeaderBadges({
           {reasonTitle}
         </Badge>
       )}
-      {booking.eventType.team && (
-        <Badge variant="gray">{booking.eventType.team.name}</Badge>
-      )}
+      {booking.eventType.team && <Badge variant="gray">{booking.eventType.team.name}</Badge>}
       {booking.paid && !payment ? (
         <Badge variant="orange">{t("error_collecting_card")}</Badge>
       ) : booking.paid ? (
@@ -1034,7 +956,7 @@ function BookingHeaderBadges({
         </Badge>
       ) : null}
       {recurringInfo && (
-        <Badge variant="gray">
+        <Badge variant="gray" className="font-mono">
           <RepeatIcon className="mr-1 h-3 w-3" />
           {recurringInfo.count}
         </Badge>
@@ -1060,9 +982,7 @@ function TrackingSection({
     return null;
   }
 
-  const utmEntries = Object.entries(tracking).filter(([_, value]) =>
-    Boolean(value)
-  );
+  const utmEntries = Object.entries(tracking).filter(([_, value]) => Boolean(value));
 
   if (utmEntries.length === 0) {
     return null;
@@ -1074,9 +994,7 @@ function TrackingSection({
         {utmEntries.map(([key, value]) => (
           <div key={key} className="mb-1 last:mb-0">
             <span className="font-medium">{key}</span>:{" "}
-            <code className="rounded bg-subtle px-1 py-0.5 font-mono text-default text-xs">
-              {value}
-            </code>
+            <code className="rounded bg-subtle px-1 py-0.5 font-mono text-default text-xs">{value}</code>
           </div>
         ))}
       </div>
@@ -1095,7 +1013,7 @@ function Section({
 }) {
   return (
     <div className={classNames("flex flex-col gap-1", className)}>
-      <h3 className="font-medium text-subtle text-xs">{title}</h3>
+      <h3 className="text-subtle font-mono text-[11px] font-medium uppercase tracking-[0.18em]">{title}</h3>
       {children}
     </div>
   );

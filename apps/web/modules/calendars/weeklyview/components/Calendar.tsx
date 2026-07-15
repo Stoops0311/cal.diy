@@ -3,6 +3,7 @@ import {
   createCalendarStore,
   useCalendarStore,
 } from "@calcom/features/calendars/weeklyview/state/store";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import classNames from "@calcom/ui/classNames";
 import type React from "react";
 import { useEffect, useMemo, useRef } from "react";
@@ -66,9 +67,7 @@ function CalendarInner(props: CalendarComponentProps) {
         }>
         {hideHeader !== true && <SchedulerHeading />}
         {props.isPending && <Spinner />}
-        <div
-          ref={container}
-          className="bg-default dark:bg-cal-muted relative isolate flex h-full flex-auto flex-col">
+        <div ref={container} className="relative isolate flex h-full flex-auto flex-col bg-default">
           <div
             style={{ width: "165%" }}
             className="flex max-w-full flex-none flex-col sm:max-w-none md:max-w-full">
@@ -86,7 +85,7 @@ function CalendarInner(props: CalendarComponentProps) {
               />
               <div
                 className={classNames(
-                  "bg-default dark:bg-cal-muted ring-muted sticky left-0 z-10 w-16 flex-none ring-1",
+                  "ring-muted sticky left-0 z-10 w-16 flex-none bg-default ring-1",
                   showBorder &&
                     (borderColor === "subtle"
                       ? "border-subtle border-l border-r"
@@ -94,14 +93,14 @@ function CalendarInner(props: CalendarComponentProps) {
                 )}
               />
               <div
-                className="grid flex-auto grid-cols-1 grid-rows-1 [--disabled-gradient-background:#F8F9FB] [--disabled-gradient-foreground:#E6E7EB] dark:[--disabled-gradient-background:#262626] dark:[--disabled-gradient-foreground:#393939]"
+                className="grid flex-auto grid-cols-1 grid-rows-1"
                 style={
                   showBackgroundPattern === false
                     ? undefined
                     : {
-                        backgroundColor: "var(--disabled-gradient-background)",
+                        backgroundColor: "var(--cal-bg-subtle)",
                         background:
-                          "repeating-linear-gradient(-45deg, var(--disabled-gradient-background), var(--disabled-gradient-background) 2.5px, var(--disabled-gradient-foreground) 2.5px, var(--disabled-gradient-foreground) 5px)",
+                          "repeating-linear-gradient(-45deg, var(--cal-bg-subtle), var(--cal-bg-subtle) 2.5px, var(--cal-bg-muted), var(--cal-bg-muted) 5px)",
                       }
                 }>
                 <HorizontalLines
@@ -203,11 +202,16 @@ export function Calendar(props: CalendarComponentProps) {
 
 /** @todo Will be removed once we have mobile support */
 const MobileNotSupported = ({ children }: { children: React.ReactNode }) => {
+  const { t } = useLocale();
+
   return (
     <>
-      <div className="flex h-full flex-col items-center justify-center sm:hidden">
-        <h1 className="text-2xl font-bold">Mobile not supported yet </h1>
-        <p className="text-subtle">Please use a desktop browser to view this page</p>
+      <div className="bg-subtle flex h-full flex-col items-center justify-center p-6 text-center sm:hidden">
+        <div className="border-subtle bg-default max-w-sm rounded-2xl border p-8 shadow-lg">
+          <p className="font-mono text-xs uppercase tracking-[0.18em]">{t("calendar_view")}</p>
+          <h1 className="font-cal text-emphasis mt-4 text-3xl tracking-tight">{t("mobile_not_supported")}</h1>
+          <p className="text-subtle mt-3 text-sm leading-6">{t("use_desktop_for_calendar")}</p>
+        </div>
       </div>
       <div className="hidden h-full sm:block">{children}</div>
     </>

@@ -1,9 +1,7 @@
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
-import classNames from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
 import { List } from "@calcom/ui/components/list";
-
 import { AppConnectionItem } from "../components/AppConnectionItem";
 import { ConnectedCalendarItem } from "../components/ConnectedCalendarItem";
 import { CreateEventsOnCalendarSelect } from "../components/CreateEventsOnCalendarSelect";
@@ -41,7 +39,7 @@ const ConnectedCalendars = (props: IConnectCalendarsProps) => {
         firstCalendar.integration.title &&
         firstCalendar.integration.logo && (
           <>
-            <List className="bg-default border-subtle rounded-md border p-0 dark:bg-black ">
+            <List className="bg-default border-subtle overflow-hidden rounded-xl border p-0">
               <ConnectedCalendarItem
                 key={firstCalendar.integration.title}
                 name={firstCalendar.integration.title}
@@ -63,10 +61,10 @@ const ConnectedCalendars = (props: IConnectCalendarsProps) => {
 
       {/* Connect calendars list */}
       {firstCalendar === undefined && queryIntegrations.data && queryIntegrations.data.items.length > 0 && (
-        <List className="bg-default divide-subtle border-subtle mx-1 divide-y rounded-md border p-0 dark:bg-black sm:mx-0">
+        <List className="bg-default divide-subtle border-subtle divide-y overflow-hidden rounded-xl border p-0">
           {queryIntegrations.data &&
             queryIntegrations.data.items.map((item) => (
-              <li key={item.title}>
+              <li key={item.type}>
                 {item.title && item.logo && (
                   <AppConnectionItem
                     type={item.type}
@@ -85,10 +83,7 @@ const ConnectedCalendars = (props: IConnectCalendarsProps) => {
       <Button
         EndIcon="arrow-right"
         data-testid="save-calendar-button"
-        className={classNames(
-          "text-inverted bg-inverted border-inverted mt-8 flex w-full flex-row justify-center rounded-md border p-2 text-center text-sm",
-          disabledNextButton ? "cursor-not-allowed opacity-20" : ""
-        )}
+        className="mt-8 w-full justify-center"
         loading={isPageLoading}
         onClick={() => nextStep()}
         disabled={disabledNextButton}>

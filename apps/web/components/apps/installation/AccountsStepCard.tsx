@@ -1,13 +1,11 @@
-import type { FC } from "react";
-import React, { useState } from "react";
-
 import { getPlaceholderAvatar } from "@calcom/lib/defaultAvatarImage";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import type { User } from "@calcom/prisma/client";
 import classNames from "@calcom/ui/classNames";
 import { Avatar } from "@calcom/ui/components/avatar";
 import { StepCard } from "@calcom/ui/components/card";
-
+import type { FC } from "react";
+import React, { useState } from "react";
 import type { TTeams } from "~/apps/installation/[[...step]]/step-view";
 
 export type PersonalAccountProps = Pick<User, "id" | "avatarUrl" | "name"> & { alreadyInstalled: boolean };
@@ -40,10 +38,12 @@ const AccountSelector: FC<AccountSelectorProps> = ({
   const { t } = useLocale();
   const [selected, setSelected] = useState(false);
   return (
-    <div
+    <button
+      type="button"
+      disabled={alreadyInstalled || loading}
       className={classNames(
-        "hover:bg-cal-muted flex cursor-pointer flex-row items-center gap-2 p-1",
-        (alreadyInstalled || loading) && "cursor-not-allowed",
+        "hover:bg-cal-muted flex w-full cursor-pointer flex-row items-center gap-2 rounded-lg p-1 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emphasis",
+        (alreadyInstalled || loading) && "cursor-not-allowed opacity-60",
         selected && loading && "bg-cal-muted animate-pulse"
       )}
       data-testid={testId}
@@ -53,16 +53,12 @@ const AccountSelector: FC<AccountSelectorProps> = ({
           onClick();
         }
       }}>
-      <Avatar
-        alt={t("avatar_of_name", { name })}
-        imageSrc={getPlaceholderAvatar(avatar, name)} // if no image, use default avatar
-        size="sm"
-      />
+      <Avatar alt={t("avatar_of_name", { name })} imageSrc={getPlaceholderAvatar(avatar, name)} size="sm" />
       <div className="text-md text-subtle pt-0.5 font-medium">
         {name}
         {alreadyInstalled ? <span className="text-subtle ml-2 text-sm">({t("already_installed")})</span> : ""}
       </div>
-    </div>
+    </button>
   );
 };
 

@@ -1,12 +1,3 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { Dispatch, SetStateAction } from "react";
-import type { FC } from "react";
-import React, { forwardRef, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { useFieldArray, useFormContext } from "react-hook-form";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-
 import type { LocationObject } from "@calcom/app-store/locations";
 import { locationsResolver } from "@calcom/app-store/locations";
 import NoSSR from "@calcom/lib/components/NoSSR";
@@ -16,12 +7,16 @@ import type { EventTypeMetaDataSchema, eventTypeBookingFields } from "@calcom/pr
 import { Avatar } from "@calcom/ui/components/avatar";
 import { Button } from "@calcom/ui/components/button";
 import { Form } from "@calcom/ui/components/form";
-import { Icon } from "@calcom/ui/components/icon";
-
 import EventTypeAppSettingsWrapper from "@components/apps/installation/EventTypeAppSettingsWrapper";
 import EventTypeConferencingAppSettings from "@components/apps/installation/EventTypeConferencingAppSettings";
-
-import type { TEventType, TEventTypesForm, TEventTypeGroup } from "~/apps/installation/[[...step]]/step-view";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type React from "react";
+import type { Dispatch, FC, SetStateAction } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useFieldArray, useForm, useFormContext } from "react-hook-form";
+import { z } from "zod";
+import type { TEventType, TEventTypeGroup, TEventTypesForm } from "~/apps/installation/[[...step]]/step-view";
 
 export type TFormType = {
   id: number;
@@ -93,7 +88,7 @@ const EventTypeAppSettingsForm = forwardRef<HTMLButtonElement, EventTypeAppSetti
           onSubmit({ metadata, locations, bookingFields });
         }}>
         <div>
-          <div className="sm:border-subtle bg-default relative border p-4 dark:bg-black sm:rounded-md">
+          <div className="relative border bg-default p-4 sm:rounded-2xl sm:border-subtle">
             <div>
               <span className="text-default font-semibold ltr:mr-1 rtl:ml-1">{eventType.title}</span>{" "}
               <small className="text-subtle hidden font-normal sm:inline">
@@ -105,11 +100,16 @@ const EventTypeAppSettingsForm = forwardRef<HTMLButtonElement, EventTypeAppSetti
             ) : (
               <EventTypeAppSettingsWrapper {...props} />
             )}
-            <Icon
-              name="x"
+            <Button
+              type="button"
+              variant="icon"
+              color="minimal"
+              StartIcon="x"
+              aria-label={t("remove")}
               data-testid={`remove-event-type-${eventType.id}`}
-              className="absolute right-4 top-4 h-4 w-4 cursor-pointer"
-              onClick={() => !loading && handleDelete()}
+              className="absolute right-1 top-1 min-h-[44px] min-w-[44px]"
+              disabled={loading}
+              onClick={() => handleDelete()}
             />
             <button type="submit" className="hidden" form={`eventtype-${eventType.id}`} ref={ref}>
               Save

@@ -1,5 +1,6 @@
 import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { ENABLE_PROFILE_SWITCHER } from "@calcom/lib/constants";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { useRefreshData } from "@calcom/lib/hooks/useRefreshData";
 import { trpc } from "@calcom/trpc/react";
 import classNames from "@calcom/ui/classNames";
@@ -16,6 +17,7 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "@coss/ui/icons";
 import { useState } from "react";
 
 export function ProfileDropdown() {
+  const { t } = useLocale();
   const { update, data: sessionData } = useSession();
   const { data } = trpc.viewer.me.get.useQuery();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -44,9 +46,11 @@ export function ProfileDropdown() {
     <Dropdown open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenuTrigger asChild>
         <button
+          type="button"
           data-testid="user-dropdown-trigger-button"
+          aria-label={t("switch_profile")}
           className={classNames(
-            "hover:bg-emphasis todesktop:!bg-transparent group mx-0 flex w-full cursor-pointer appearance-none items-center rounded-full px-2 py-1.5 text-left outline-none transition focus:outline-none focus:ring-0 md:rounded-none lg:rounded"
+            "hover:bg-emphasis focus-visible:ring-emphasis todesktop:!bg-transparent group mx-0 flex w-full cursor-pointer appearance-none items-center rounded-full px-2 py-1.5 text-left outline-none transition focus-visible:ring-2 md:rounded-none lg:rounded"
           )}>
           <span className="flex w-full grow items-center justify-around gap-2 text-sm font-medium leading-none">
             <Avatar alt={currentOption.label || ""} size="xsm" />
@@ -70,7 +74,7 @@ export function ProfileDropdown() {
           }}
           className="min-w-56 hariom group overflow-hidden rounded-md">
           <DropdownMenuItem className="p-3 uppercase">
-            <span>Switch to</span>
+            <span>{t("switch_to")}</span>
           </DropdownMenuItem>
           {options.map((option) => {
             const isSelected = currentOption.value === option.value;

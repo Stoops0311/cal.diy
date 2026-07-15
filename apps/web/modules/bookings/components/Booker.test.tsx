@@ -221,6 +221,21 @@ describe("Booker", () => {
     expect(screen.getByTestId("dry-run-message")).toBeInTheDocument();
   });
 
+  it("separates host context from the guest decision plane", () => {
+    render(<Booker {...(defaultProps as unknown as BookerProps & WrappedBookerProps)} />, {
+      mockStore: { state: "selecting_time" },
+    });
+
+    const sections = screen.getAllByTestId("booker-section");
+    const hostPlane = sections.find((section) => section.getAttribute("data-area") === "meta");
+    const guestPlane = sections.find(
+      (section) => section.getAttribute("data-area") === "main" && section.classList.contains("bg-default")
+    );
+
+    expect(hostPlane).toHaveClass("bg-subtle");
+    expect(guestPlane).toBeDefined();
+  });
+
   it("should invalidate schedule when cancelling booking form", () => {
     const mockInvalidate = vi.fn();
     constantsScenarios.set({

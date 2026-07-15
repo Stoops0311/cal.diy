@@ -13,8 +13,8 @@ self.addEventListener("push", async (event) => {
     return;
   }
 
-  const title = notificationData.title || "New Cal.diy Notification";
-  const image = notificationData.icon || "https://cal.com/api/logo?type=icon";
+  const title = notificationData.title || "New Convenio notification";
+  const image = notificationData.icon || "/api/logo?type=icon";
 
    event.waitUntil(
     (async () => {
@@ -42,7 +42,7 @@ self.addEventListener("push", async (event) => {
           icon: image,
           badge: image,
           data: notificationData.data,
-          tag: notificationData.tag || `cal-notification-${Date.now()}`,
+          tag: notificationData.tag || `convenio-notification-${Date.now()}`,
           renotify: true,
           requireInteraction: notificationData.requireInteraction ?? true,
           actions: notificationData.actions || [],

@@ -1,4 +1,5 @@
 import { _generateMetadata } from "app/_utils";
+import { redirect } from "next/navigation";
 
 export const generateMetadata = async () =>
   await _generateMetadata(
@@ -9,5 +10,5 @@ export const generateMetadata = async () =>
     "/settings/admin"
   );
 
-const Page = () => <h1>Admin index</h1>;
+const Page = () => redirect("/settings/admin/users");
 export default Page;

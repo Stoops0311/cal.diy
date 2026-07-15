@@ -1,20 +1,19 @@
+import { TroubleshooterListItemContainer } from "@calcom/features/troubleshooter/components/TroubleshooterListItemContainer";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
 import { Switch } from "@calcom/ui/components/form";
 
-import { TroubleshooterListItemContainer } from "@calcom/features/troubleshooter/components/TroubleshooterListItemContainer";
-
 function AvailabiltyItem() {
   const { t } = useLocale();
   return (
     <TroubleshooterListItemContainer
-      title="Office Hours"
-      subtitle="Mon-Fri; 9:00 AM - 5:00 PM"
+      title={t("office_hours")}
+      subtitle={t("weekdays_nine_to_five")}
       suffixSlot={
         <div>
           <Badge variant="green" withDot size="sm">
-            Connected
+            {t("connected")}
           </Badge>
         </div>
       }>

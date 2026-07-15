@@ -1,7 +1,7 @@
 import { Timezone as PlatformTimezoneSelect } from "@calcom/atoms/timezone";
 import { useBookerStoreContext } from "@calcom/features/bookings/Booker/BookerStoreProvider";
-import { useBookerTime } from "@calcom/features/bookings/Booker/hooks/useBookerTime";
 import { fadeInUp } from "@calcom/features/bookings/Booker/config";
+import { useBookerTime } from "@calcom/features/bookings/Booker/hooks/useBookerTime";
 import type { Timezone } from "@calcom/features/bookings/Booker/types";
 import { FromToTime } from "@calcom/features/bookings/Booker/utils/dates";
 import { useTimePreferences } from "@calcom/features/bookings/lib";
@@ -138,12 +138,8 @@ export const EventMeta = ({
   const isNearlyFull =
     bookingSeatAttendeesQty && eventTotalSeats && bookingSeatAttendeesQty / eventTotalSeats >= 0.83;
 
-  const colorClass = isNearlyFull
-    ? "text-rose-600"
-    : isHalfFull
-      ? "text-yellow-500"
-      : "text-bookinghighlight";
-  const userLocale = locale ?? navigator.language;
+  const colorClass = isNearlyFull ? "text-error" : isHalfFull ? "text-attention" : "text-bookinghighlight";
+  const userLocale = locale ?? i18n.language;
   const translatedDescription = getTranslatedField(
     event?.fieldTranslations ?? [],
     EventTypeAutoTranslatedField.DESCRIPTION,

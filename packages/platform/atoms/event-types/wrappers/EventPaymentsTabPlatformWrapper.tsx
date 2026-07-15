@@ -6,34 +6,41 @@ import { EventTypeAppCard } from "@calcom/app-store/_components/EventTypeAppCard
 import type { EventTypeAppsList } from "@calcom/app-store/utils";
 import useAppsData from "@calcom/features/apps/hooks/useAppsData";
 import type { EventTypeSetupProps } from "@calcom/features/eventtypes/lib/types";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { EmptyScreen } from "@calcom/ui/components/empty-screen";
 import { StripeConnect } from "../../connect/stripe/StripeConnect";
 import { useCheck } from "../../hooks/stripe/useCheck";
 import { useAtomsEventTypeById } from "../hooks/useAtomEventTypeAppIntegration";
 
 const EventPaymentsTabPlatformWrapper = ({ eventType }: { eventType: EventTypeSetupProps["eventType"] }) => {
+  const { t } = useLocale();
   const { allowConnect, checked } = useCheck({ teamId: eventType.teamId });
 
   const isStripeConnected = !checked || !allowConnect;
 
-  if (!checked) return <div>Checking...</div>;
+  if (!checked)
+    return (
+      <div className="text-subtle text-sm" aria-live="polite">
+        {t("checking")}
+      </div>
+    );
 
   return (
     <div>
       {!isStripeConnected ? (
         <EmptyScreen
           Icon="grid-3x3"
-          headline="Stripe not connected"
-          description="You need to connect Stripe to use this feature. Please click on the button below to connect."
+          headline={t("stripe_not_connected")}
+          description={t("stripe_not_connected_description")}
           buttonRaw={
             <StripeConnect
               teamId={eventType.teamId}
-              label="Connect to Stripe"
-              loadingLabel="Connect to Stripe"
-              alreadyConnectedLabel="Connect to Stripe"
+              label={t("connect_to_stripe")}
+              loadingLabel={t("connecting")}
+              alreadyConnectedLabel={t("connect_to_stripe")}
               isClickable={true}
               color="secondary"
-              redir={window.location.href}
+              redir={typeof window === "undefined" ? undefined : window.location.href}
             />
           }
         />

@@ -1,10 +1,9 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { SkeletonText } from "@calcom/ui/components/skeleton";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-
-import { SkeletonText } from "@calcom/ui/components/skeleton";
 
 type OnboardingCardProps = {
   title: string;
@@ -24,12 +23,13 @@ export const OnboardingCard = ({
   floatingFooter = false,
 }: OnboardingCardProps) => {
   const pathname = usePathname();
+  const shouldReduceMotion = useReducedMotion();
 
   // Animation variants for entry and exit
   const containerVariants = {
     initial: {
       opacity: 0,
-      y: 20,
+      y: shouldReduceMotion ? 0 : 20,
     },
     animate: {
       opacity: 1,
@@ -37,7 +37,7 @@ export const OnboardingCard = ({
     },
     exit: {
       opacity: 0,
-      y: -20,
+      y: shouldReduceMotion ? 0 : -20,
     },
   };
 
@@ -52,8 +52,8 @@ export const OnboardingCard = ({
           animate="animate"
           exit="exit"
           transition={{
-            duration: 0.5,
-            ease: "backOut",
+            duration: 0.2,
+            ease: "easeOut",
           }}>
           {/* Card Header */}
           <div className="mb-2 flex w-full gap-1.5 py-2  md:mb-0 md:py-4">
@@ -82,7 +82,7 @@ export const OnboardingCard = ({
 
       {/* Footer */}
       {floatingFooter ? (
-        <div className="sticky bottom-0 left-0 right-0 z-10 flex items-center justify-start rounded-[12px] bg-[rgba(255,255,255,0.01)] p-2 shadow-[0px_12px_32px_-6px_rgba(0,0,0,0.12),0px_0px_0px_1px_rgba(111,107,107,0.1),0px_1px_3px_0px_rgba(63,70,75,0.1)] backdrop-blur-[6px] backdrop-filter">
+        <div className="border-subtle bg-default sticky bottom-0 left-0 right-0 z-10 flex items-center justify-start border-t p-2">
           {footer}
         </div>
       ) : (

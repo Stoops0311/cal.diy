@@ -1,8 +1,6 @@
+import classNames from "@calcom/ui/classNames";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import type { ReactNode } from "react";
-
-import classNames from "@calcom/ui/classNames";
-
 import { Label } from "../inputs/Label";
 import { Switch } from "./Switch";
 
@@ -54,7 +52,7 @@ export function SettingsToggle({
           {toggleSwitchAtTheEnd ? (
             <div
               className={classNames(
-                "border-subtle flex justify-between space-x-3 rounded-lg border px-4 py-6 sm:px-6",
+                "bg-subtle border-subtle flex justify-between space-x-3 rounded-xl border px-4 py-6 shadow-sm sm:px-6",
                 checked && children && "rounded-b-none",
                 switchContainerClassName
               )}>

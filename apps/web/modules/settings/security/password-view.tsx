@@ -8,7 +8,6 @@ import { IdentityProvider } from "@calcom/prisma/enums";
 import { userMetadata as userMetadataSchema } from "@calcom/prisma/zod-utils";
 import type { RouterOutputs } from "@calcom/trpc/react";
 import { trpc } from "@calcom/trpc/react";
-import classNames from "@calcom/ui/classNames";
 import { Alert } from "@calcom/ui/components/alert";
 import { Button } from "@calcom/ui/components/button";
 import { Form, PasswordField, Select, SettingsToggle } from "@calcom/ui/components/form";
@@ -31,16 +30,14 @@ interface PasswordViewProps {
 const SkeletonLoader = () => {
   return (
     <SkeletonContainer>
-      <div className="border-subtle stack-y-6 border-x px-4 py-8 sm:px-6">
+      <div className="stack-y-6 py-8">
         <SkeletonText className="h-8 w-full" />
         <SkeletonText className="h-8 w-full" />
         <SkeletonText className="h-8 w-full" />
       </div>
-      <div className="rounded-b-xl">
-        <SectionBottomActions align="end">
-          <SkeletonButton className="ml-auto h-8 w-20 rounded-md" />
-        </SectionBottomActions>
-      </div>
+      <SectionBottomActions align="end">
+        <SkeletonButton className="ml-auto h-8 w-20 rounded-md" />
+      </SectionBottomActions>
     </SkeletonContainer>
   );
 };
@@ -149,8 +146,8 @@ const PasswordView = ({ user }: PasswordViewProps) => {
   return (
     <>
       {user && user.identityProvider !== IdentityProvider.CAL && !user.passwordAdded ? (
-        <div className="border-subtle rounded-b-xl border border-t-0">
-          <div className="px-4 py-6 sm:px-6">
+        <div>
+          <div className="py-6">
             <h2 className="font-cal text-emphasis text-lg font-medium leading-6">
               {t("account_managed_by_identity_provider", {
                 provider: IdentityProvider[user.identityProvider],
@@ -172,7 +169,7 @@ const PasswordView = ({ user }: PasswordViewProps) => {
         </div>
       ) : (
         <Form form={formMethods} handleSubmit={handleSubmit}>
-          <div className="border-subtle border-x px-4 py-6 sm:px-6">
+          <div className="py-6">
             {formMethods.formState.errors.apiError && (
               <div className="pb-6">
                 <Alert severity="error" message={formMethods.formState.errors.apiError?.message} />
@@ -239,12 +236,9 @@ const PasswordView = ({ user }: PasswordViewProps) => {
                 }
               }}
               childrenClassName="lg:ml-0"
-              switchContainerClassName={classNames(
-                "py-6 px-4 sm:px-6 border-subtle rounded-xl border",
-                !!sessionTimeout && "rounded-b-none"
-              )}>
+              switchContainerClassName="py-6">
               <>
-                <div className="border-subtle border-x p-6 pb-8">
+                <div className="pb-8">
                   <div className="flex flex-col">
                     <p className="text-default mb-2 font-medium">{t("session_timeout_after")}</p>
                     <Select

@@ -1,8 +1,5 @@
-import type { TFunction } from "i18next";
-import short from "short-uuid";
-
 import getLabelValueMapFromResponses from "@calcom/lib/bookings/getLabelValueMapFromResponses";
-import { Prisma } from "@calcom/prisma/client";
+import type { Prisma } from "@calcom/prisma/client";
 import type {
   AdditionalInformation,
   AppsStatus,
@@ -12,8 +9,9 @@ import type {
   TeamMember,
   VideoCallData,
 } from "@calcom/types/Calendar";
-
-import { WEBAPP_URL } from "./constants";
+import type { TFunction } from "i18next";
+import short from "short-uuid";
+import { APP_NAME, WEBAPP_URL } from "./constants";
 import isSmsCalEmail from "./isSmsCalEmail";
 import {
   buildPlatformCancelLink,
@@ -201,7 +199,7 @@ export const getProviderName = (location?: string | null): string => {
   if (location && location.includes("integrations:")) {
     let locationName = location.split(":")[1];
     if (locationName === "daily") {
-      locationName = "Cal Video";
+      locationName = `${APP_NAME} Video`;
     }
     return locationName[0].toUpperCase() + locationName.slice(1);
   }

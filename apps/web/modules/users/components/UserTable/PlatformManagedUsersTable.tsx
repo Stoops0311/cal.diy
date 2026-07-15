@@ -83,8 +83,7 @@ function UserListTableContent({ oAuthClientId }: PlatformManagedUsersTableProps)
 
   const totalRowCount = data?.meta?.totalRowCount ?? 0;
 
-  //we must flatten the array of arrays from the useInfiniteQuery hook
-  const flatData = useMemo(() => data?.rows ?? [], [data]) as PlatformManagedUserTableUser[];
+  const flatData = data.rows;
 
   const columns = useMemo(() => {
     const cols: ColumnDef<PlatformManagedUserTableUser>[] = [
@@ -99,14 +98,14 @@ function UserListTableContent({ oAuthClientId }: PlatformManagedUsersTableProps)
           <Checkbox
             checked={table.getIsAllPageRowsSelected()}
             onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
+            aria-label={t("select_all")}
           />
         ),
         cell: ({ row }) => (
           <Checkbox
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
+            aria-label={t("select_row")}
             className="translate-y-[2px]"
           />
         ),
@@ -137,7 +136,7 @@ function UserListTableContent({ oAuthClientId }: PlatformManagedUsersTableProps)
                 <div
                   data-testid={`member-${username}-username`}
                   className="text-emphasis text-sm font-medium leading-none">
-                  {username || "No username"}
+                  {username || t("no_username")}
                 </div>
                 <div
                   data-testid={`member-${username}-email`}

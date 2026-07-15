@@ -242,3 +242,98 @@ For detailed information, see the `agents/` directory:
 - **[agents/rules/](agents/rules/)** - Modular engineering rules
 - **[agents/commands.md](agents/commands.md)** - Complete command reference
 - **[agents/knowledge-base.md](agents/knowledge-base.md)** - Domain knowledge and business rules
+
+## Local Development Runbook
+
+### Services and URLs
+
+Local development runs the Next.js application on the host and supporting services in Docker:
+
+| Service | URL or connection |
+| --- | --- |
+| Web application | `http://localhost:3000` |
+| MailHog inbox | `http://localhost:8025` |
+| MailHog SMTP | `localhost:1025` |
+| PostgreSQL | `postgresql://postgres:@localhost:5450/calendso` |
+| Prisma Studio | `http://localhost:5555` |
+
+The checkout may remain on the HDD at `/mnt/games-and-things`, but `apps/web/.next` links to the faster SSD-backed cache at `/mnt/STEAM/cal.diy/apps/web/.next`. The SSD path deliberately mirrors the repository depth because Turbopack generates relative dependency links inside `.next`. `/mnt/STEAM/cal.diy/node_modules` and `/mnt/STEAM/cal.diy/packages` link back to their repository counterparts so those generated links resolve correctly. Clear the cache by removing the contents of the SSD `.next` target, not the source-tree symlink.
+
+### Normal startup
+
+From the repository root, start PostgreSQL and MailHog:
+
+```bash
+yarn workspace @calcom/prisma db-up
+docker compose -f packages/emails/docker-compose.yml up -d
+```
+
+Then start the web application in a foreground terminal:
+
+```bash
+yarn dev
+```
+
+On a fresh database, apply migrations and seed development accounts before starting the app:
+
+```bash
+yarn workspace @calcom/prisma db-deploy
+yarn workspace @calcom/prisma db-seed
+```
+
+Common seeded logins include:
+
+| Email | Password |
+| --- | --- |
+| `free@example.com` | `free` |
+| `pro@example.com` | `pro` |
+| `admin@example.com` | `ADMINadmin2022!` |
+| `onboarding@example.com` | `onboarding` |
+
+### Inspecting local services
+
+```bash
+docker compose -f packages/prisma/docker-compose.yml ps
+docker compose -f packages/emails/docker-compose.yml ps
+yarn db-studio
+```
+
+Mail sent by the application appears automatically in MailHog at `http://localhost:8025`.
+
+### Stopping and restarting
+
+Stop the web server with `Ctrl+C` in its terminal. Supporting containers continue running until explicitly stopped:
+
+```bash
+docker compose -f packages/prisma/docker-compose.yml down
+docker compose -f packages/emails/docker-compose.yml down
+```
+
+These commands preserve PostgreSQL data. Do not add `--volumes` unless the local database should be deleted.
+
+To restart the supporting services:
+
+```bash
+docker compose -f packages/prisma/docker-compose.yml restart
+docker compose -f packages/emails/docker-compose.yml up -d --force-recreate
+```
+
+### Prisma workflow
+
+- Edit `packages/prisma/schema.prisma` only for an approved schema change.
+- Create a development migration with `yarn workspace @calcom/prisma prisma migrate dev --name descriptive_name`.
+- Apply committed migrations with `yarn workspace @calcom/prisma db-deploy`.
+- Regenerate Prisma Client and related schemas with `yarn workspace @calcom/prisma generate-schemas`.
+- Seed development data with `yarn workspace @calcom/prisma db-seed`.
+- Browse data with `yarn db-studio`.
+- Never edit generated Prisma files directly.
+
+### Before handing off a change
+
+```bash
+yarn biome check --write path/to/changed/files
+TZ=UTC yarn test path/to/relevant/test
+yarn type-check:ci --force
+```
+
+External integrations such as Google Calendar, Microsoft Outlook, Zoom, Stripe, and Twilio require developer-owned credentials in `.env`; the core local application does not require them.

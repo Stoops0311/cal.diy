@@ -1,14 +1,12 @@
-import type { TFunction } from "i18next";
-import { useState } from "react";
-
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import type { InputClassNames, SettingsToggleClassNames } from "@calcom/features/eventtypes/lib/types";
 import ServerTrans from "@calcom/lib/components/ServerTrans";
 import classNames from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
-import { DialogContent, DialogFooter, DialogClose } from "@calcom/ui/components/dialog";
-import { InputField } from "@calcom/ui/components/form";
-import { SettingsToggle } from "@calcom/ui/components/form";
+import { DialogClose, DialogContent, DialogFooter } from "@calcom/ui/components/dialog";
+import { InputField, SettingsToggle } from "@calcom/ui/components/form";
+import type { TFunction } from "i18next";
+import { useState } from "react";
 
 export type EmailNotificationToggleCustomClassNames = SettingsToggleClassNames & {
   confirmationDialog?: {
@@ -57,14 +55,10 @@ export const DisableAllEmailsSetting = ({
             className={classNames("text-default text-sm", customClassNames?.confirmationDialog?.description)}>
             <ServerTrans t={t} i18nKey="disable_attendees_emails_description" values={{ recipient }} />
           </p>
-          <p
-            className={classNames(
-              "text-default mb-1 mt-2 text-sm",
-              customClassNames?.confirmationDialog?.confirmInput?.label
-            )}>
-            {t("type_confirm_to_continue")}
-          </p>
           <InputField
+            label={t("type_confirm_to_continue")}
+            containerClassName="mt-4"
+            labelClassName={customClassNames?.confirmationDialog?.confirmInput?.label}
             value={confirmText}
             onChange={(e) => {
               setConfirmText(e.target.value);
@@ -73,6 +67,7 @@ export const DisableAllEmailsSetting = ({
           <DialogFooter className={customClassNames?.confirmationDialog?.dialogFooter?.container}>
             <DialogClose className={customClassNames?.confirmationDialog?.dialogFooter?.cancelButton} />
             <Button
+              color="destructive"
               disabled={confirmText.toLowerCase() !== confirmationString.toLowerCase()}
               onClick={() => {
                 onCheckedChange(true);

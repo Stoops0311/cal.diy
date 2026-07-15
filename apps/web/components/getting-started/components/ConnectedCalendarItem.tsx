@@ -1,3 +1,4 @@
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { UserCalendarSwitch } from "@calcom/web/modules/calendars/components/CalendarSwitch";
 
 interface IConnectedCalendarItem {
@@ -19,6 +20,7 @@ interface IConnectedCalendarItem {
 }
 
 const ConnectedCalendarItem = (prop: IConnectedCalendarItem): JSX.Element => {
+  const { t } = useLocale();
   const { name, logo, externalId, calendars, integrationType } = prop;
 
   return (
@@ -26,13 +28,7 @@ const ConnectedCalendarItem = (prop: IConnectedCalendarItem): JSX.Element => {
       <div className="flex flex-row items-center p-4">
         <img src={logo} alt={name} className="m-1 h-8 w-8" />
         <div className="mx-4">
-          <p className="font-bold font-sans text-sm leading-5">
-            {name}
-            {/* Temporarily removed till we use it on another place */}
-            {/* <span className="mx-1 rounded-[4px] bg-cal-success py-[2px] px-[6px] font-sans text-xs font-medium text-green-600">
-              {t("default")}
-            </span> */}
-          </p>
+          <p className="font-bold font-sans text-sm leading-5">{name}</p>
           <div className="fle-row flex">
             <span
               title={externalId}
@@ -41,13 +37,6 @@ const ConnectedCalendarItem = (prop: IConnectedCalendarItem): JSX.Element => {
             </span>
           </div>
         </div>
-        {/* Temporarily removed */}
-        {/* <Button
-          color="minimal"
-          type="button"
-          className="ml-auto flex rounded-md border border-subtle py-[10x] px-4 font-sans text-sm">
-          {t("edit")}
-        </Button> */}
       </div>
       <div className="h-px w-full border-subtle border-b" />
       <div>
@@ -57,8 +46,8 @@ const ConnectedCalendarItem = (prop: IConnectedCalendarItem): JSX.Element => {
               credentialId={calendar.credentialId}
               key={calendar.externalId}
               externalId={calendar.externalId}
-              title={calendar.name || "Nameless Calendar"}
-              name={calendar.name || "Nameless Calendar"}
+              title={calendar.name || t("nameless_calendar")}
+              name={calendar.name || t("nameless_calendar")}
               type={integrationType}
               isChecked={calendar.isSelected}
               isLastItemInList={i === calendars.length - 1}

@@ -15,6 +15,7 @@ export const DestinationCalendarSettingsPlatformWrapper = ({
   classNamesObject?: DestinationCalendarClassNames;
   isDryRun?: boolean;
 }) => {
+  const { t } = useLocale();
   const calendars = useConnectedCalendars({});
   const { mutate: updateDestinationCalendars, isPending: isUpdatingCalendar } =
     useUpdateDestinationCalendars();
@@ -24,7 +25,11 @@ export const DestinationCalendarSettingsPlatformWrapper = ({
       <AtomsWrapper>
         <>
           {statusLoader}
-          {!statusLoader && <h1 className="m-5 text-xl font-semibold">Loading...</h1>}
+          {!statusLoader && (
+            <p className="text-subtle m-5 text-sm" aria-live="polite">
+              {t("loading")}
+            </p>
+          )}
         </>
       </AtomsWrapper>
     );
@@ -58,3 +63,5 @@ export const DestinationCalendarSettingsPlatformWrapper = ({
     </AtomsWrapper>
   );
 };
+
+import { useLocale } from "@calcom/lib/hooks/useLocale";

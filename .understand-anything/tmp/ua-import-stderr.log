@@ -1,0 +1,2 @@
+Warning: extract-import-map: tsconfig.json at /mnt/games-and-things/cal.diy/apps/web/tsconfig.json failed to parse — path aliases from this config will not be applied — relative imports unaffected
+extract-import-map: filesScanned=6794 filesWithImports=2643 totalEdges=7107

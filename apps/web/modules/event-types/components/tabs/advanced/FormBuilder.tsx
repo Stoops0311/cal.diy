@@ -1,13 +1,11 @@
-import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { useEffect, useState } from "react";
-import type { SubmitHandler, UseFormReturn } from "react-hook-form";
-import { Controller, useFieldArray, useForm, useFormContext } from "react-hook-form";
-import type { z } from "zod";
-import { ZodError } from "zod";
-
 import { useIsPlatform } from "@calcom/atoms/hooks/useIsPlatform";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { LearnMoreLink } from "@calcom/features/eventtypes/components/LearnMoreLink";
+import { fieldsThatSupportLabelAsSafeHtml } from "@calcom/features/form-builder/fieldsThatSupportLabelAsSafeHtml";
+import { fieldTypesConfigMap } from "@calcom/features/form-builder/fieldTypes";
+import type { fieldsSchema } from "@calcom/features/form-builder/schema";
+import { getFieldIdentifier } from "@calcom/features/form-builder/utils/getFieldIdentifier";
+import { getConfig as getVariantsConfig } from "@calcom/features/form-builder/utils/variantsConfig";
 import { getCurrencySymbol } from "@calcom/lib/currencyConversions";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { md } from "@calcom/lib/markdownIt";
@@ -17,26 +15,26 @@ import { excludeOrRequireEmailSchema } from "@calcom/prisma/zod-utils";
 import classNames from "@calcom/ui/classNames";
 import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
-import { DialogContent, DialogFooter, DialogHeader, DialogClose } from "@calcom/ui/components/dialog";
+import { DialogClose, DialogContent, DialogFooter, DialogHeader } from "@calcom/ui/components/dialog";
 import { Editor } from "@calcom/ui/components/editor";
-import { ToggleGroup } from "@calcom/ui/components/form";
 import {
-  Switch,
   CheckboxField,
-  SelectField,
   Form,
   Input,
   InputField,
   Label,
+  SelectField,
+  Switch,
+  ToggleGroup,
 } from "@calcom/ui/components/form";
-import { ArrowDownIcon, ArrowUpIcon, MailIcon, PhoneIcon } from "@coss/ui/icons";
 import { showToast } from "@calcom/ui/components/toast";
-
-import { fieldTypesConfigMap } from "@calcom/features/form-builder/fieldTypes";
-import { fieldsThatSupportLabelAsSafeHtml } from "@calcom/features/form-builder/fieldsThatSupportLabelAsSafeHtml";
-import type { fieldsSchema } from "@calcom/features/form-builder/schema";
-import { getFieldIdentifier } from "@calcom/features/form-builder/utils/getFieldIdentifier";
-import { getConfig as getVariantsConfig } from "@calcom/features/form-builder/utils/variantsConfig";
+import { ArrowDownIcon, ArrowUpIcon, MailIcon, PhoneIcon } from "@coss/ui/icons";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { useEffect, useState } from "react";
+import type { SubmitHandler, UseFormReturn } from "react-hook-form";
+import { Controller, useFieldArray, useForm, useFormContext } from "react-hook-form";
+import type { z } from "zod";
+import { ZodError } from "zod";
 
 type RhfForm = {
   fields: z.infer<typeof fieldsSchema>;
@@ -187,12 +185,12 @@ export const FormBuilder = function FormBuilder({
               options={[
                 {
                   value: "email",
-                  label: "Email",
+                  label: t("email"),
                   iconLeft: <MailIcon className="h-4 w-4" />,
                 },
                 {
                   value: "phone",
-                  label: "Phone",
+                  label: t("phone"),
                   iconLeft: <PhoneIcon className="h-4 w-4" />,
                 },
               ]}
@@ -298,7 +296,8 @@ export const FormBuilder = function FormBuilder({
                     {index >= 1 && (
                       <button
                         type="button"
-                        className="bg-default text-muted hover:text-emphasis disabled:hover:text-muted border-subtle hover:border-emphasis invisible absolute -left-[12px] -ml-4 -mt-4 mb-4 hidden h-6 w-6 scale-0 items-center justify-center rounded-md border p-1 transition-all hover:shadow disabled:hover:border-inherit disabled:hover:shadow-none group-hover:visible group-hover:scale-100 sm:ml-0 sm:flex"
+                        className="bg-default text-muted hover:text-emphasis disabled:hover:text-muted border-subtle hover:border-emphasis invisible absolute -left-[12px] -ml-4 -mt-4 mb-4 hidden h-6 w-6 scale-0 items-center justify-center rounded-md border p-1 transition-[transform,color,border-color,box-shadow] hover:shadow disabled:hover:border-inherit disabled:hover:shadow-none group-hover:visible group-hover:scale-100 sm:ml-0 sm:flex"
+                        aria-label={t("move_up")}
                         onClick={() => swap(index, index - 1)}>
                         <ArrowUpIcon className="h-5 w-5" />
                       </button>
@@ -306,7 +305,8 @@ export const FormBuilder = function FormBuilder({
                     {index < fields.length - 1 && (
                       <button
                         type="button"
-                        className="bg-default text-muted hover:border-emphasis border-subtle hover:text-emphasis disabled:hover:text-muted invisible absolute -left-[12px] -ml-4 mt-8 hidden h-6 w-6 scale-0 items-center justify-center rounded-md border p-1 transition-all hover:shadow disabled:hover:border-inherit disabled:hover:shadow-none group-hover:visible group-hover:scale-100 sm:ml-0 sm:flex"
+                        className="bg-default text-muted hover:border-emphasis border-subtle hover:text-emphasis disabled:hover:text-muted invisible absolute -left-[12px] -ml-4 mt-8 hidden h-6 w-6 scale-0 items-center justify-center rounded-md border p-1 transition-[transform,color,border-color,box-shadow] hover:shadow disabled:hover:border-inherit disabled:hover:shadow-none group-hover:visible group-hover:scale-100 sm:ml-0 sm:flex"
+                        aria-label={t("move_down")}
                         onClick={() => swap(index, index + 1)}>
                         <ArrowDownIcon className="h-5 w-5" />
                       </button>
@@ -328,9 +328,8 @@ export const FormBuilder = function FormBuilder({
                         </Badge>
                       )}
                       {Object.entries(groupedBySourceLabel).map(([sourceLabel, sources], key) => (
-                        // We don't know how to pluralize `sourceLabel` because it can be anything
-                        <Badge key={key} variant="blue">
-                          {sources.length} {sources.length === 1 ? sourceLabel : `${sourceLabel}s`}
+                        <Badge key={key} variant="grayWithoutHover">
+                          {t("active_on_source_count", { count: sources.length, sourceLabel })}
                         </Badge>
                       ))}
                     </div>
@@ -358,6 +357,7 @@ export const FormBuilder = function FormBuilder({
                         color="destructive"
                         disabled={!isUserField}
                         variant="icon"
+                        aria-label={t("delete")}
                         onClick={() => {
                           removeField(index);
                         }}
@@ -452,10 +452,10 @@ export const FormBuilder = function FormBuilder({
 };
 
 function Options({
-  label = "Options",
+  label,
   value,
 
-  onChange = () => { },
+  onChange = () => {},
   className = "",
   readOnly = false,
   showPrice = false,
@@ -475,19 +475,19 @@ function Options({
   if (!value) {
     onChange([
       {
-        label: "Option 1",
-        value: "Option 1",
+        label: t("option_number", { number: 1 }),
+        value: t("option_number", { number: 1 }),
       },
       {
-        label: "Option 2",
-        value: "Option 2",
+        label: t("option_number", { number: 2 }),
+        value: t("option_number", { number: 2 }),
       },
     ]);
   }
   return (
     <div className={className}>
-      <Label>{label}</Label>
-      <div className="bg-cal-muted rounded-md p-4" data-testid="options-container">
+      <Label>{label ?? t("options")}</Label>
+      <div className="rounded-2xl bg-subtle p-4" data-testid="options-container">
         <ul ref={animationRef} className="flex flex-col gap-3">
           {value?.map((option, index) => (
             <li key={index}>
@@ -517,6 +517,7 @@ function Options({
                       size="sm"
                       color="minimal"
                       StartIcon="x"
+                      aria-label={t("delete")}
                       onClick={() => {
                         if (!value) return;
                         const newOptions = [...(value || [])];
@@ -564,7 +565,7 @@ function Options({
               onChange(newOptions);
             }}
             StartIcon="plus">
-            Add an Option
+            {t("add_an_option")}
           </Button>
         )}
       </div>
@@ -751,7 +752,7 @@ function FieldEditDialog({
                           } catch (err) {
                             if (err instanceof ZodError) {
                               fieldForm.setError("requireEmails", {
-                                message: err.errors[0]?.message || "Invalid input",
+                                message: err.errors[0]?.message || t("invalid_input"),
                               });
                             }
                           }
@@ -772,7 +773,7 @@ function FieldEditDialog({
                           } catch (err) {
                             if (err instanceof ZodError) {
                               fieldForm.setError("excludeEmails", {
-                                message: err.errors[0]?.message || "Invalid input",
+                                message: err.errors[0]?.message || t("invalid_input"),
                               });
                             }
                           }
@@ -998,7 +999,7 @@ function VariantFields({
           onCheckedChange={(checked) => {
             fieldForm.setValue("variant", checked ? otherVariant : defaultVariant);
           }}
-          tooltip={t("Toggle Variant")}
+          tooltip={t("toggle_variant")}
         />
       ) : (
         <VariantSelector />
@@ -1030,7 +1031,7 @@ function VariantFields({
           const rhfVariantFieldPrefix = `variantsConfig.variants.${variantName}.fields.${index}` as const;
           const fieldTypeConfigVariants =
             fieldTypeConfigVariantsConfig.variants[
-            variantName as keyof typeof fieldTypeConfigVariantsConfig.variants
+              variantName as keyof typeof fieldTypeConfigVariantsConfig.variants
             ];
           const appUiFieldConfig =
             fieldTypeConfigVariants.fieldsMap[f.name as keyof typeof fieldTypeConfigVariants.fieldsMap];
@@ -1039,7 +1040,7 @@ function VariantFields({
             <li className={classNames(!isSimpleVariant ? "p-4" : "")} key={f.name}>
               {!isSimpleVariant && (
                 <Label className="flex justify-between">
-                  <span>{`Field ${index + 1}`}</span>
+                  <span>{t("field_number", { number: index + 1 })}</span>
                   <span className="text-muted">{t(appUiFieldConfig?.defaultLabel || "")}</span>
                 </Label>
               )}
@@ -1052,7 +1053,6 @@ function VariantFields({
               />
               <InputField
                 {...fieldForm.register(`${rhfVariantFieldPrefix}.placeholder`)}
-                key={f.name}
                 value={f.placeholder || ""}
                 containerClassName="mt-6"
                 label={t("placeholder")}

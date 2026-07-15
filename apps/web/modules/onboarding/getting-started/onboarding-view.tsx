@@ -209,8 +209,8 @@ export const OnboardingView = ({ userEmail }: OnboardingViewProps) => {
           </div>
         </OnboardingCard>
 
-        {/* Right column - Icon display */}
-        <div className="hidden h-full w-full rounded-l-2xl border-subtle border-t border-b border-l bg-cal-muted xl:flex xl:items-center xl:justify-center">
+        {/* Right column - Convenio statement panel */}
+        <div className="bg-inverted hidden h-full w-full rounded-l-2xl xl:flex xl:items-stretch xl:justify-center">
           <AnimatePresence mode="wait">
             {selectedPlanData && (
               <PlanIcon

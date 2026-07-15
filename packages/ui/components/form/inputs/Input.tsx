@@ -104,12 +104,13 @@ type TextAreaFieldProps = {
 
 export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>(
   function TextField(props, ref) {
-    const id = useId();
+    const generatedId = useId();
     const { t: _t } = useLocale();
     const t = props.t || _t;
     const methods = useFormContext();
     const {
       label = t(props.name as string),
+      id: providedId,
       labelProps,
       /** Prevents displaying untranslated placeholder keys */
       placeholder = t(`${props.name}_placeholder`) !== `${props.name}_placeholder`
@@ -117,6 +118,7 @@ export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>
         : "",
       ...passThrough
     } = props;
+    const id = providedId ?? generatedId;
     return (
       <div>
         {!!props.name && (
@@ -124,7 +126,7 @@ export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>
             {label}
           </Label>
         )}
-        <TextArea ref={ref} placeholder={placeholder} {...passThrough} />
+        <TextArea id={id} ref={ref} placeholder={placeholder} {...passThrough} />
         {methods?.formState?.errors[props.name]?.message && (
           <Alert
             className="mt-1"
@@ -153,11 +155,12 @@ export const NumberInput = forwardRef<HTMLInputElement, InputFieldProps>(functio
 
 export const FilterSearchField = forwardRef<HTMLInputElement, InputFieldProps>(
   function PasswordField(props, ref) {
+    const { t } = useLocale();
     return (
       <InputField
         ref={ref}
         addOnLeading={<SearchIcon className="h-4 w-4 stroke-[2.5px]" data-testid="search-icon" />}
-        placeholder="Search"
+        placeholder={t("search")}
         containerClassName="mt-1"
         {...props}
       />

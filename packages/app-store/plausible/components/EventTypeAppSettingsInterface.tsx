@@ -1,4 +1,5 @@
 import type { EventTypeAppSettingsComponent } from "@calcom/app-store/types";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { TextField } from "@calcom/ui/components/form";
 
 const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
@@ -7,6 +8,7 @@ const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
   disabled,
   slug,
 }) => {
+  const { t } = useLocale();
   const plausibleUrl = getAppData("PLAUSIBLE_URL");
   const trackingId = getAppData("trackingId");
 
@@ -14,7 +16,8 @@ const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
     <div className="flex flex-col gap-2">
       <TextField
         dataTestid={`${slug}-url`}
-        name="Plausible URL"
+        name="plausibleUrl"
+        label={t("plausible_url")}
         defaultValue="https://plausible.io/js/script.js"
         placeholder="https://plausible.io/js/script.js"
         value={plausibleUrl}
@@ -26,7 +29,8 @@ const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
       <TextField
         dataTestid={`${slug}-tracking-id`}
         disabled={disabled}
-        name="Tracked Domain"
+        name="trackedDomain"
+        label={t("tracked_domain")}
         placeholder="yourdomain.com"
         value={trackingId}
         onChange={(e) => {

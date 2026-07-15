@@ -1,7 +1,6 @@
 import type { DailyCall } from "@daily-co/daily-js";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-
-import { BUTTONS } from "../button-states";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getButtons } from "../button-states";
 import { createCalVideoCallbacks } from "../cal-video-premium-features";
 
 vi.mock("@calcom/lib/constants", () => ({
@@ -10,6 +9,9 @@ vi.mock("@calcom/lib/constants", () => ({
   TRANSCRIPTION_STOPPED_ICON: "/transcription-stopped-icon.svg",
   RECORDING_DEFAULT_ICON: "/recording-default-icon.svg",
 }));
+
+const mockT = (key: string) => key;
+const BUTTONS = getButtons(mockT);
 
 const mockDaily: DailyCall = {
   startRecording: vi.fn(),
@@ -36,6 +38,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should start transcription automatically when enabled and not already transcribing", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(),
         transcription: createMockTranscription(false), // not transcribing
         showRecordingButton: true,
@@ -53,6 +56,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should start recording automatically when enabled and not already recording", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(false), // not recording
         transcription: createMockTranscription(),
         showRecordingButton: true,
@@ -73,6 +77,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should start both transcription and recording when both are enabled", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(false),
         transcription: createMockTranscription(false),
         showRecordingButton: true,
@@ -90,6 +95,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should not start transcription when already transcribing", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(),
         transcription: createMockTranscription(true), // already transcribing
         showRecordingButton: true,
@@ -106,6 +112,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should not start recording when already recording", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(true), // already recording
         transcription: createMockTranscription(),
         showRecordingButton: true,
@@ -124,6 +131,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should start recording when click occurs on Recording button and recording is stopped", async () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(false), // not recording
         transcription: createMockTranscription(),
         showRecordingButton: true,
@@ -148,6 +156,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should stop recording when click occurs on Recording button and recording is started", async () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(true), // currently recording
         transcription: createMockTranscription(),
         showRecordingButton: true,
@@ -171,6 +180,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should start transcription when click occurs on Transcription button and transcription is stopped", async () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(),
         transcription: createMockTranscription(false), // not transcribing
         showRecordingButton: true,
@@ -192,6 +202,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should stop transcription when click occurs on Transcription button and transcription is started", async () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(),
         transcription: createMockTranscription(true), // currently transcribing
         showRecordingButton: true,
@@ -215,6 +226,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should update custom tray buttons to show stop recording button", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(),
         transcription: createMockTranscription(),
         showRecordingButton: true,
@@ -236,6 +248,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should update custom tray buttons to show start recording button", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(),
         transcription: createMockTranscription(),
         showRecordingButton: true,
@@ -257,6 +270,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should update custom tray buttons to show stop transcription button", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(),
         transcription: createMockTranscription(),
         showRecordingButton: true,
@@ -278,6 +292,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should update custom tray buttons to show start transcription button", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(),
         transcription: createMockTranscription(),
         showRecordingButton: true,
@@ -299,6 +314,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should start recording when not currently recording", async () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(false), // not recording
         transcription: createMockTranscription(),
         showRecordingButton: true,
@@ -323,6 +339,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should stop recording when currently recording", async () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(true), // currently recording
         transcription: createMockTranscription(),
         showRecordingButton: true,
@@ -346,6 +363,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should start transcription when not currently transcribing", async () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(),
         transcription: createMockTranscription(false), // not transcribing
         showRecordingButton: true,
@@ -367,6 +385,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should stop transcription when currently transcribing", async () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(),
         transcription: createMockTranscription(true), // currently transcribing
         showRecordingButton: true,
@@ -390,6 +409,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should update both recording and transcription buttons when both are shown", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(false),
         transcription: createMockTranscription(false),
         showRecordingButton: true,
@@ -412,6 +432,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should update only recording button when transcription button is not shown", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(false),
         transcription: createMockTranscription(false),
         showRecordingButton: true,
@@ -432,6 +453,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should update only transcription button when recording button is not shown", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(false),
         transcription: createMockTranscription(false),
         showRecordingButton: false,
@@ -452,6 +474,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should use current state when no override is provided", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(true), // currently recording
         transcription: createMockTranscription(false), // not transcribing
         showRecordingButton: true,
@@ -473,6 +496,7 @@ describe("CalVideoPremiumFeatures - End-to-End Callback Tests", () => {
     it("should call daily.startRecording with correct parameters", () => {
       const callbacks = createCalVideoCallbacks({
         daily: mockDaily,
+        t: mockT,
         recording: createMockRecording(),
         transcription: createMockTranscription(),
         showRecordingButton: true,

@@ -1,7 +1,7 @@
 {
-    "name": "Cal.diy",
-    "short_name": "Cal.diy",
-    "description": "Scheduling infrastructure for absolutely everyone.",
+    "name": "Convenio",
+    "short_name": "Convenio",
+    "description": "Two calendars. One agreement. Scheduling that treats a booking as two parties arriving at the same time, on purpose.",
     "icons": [
         {
             "src": "/api/logo?type=android-chrome-192",

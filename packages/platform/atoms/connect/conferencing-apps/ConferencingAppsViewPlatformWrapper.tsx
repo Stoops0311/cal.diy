@@ -168,12 +168,12 @@ export const ConferencingAppsViewPlatformWrapper = ({
   }: UpdateUsersDefaultConferencingAppParams) => {
     updateDefaultAppMutation.mutate(appSlug, {
       onSuccess: () => {
-        showToast("Default app updated successfully", "success");
+        showToast(t("default_app_updated_successfully"), "success");
         queryClient.invalidateQueries({ queryKey: [defaultConferencingAppQueryKey] });
         !disableBulkUpdateEventTypes && onSuccessCallback();
       },
       onError: (error) => {
-        showToast(`Error: ${error.message}`, "error");
+        showToast(t("default_app_update_failed", { error: error.message }), "error");
         onErrorCallback();
       },
     });

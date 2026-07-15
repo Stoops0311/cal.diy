@@ -38,6 +38,7 @@
   --radius-cal-full: 9999px;
 
   --color-emphasis: var(--cal-bg-emphasis);
+  --color-overlay: var(--cal-bg-overlay);
   --color-default: var(--cal-bg);
   --color-subtle: var(--cal-bg-subtle);
   --color-cal-muted: var(--cal-bg-muted);
@@ -133,8 +134,8 @@
   --text-color-error: var(--cal-text-error);
   --text-color-brand: var(--cal-brand-text);
 
-  /* Default Ring Color */
-  --default-ring-color: rgb(59 130 246 / 0.5);
+  /* Default Ring Color — monochrome focus, follows the theme's ink */
+  --default-ring-color: color-mix(in srgb, var(--cal-text-emphasis) 50%, transparent);
 
   /* Cal.diy Box Shadows */
   --shadow-dropdown: var(--shadow-dropdown);
@@ -238,22 +239,25 @@
 
   --radius-none: 0px;
 
-  /* Background Standard */
-  --cal-bg-emphasis: hsla(220, 13%, 91%, 1);
+  /* Background Standard — Convenio monochrome: hue/saturation zeroed, black-on-white */
+  --cal-bg-emphasis: hsla(0, 0%, 91%, 1);
   --cal-bg: hsla(0, 0%, 100%, 1);
-  --cal-bg-subtle: hsla(220, 14%, 94%, 1);
-  --cal-bg-muted: hsla(210, 20%, 97%, 1);
-  --cal-bg-inverted: hsla(210, 30%, 4%, 1);
+  --cal-bg-subtle: hsla(0, 0%, 95%, 1);
+  --cal-bg-muted: hsla(0, 0%, 98%, 1);
+  --cal-bg-inverted: hsla(0, 0%, 2%, 1);
+
+  /* Scrim behind floating UI — a shadow, so it stays dark in both themes */
+  --cal-bg-overlay: hsla(0, 0%, 4%, 0.6);
 
   /* Background Primary */
-  --cal-bg-primary: hsla(214, 30%, 16%, 1);
-  --cal-bg-primary-emphasis: hsla(220, 6%, 25%, 1);
-  --cal-bg-primary-muted: hsla(220, 14%, 94%, 1);
+  --cal-bg-primary: hsla(0, 0%, 4%, 1);
+  --cal-bg-primary-emphasis: hsla(0, 0%, 18%, 1);
+  --cal-bg-primary-muted: hsla(0, 0%, 95%, 1);
 
   /* Background Brand */
-  --cal-bg-brand: hsla(214, 30%, 16%, 1);
-  --cal-bg-brand-emphasis: hsla(220, 6%, 25%, 1);
-  --cal-bg-brand-muted: hsla(220, 14%, 94%, 1);
+  --cal-bg-brand: hsla(0, 0%, 4%, 1);
+  --cal-bg-brand-emphasis: hsla(0, 0%, 18%, 1);
+  --cal-bg-brand-muted: hsla(0, 0%, 95%, 1);
 
   /* Background Semantic */
   --cal-bg-semantic-info-subtle: hsla(212, 88%, 97%, 1);
@@ -287,13 +291,13 @@
   --cal-bg-attention: hsla(33, 100%, 92%, 1);
   --cal-bg-error: hsla(3, 66%, 93%, 1);
   --cal-bg-dark-error: hsla(2, 55%, 30%, 1);
-  --cal-bg-launch-dark: hsla(242, 53%, 10%, 1);
+  --cal-bg-launch-dark: hsla(0, 0%, 5%, 1);
 
   /* Borders */
-  --cal-border-emphasis: hsla(218, 11%, 65%, 1);
-  --cal-border: hsla(216, 12%, 84%, 1);
-  --cal-border-subtle: hsla(220, 13%, 91%, 1);
-  --cal-border-muted: hsla(220, 14%, 94%, 1);
+  --cal-border-emphasis: hsla(0, 0%, 62%, 1);
+  --cal-border: hsla(0, 0%, 84%, 1);
+  --cal-border-subtle: hsla(0, 0%, 91%, 1);
+  --cal-border-muted: hsla(0, 0%, 95%, 1);
   --cal-border-error: hsla(0, 96%, 89%, 1);
   --cal-border-semantic-error: hsla(0, 96%, 89%, 1);
   --cal-border-semantic-attention-subtle: hsla(32, 98%, 83%, 1);
@@ -301,10 +305,10 @@
   --cal-border-booker: var(--cal-border-subtle);
 
   /* Content/Text Standard */
-  --cal-text-emphasis: hsla(210, 30%, 4%, 1);
-  --cal-text: hsla(220, 6%, 25%, 1);
-  --cal-text-subtle: hsla(220, 9%, 46%, 1);
-  --cal-text-muted: hsla(218, 11%, 65%, 1);
+  --cal-text-emphasis: hsla(0, 0%, 4%, 1);
+  --cal-text: hsla(0, 0%, 20%, 1);
+  --cal-text-subtle: hsla(0, 0%, 42%, 1);
+  --cal-text-muted: hsla(0, 0%, 60%, 1);
   --cal-text-inverted: hsla(0, 0%, 100%, 1);
 
   /* Content/Text Semantic */
@@ -328,9 +332,9 @@
   --cal-text-attention: hsla(16, 62%, 28%, 1);
   --cal-text-error: hsla(0, 63%, 31%, 1);
 
-  /* Brand */
-  --cal-brand: hsla(221, 39%, 11%, 1);
-  --cal-brand-emphasis: hsla(0, 0%, 6%, 1);
+  /* Brand — Convenio has no accent color; brand is pure ink, inverted per theme */
+  --cal-brand: hsla(0, 0%, 4%, 1);
+  --cal-brand-emphasis: hsla(0, 0%, 18%, 1);
   --cal-brand-text: hsla(0, 0%, 100%, 1);
 
   /* Box Shadows */
@@ -367,12 +371,15 @@
 }
 
 .dark {
-  /* Background Standard */
+  /* Background Standard — mirror image of light, not a dimmed variant */
   --cal-bg-emphasis: hsla(0, 0%, 25%, 1);
-  --cal-bg: hsla(0, 0%, 6%, 1);
-  --cal-bg-subtle: hsla(0, 0%, 15%, 1);
-  --cal-bg-muted: hsla(0, 0%, 9%, 1);
+  --cal-bg: hsla(0, 0%, 2%, 1);
+  --cal-bg-subtle: hsla(0, 0%, 13%, 1);
+  --cal-bg-muted: hsla(0, 0%, 6%, 1);
   --cal-bg-inverted: hsla(0, 0%, 98%, 1);
+
+  /* Scrim stays dark: deeper here so it still recedes an already-dark canvas */
+  --cal-bg-overlay: hsla(0, 0%, 0%, 0.7);
 
   /* Background Primary */
   --cal-bg-primary: hsla(0, 0%, 96%, 1);
@@ -416,12 +423,12 @@
   --cal-bg-attention: hsla(16, 62%, 28%, 1);
   --cal-bg-error: hsla(2, 55%, 30%, 1);
   --cal-bg-dark-error: hsla(2, 55%, 30%, 1);
-  --cal-bg-launch-dark: hsla(242, 53%, 10%, 1);
+  --cal-bg-launch-dark: hsla(0, 0%, 5%, 1);
 
   /* Border Standard */
   --cal-border: hsla(0, 0%, 30%, 1);
-  --cal-border-muted: hsla(0, 0%, 9%, 1);
-  --cal-border-subtle: hsla(0, 0%, 15%, 1);
+  --cal-border-muted: hsla(0, 0%, 6%, 1);
+  --cal-border-subtle: hsla(0, 0%, 13%, 1);
   --cal-border-emphasis: hsla(0, 0%, 45%, 1);
   --cal-border-semantic-error: hsla(0, 63%, 24%, 1);
   --cal-border-semantic-attention-subtle: hsla(15, 75%, 23%, 1);
@@ -454,7 +461,7 @@
 
   /* Brand */
   --cal-brand: hsla(0, 0%, 100%, 1);
-  --cal-brand-emphasis: hsla(218, 11%, 65%, 1);
+  --cal-brand-emphasis: hsla(0, 0%, 82%, 1);
   --cal-brand-text: hsla(0, 0%, 0%, 1);
 
   /* Fill Colors */

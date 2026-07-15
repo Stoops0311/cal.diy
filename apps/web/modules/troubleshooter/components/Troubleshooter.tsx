@@ -1,12 +1,11 @@
 import { BookerStoreProvider } from "@calcom/features/bookings/Booker/BookerStoreProvider";
+import { useInitalizeTroubleshooterStore } from "@calcom/features/troubleshooter/store";
+import type { TroubleshooterProps } from "@calcom/features/troubleshooter/types";
 import useMediaQuery from "@calcom/lib/hooks/useMediaQuery";
 import classNames from "@calcom/ui/classNames";
-
 import { LargeCalendar } from "./LargeCalendar";
 import { TroubleshooterHeader } from "./TroubleshooterHeader";
 import { TroubleshooterSidebar } from "./TroubleshooterSidebar";
-import { useInitalizeTroubleshooterStore } from "@calcom/features/troubleshooter/store";
-import type { TroubleshooterProps } from "@calcom/features/troubleshooter/types";
 
 const extraDaysConfig = {
   desktop: 7,
@@ -44,10 +43,8 @@ const TroubleshooterComponent = ({ month }: TroubleshooterProps) => {
             gridTemplateColumns: "var(--troubleshooter-meta-width) 1fr",
             gridTemplateRows: "70px auto",
           }}
-          className={classNames(
-            "bg-default dark:bg-cal-muted text-default flex min-h-full w-full flex-col items-center sm:transition-[width] sm:duration-300"
-          )}>
-          <div className="bg-default dark:bg-cal-muted sticky top-0 z-10 [grid-area:header]">
+          className="flex min-h-full w-full flex-col items-center bg-default text-default sm:transition-[width] sm:duration-300">
+          <div className="sticky top-0 z-10 bg-default [grid-area:header]">
             <TroubleshooterHeader extraDays={extraDays} isMobile={isMobile} />
           </div>
           <div className="sticky top-0 z-10 ps-6">

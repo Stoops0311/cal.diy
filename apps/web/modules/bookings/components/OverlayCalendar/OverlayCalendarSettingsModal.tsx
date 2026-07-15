@@ -4,7 +4,7 @@ import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
 import classNames from "@calcom/ui/classNames";
 import { Alert } from "@calcom/ui/components/alert";
-import { DialogClose, DialogContent } from "@calcom/ui/components/dialog";
+import { DialogClose, DialogContent, DialogFooter } from "@calcom/ui/components/dialog";
 import { EmptyScreen } from "@calcom/ui/components/empty-screen";
 import { Switch } from "@calcom/ui/components/form";
 import { ListItem, ListItemText, ListItemTitle } from "@calcom/ui/components/list";
@@ -76,7 +76,7 @@ export function OverlayCalendarSettingsModal({
                   width={40}
                   height={40}
                   src={isPlatform ? `https://app.cal.com${item.integration.logo}` : item.integration.logo}
-                  alt={`${item.integration.title} logo`}
+                  alt=""
                 />
               )}
               <div className="grow truncate pl-2">
@@ -121,10 +121,10 @@ export function OverlayCalendarSettingsModal({
         title={t("calendar_settings")}
         className="pb-4"
         description={t("view_overlay_calendar_events")}>
-        <div className="no-scrollbar max-h-full overflow-y-scroll">{content}</div>
-        <div className="mt-4 flex gap-2 self-end">
+        <div className="no-scrollbar max-h-full overflow-y-auto overscroll-contain">{content}</div>
+        <DialogFooter showDivider className="mt-4">
           <DialogClose>{t("done")}</DialogClose>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

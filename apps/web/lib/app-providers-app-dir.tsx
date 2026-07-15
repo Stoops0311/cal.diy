@@ -7,11 +7,11 @@ import { useNuqsParams } from "@lib/hooks/useNuqsParams";
 import type { WithLocaleProps } from "@lib/withLocale";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import type { AppProps as NextAppProps } from "next/app";
-import type { ReadonlyURLSearchParams } from "next/navigation";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { Session } from "next-auth";
 import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { useEffect, useState } from "react";
 import { getThemeProviderProps } from "./getThemeProviderProps";
 
 // Workaround for https://github.com/vercel/next.js/issues/8592
@@ -35,12 +35,6 @@ export type AppProps = Omit<
   err?: Error;
 };
 
-const getEmbedNamespace = (searchParams: ReadonlyURLSearchParams) => {
-  // Mostly embed query param should be available on server. Use that there.
-  // Use the most reliable detection on client
-  return typeof window !== "undefined" ? window.getEmbedNamespace() : (searchParams.get("embed") ?? null);
-};
-
 type CalcomThemeProps = Readonly<{
   isBookingPage: boolean;
   nonce: string | undefined;
@@ -53,7 +47,12 @@ const CalcomThemeProvider = (props: CalcomThemeProps) => {
   // One such example is our Embeds Demo and Testing page at http://localhost:3100
   // Having `getEmbedNamespace` defined on window before react initializes the app, ensures that embedNamespace is available on the first mount and can be used as part of storageKey
   const searchParams = useSearchParams();
-  const embedNamespace = searchParams ? getEmbedNamespace(searchParams) : null;
+  const [embedNamespace, setEmbedNamespace] = useState<string | null>(searchParams?.get("embed") ?? null);
+
+  useEffect(() => {
+    setEmbedNamespace(window.getEmbedNamespace());
+  }, []);
+
   const isEmbedMode = typeof embedNamespace === "string";
   const pathname = usePathname();
   const { key, ...themeProviderProps } = getThemeProviderProps({
@@ -68,7 +67,7 @@ const CalcomThemeProvider = (props: CalcomThemeProps) => {
     <ThemeProvider key={key} {...themeProviderProps}>
       {/* Embed Mode can be detected reliably only on client side here as there can be static generated pages as well which can't determine if it's embed mode at backend */}
       {/* color-scheme makes background:transparent not work in iframe which is required by embed. */}
-      {typeof window !== "undefined" && !isEmbedMode && (
+      {!isEmbedMode && (
         //eslint-disable-next-line react/no-unknown-property
         <style jsx global>
           {`

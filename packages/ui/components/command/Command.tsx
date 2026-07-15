@@ -1,9 +1,8 @@
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import classNames from "@calcom/ui/classNames";
 import type { DialogProps } from "@radix-ui/react-dialog";
 import { Command as CommandPrimitive } from "cmdk";
 import * as React from "react";
-
-import classNames from "@calcom/ui/classNames";
-
 import { Dialog, DialogContent } from "../dialog";
 
 const Command = React.forwardRef<
@@ -24,9 +23,11 @@ Command.displayName = CommandPrimitive.displayName;
 type CommandDialogProps = DialogProps;
 
 const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
+  const { t } = useLocale();
+
   return (
     <Dialog {...props}>
-      <DialogContent className="overflow-hidden p-0 shadow-lg">
+      <DialogContent type={null} title={t("command_menu")} className="overflow-hidden p-0 shadow-lg">
         <Command className="[&_[cmdk-group-heading]]:text-muted hover:bg-subtle transition [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
           {children}
         </Command>
@@ -43,7 +44,7 @@ const CommandInput = React.forwardRef<
     <CommandPrimitive.Input
       ref={ref}
       className={classNames(
-        "border-default hover:border-emphasis placeholder:text-muted text-emphasis disabled:hover:border-default disabled:bg-subtle focus:border-emphasis focus:ring-0 focus:shadow-outline-gray-focused shadow-outline-gray-rested transition-all flex h-[28px] w-full rounded-md border bg-transparent px-3 py-1.5 text-sm leading-4 outline-none focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+        "border-default hover:border-emphasis placeholder:text-muted text-emphasis disabled:hover:border-default disabled:bg-subtle focus:border-emphasis focus:ring-0 focus:shadow-outline-gray-focused shadow-outline-gray-rested transition-[color,background-color,border-color,box-shadow] flex h-[28px] w-full rounded-md border bg-transparent px-3 py-1.5 text-sm leading-4 outline-none focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}

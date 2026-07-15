@@ -1,24 +1,24 @@
-import { useAutoAnimate } from "@formkit/auto-animate/react";
-import {
-  useFieldArray,
-  useFormContext,
-  type FieldValues,
-  type Path,
-  type PathValue,
-  type ArrayPath,
-} from "react-hook-form";
-import { v4 as uuidv4 } from "uuid";
-
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import classNames from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
 import { TextField } from "@calcom/ui/components/form";
 import { ArrowDownIcon, ArrowUpIcon, XIcon } from "@coss/ui/icons";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
+import {
+  type ArrayPath,
+  type FieldValues,
+  type Path,
+  type PathValue,
+  useFieldArray,
+  useFormContext,
+} from "react-hook-form";
+import { v4 as uuidv4 } from "uuid";
 
 export interface Option {
   label: string;
   value?: string;
   id?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface MultiOptionInputProps<TFieldValues extends FieldValues> {
@@ -96,6 +96,7 @@ export const MultiOptionInput = <TFieldValues extends FieldValues>({
   disabled = false,
   addOptionButtonColor = "primary",
 }: MultiOptionInputProps<TFieldValues>) => {
+  const { t } = useLocale();
   const [animationRef] = useAutoAnimate<HTMLUListElement>();
   const { control } = useFormContext<TFieldValues>();
 
@@ -237,7 +238,7 @@ export const MultiOptionInput = <TFieldValues extends FieldValues>({
                         <button
                           type="button"
                           onClick={() => handleRemoveOption(index)}
-                          aria-label="Remove option"
+                          aria-label={t("remove_option")}
                           disabled={disabled}>
                           <XIcon className="h-4 w-4" />
                         </button>
@@ -263,7 +264,7 @@ export const MultiOptionInput = <TFieldValues extends FieldValues>({
                       <button
                         type="button"
                         onClick={() => handleRemoveOption(index)}
-                        aria-label="Remove option"
+                        aria-label={t("remove_option")}
                         disabled={disabled}>
                         <XIcon className="h-4 w-4" />
                       </button>
@@ -276,20 +277,22 @@ export const MultiOptionInput = <TFieldValues extends FieldValues>({
               <div className="flex flex-col">
                 <button
                   type="button"
+                  aria-label={t("move_up")}
                   onClick={() => moveUp(index)}
                   disabled={index === 0 || disabled}
                   className={classNames(
-                    "bg-default text-muted hover:text-emphasis invisible flex h-6 w-6 items-center justify-center rounded-t-md border p-1 transition-all hover:border-transparent hover:shadow group-hover:visible",
+                    "bg-default text-muted hover:text-emphasis invisible flex h-6 w-6 items-center justify-center rounded-t-md border p-1 transition-[color,border-color,box-shadow] hover:border-transparent hover:shadow group-hover:visible",
                     index === 0 ? "cursor-not-allowed opacity-30" : "cursor-pointer"
                   )}>
                   <ArrowUpIcon className="h-3 w-3" />
                 </button>
                 <button
                   type="button"
+                  aria-label={t("move_down")}
                   onClick={() => moveDown(index)}
                   disabled={index === options.length - 1 || disabled}
                   className={classNames(
-                    "bg-default text-muted hover:text-emphasis invisible -mt-px flex h-6 w-6 items-center justify-center rounded-b-md border p-1 transition-all hover:border-transparent hover:shadow group-hover:visible",
+                    "bg-default text-muted hover:text-emphasis invisible -mt-px flex h-6 w-6 items-center justify-center rounded-b-md border p-1 transition-[color,border-color,box-shadow] hover:border-transparent hover:shadow group-hover:visible",
                     index === options.length - 1 ? "cursor-not-allowed opacity-30" : "cursor-pointer"
                   )}>
                   <ArrowDownIcon className="h-3 w-3" />

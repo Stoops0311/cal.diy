@@ -30,31 +30,29 @@ export function BookingSuccessCard({
   const { t } = useLocale();
 
   return (
-    <div className="h-screen">
-      <main className="mx-auto max-w-3xl">
+    <div className="min-h-screen bg-muted">
+      <main className="mx-auto max-w-3xl py-8 sm:py-12">
         <div className="overflow-y-auto">
           <div className="flex items-end justify-center px-4 pb-20 pt-4 text-center sm:flex sm:p-0">
-            <div className="main inset-0 my-4 flex flex-col transition-opacity sm:my-0" aria-hidden="true">
+            <div className="main inset-0 my-4 flex flex-col transition-opacity sm:my-0">
               <div
-                className="bg-default dark:bg-cal-muted border-booker border-booker-width inline-block transform overflow-hidden rounded-lg px-8 pb-4 pt-5 text-left align-bottom transition-all sm:my-8 sm:w-full sm:max-w-xl sm:py-8 sm:align-middle"
-                role="dialog"
-                aria-modal="true"
+                className="border-booker border-booker-width inline-block transform overflow-hidden rounded-3xl bg-subtle px-8 pt-5 pb-4 text-left align-bottom shadow-xl transition-[opacity,transform,box-shadow] sm:my-8 sm:w-full sm:max-w-xl sm:py-8 sm:align-middle"
                 aria-labelledby="modal-headline">
                 <div>
                   <div className="bg-cal-success mx-auto flex h-12 w-12 items-center justify-center rounded-full">
-                    <CheckIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <CheckIcon className="h-5 w-5 text-success" />
                   </div>
                 </div>
                 <div className="mb-8 mt-6 text-center last:mb-0">
-                  <h3 className="text-emphasis text-2xl font-semibold leading-6" id="modal-headline">
+                  <h1 className="font-cal text-3xl text-emphasis leading-tight" id="modal-headline">
                     {t("meeting_is_scheduled")}
-                  </h3>
+                  </h1>
 
                   <div className="mt-3">
                     <p className="text-default">{t("emailed_you_and_any_other_attendees")}</p>
                   </div>
 
-                  <div className="border-subtle text-default mt-8 grid grid-cols-3 gap-x-4 border-t pt-8 text-left rtl:text-right sm:gap-x-0">
+                  <div className="mt-8 grid grid-cols-3 gap-x-4 rounded-2xl border border-subtle bg-default p-5 text-left text-default rtl:text-right sm:gap-x-0">
                     <div className="font-medium">{t("what")}</div>
                     <div className="col-span-2 mb-6 last:mb-0">{title}</div>
 
@@ -83,7 +81,7 @@ export function BookingSuccessCard({
                         <div className="mb-3">
                           <div>
                             <span className="mr-2">{hostName}</span>
-                            <Badge variant="blue">{t("Host")}</Badge>
+                            <Badge variant="gray">{t("host")}</Badge>
                           </div>
                           {hostEmail && <p className="text-default">{hostEmail}</p>}
                         </div>

@@ -149,7 +149,7 @@ export const OnboardingOrganizationBrowserView = ({
                     size="lg"
                     imageSrc={avatar || undefined}
                     alt={name || ""}
-                    className="border-4 border-white"
+                    className="border-default border-4"
                   />
                 </div>
               </div>

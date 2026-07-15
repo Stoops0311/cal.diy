@@ -1,12 +1,11 @@
 "use client";
 
+import { fallBackHex, isValidHexCode } from "@calcom/lib/getBrandColours";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import cx from "@calcom/ui/classNames";
 import * as Popover from "@radix-ui/react-popover";
 import { useState } from "react";
 import { HexColorInput, HexColorPicker } from "react-colorful";
-
-import { fallBackHex, isValidHexCode } from "@calcom/lib/getBrandColours";
-import cx from "@calcom/ui/classNames";
-
 import { Button } from "../../button/Button";
 
 export type ColorPickerProps = {
@@ -19,6 +18,7 @@ export type ColorPickerProps = {
 };
 
 const ColorPicker = (props: ColorPickerProps) => {
+  const { t } = useLocale();
   const init = !isValidHexCode(props.defaultValue)
     ? fallBackHex(props.defaultValue, false)
     : props.defaultValue;
@@ -35,8 +35,9 @@ const ColorPicker = (props: ColorPickerProps) => {
         <div className="border-default min-w-9 flex h-full items-center justify-center border ltr:rounded-l-md ltr:border-r-0 rtl:rounded-r-md rtl:border-l-0">
           <Popover.Trigger asChild>
             <button
+              type="button"
               className="relative h-5 w-5 rounded-sm after:absolute after:inset-[-8px] after:content-['']"
-              aria-label="pick colors"
+              aria-label={t("onboarding_pick_color_aria")}
               style={{ backgroundColor: color }}
             />
           </Popover.Trigger>
@@ -74,9 +75,9 @@ const ColorPicker = (props: ColorPickerProps) => {
             target="_blank"
             variant="icon"
             rel="noreferrer"
-            aria-label="Reset to default"
+            aria-label={t("reset_to_default")}
             StartIcon="rotate-ccw"
-            tooltip="Reset to default"
+            tooltip={t("reset_to_default")}
             onClick={() => {
               setColor(fallBackHex(resetDefaultValue, false));
               props.onChange(resetDefaultValue);

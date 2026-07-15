@@ -1,11 +1,7 @@
-import Image from "next/image";
-import Link from "next/link";
-
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { SkeletonText } from "@calcom/ui/components/skeleton";
-import { ArrowRightIcon } from "@coss/ui/icons";
-
-import { Slider } from "./Slider";
+import Image from "next/image";
+import Link from "next/link";
 
 export function AppStoreCategories({
   categories,
@@ -17,47 +13,36 @@ export function AppStoreCategories({
 }) {
   const { t, isLocaleReady } = useLocale();
   return (
-    <div>
-      <Slider
-        title={t("featured_categories")}
-        items={categories}
-        itemKey={(category) => category.name}
-        options={{
-          perView: 5,
-          breakpoints: {
-            768 /* and below */: {
-              perView: 2,
-            },
-          },
-        }}
-        renderItem={(category) => (
-          <Link
-            key={category.name}
-            href={`/apps/categories/${category.name}`}
-            data-testid={`app-store-category-${category.name}`}
-            className="relative flex rounded-md"
-            style={{ background: "radial-gradient(farthest-side at top right, #a2abbe 0%, #E3E3E3 100%)" }}>
-            <div className="dark:bg-cal-muted light:bg-[url('/noise.svg')] dark:from-subtle dark:to-muted w-full self-center bg-cover bg-center bg-no-repeat px-6 py-4 dark:bg-linear-to-tr">
+    <section>
+      <h2 className="text-emphasis pb-3 text-base font-semibold leading-none">
+        {isLocaleReady ? t("featured_categories") : <SkeletonText className="h-4 w-40" />}
+      </h2>
+      <ul className="flex snap-x gap-3 overflow-x-auto pb-2">
+        {categories.map((category) => (
+          <li key={category.name} className="w-44 shrink-0 snap-start">
+            <Link
+              href={`/apps/categories/${category.name}`}
+              data-testid={`app-store-category-${category.name}`}
+              className="border-subtle hover:bg-muted focus-visible:ring-emphasis block h-full rounded-lg border px-5 py-4 transition-colors focus-visible:outline-none focus-visible:ring-2">
               <Image
                 src={`/app-categories/${category.name}.svg`}
-                width={100}
-                height={100}
-                alt={category.name}
+                width={80}
+                height={80}
+                alt={t("category_icon", { category: category.name })}
                 className="dark:invert"
               />
               {isLocaleReady ? (
-                <h3 className="text-emphasis text-sm font-semibold capitalize">{category.name}</h3>
+                <h3 className="font-cal text-emphasis mt-2 text-base capitalize">{category.name}</h3>
               ) : (
                 <SkeletonText invisible />
               )}
-              <p className="text-subtle pt-2 text-sm font-medium">
-                {isLocaleReady ? t("number_apps", { count: category.count }) : <SkeletonText invisible />}{" "}
-                <ArrowRightIcon className="inline-block h-4 w-4" />
+              <p className="text-subtle mt-1 font-mono text-[11px] uppercase tracking-[0.18em]">
+                {isLocaleReady ? t("number_apps", { count: category.count }) : <SkeletonText invisible />}
               </p>
-            </div>
-          </Link>
-        )}
-      />
-    </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

@@ -9,7 +9,6 @@ import { SkeletonText } from "@calcom/ui/components/skeleton";
 import { useRedirectToLoginIfUnauthenticated } from "@calcom/web/modules/auth/hooks/useRedirectToLoginIfUnauthenticated";
 import { useRedirectToOnboardingIfNeeded } from "@calcom/web/modules/auth/hooks/useRedirectToOnboardingIfNeeded";
 import { useFormbricks } from "@calcom/web/modules/formbricks/hooks/useFormbricks";
-import TimezoneChangeDialog from "@calcom/web/modules/settings/components/TimezoneChangeDialog";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import type { Dispatch, ReactElement, ReactNode, SetStateAction } from "react";
@@ -17,11 +16,9 @@ import { cloneElement } from "react";
 import { Toaster } from "sonner";
 import { BannerContainer } from "./banners/LayoutBanner";
 import { useBanners } from "./banners/useBanners";
+import { DockContainer } from "./Dock";
 import { DynamicModals } from "./DynamicModals";
 import { KBarContent, KBarRoot } from "./Kbar";
-import { MobileNavigationContainer } from "./navigation/Navigation";
-import { SideBarContainer } from "./SideBar";
-import { TopNavContainer } from "./TopNav";
 import { useAppTheme } from "./useAppTheme";
 
 const Layout = (props: LayoutProps) => {
@@ -35,23 +32,20 @@ const Layout = (props: LayoutProps) => {
         <Toaster position="bottom-right" />
       </div>
 
-      <TimezoneChangeDialog />
       <DynamicModals />
 
       <div className="flex min-h-screen flex-col">
         {banners && <BannerContainer banners={banners} />}
 
         <div className="flex flex-1" data-testid="dashboard-shell">
-          {props.SidebarContainer ? (
-            cloneElement(props.SidebarContainer, { bannersHeight })
-          ) : (
-            <SideBarContainer bannersHeight={bannersHeight} />
-          )}
+          {props.SidebarContainer && cloneElement(props.SidebarContainer, { bannersHeight })}
           <div className="flex w-0 flex-1 flex-col">
             <MainContainer {...props} />
           </div>
         </div>
       </div>
+
+      <DockContainer />
     </>
   );
 };
@@ -63,12 +57,13 @@ export type LayoutProps = {
   title?: string;
   description?: string;
   heading?: ReactNode;
+  /** Short uppercase mono label rendered above the heading (masthead grammar). */
+  eyebrow?: ReactNode;
   subtitle?: ReactNode;
   headerClassName?: string;
   children: ReactNode;
   CTA?: ReactNode;
   large?: boolean;
-  MobileNavigationContainer?: ReactNode;
   SidebarContainer?: ReactElement;
   TopNavContainer?: ReactNode;
   drawerState?: DrawerState;
@@ -122,14 +117,14 @@ export default function Shell(props: LayoutProps) {
 
 export function ShellMain(props: LayoutProps) {
   const router = useRouter();
-  const { isLocaleReady } = useLocale();
+  const { isLocaleReady, t } = useLocale();
 
   return (
     <>
       {(props.heading || !!props.backPath) && (
         <div
           className={classNames(
-            "bg-default mb-0 flex items-center md:mb-6 md:mt-0",
+            "bg-default border-subtle mb-4 flex items-center border-b pb-3 md:mb-6 md:mt-0 md:pb-4",
             props.smallHeading ? "lg:mb-7" : "lg:mb-8",
             !props.disableSticky && "sticky top-0 z-10"
           )}>
@@ -142,7 +137,7 @@ export function ShellMain(props: LayoutProps) {
                 typeof props.backPath === "string" ? router.push(props.backPath as string) : router.back()
               }
               StartIcon="arrow-left"
-              aria-label="Go Back"
+              aria-label={t("go_back")}
               className="rounded-md ltr:mr-2 rtl:ml-2"
               data-testid="go-back-button"
             />
@@ -153,17 +148,22 @@ export function ShellMain(props: LayoutProps) {
               {props.HeadingLeftIcon && <div className="ltr:mr-4">{props.HeadingLeftIcon}</div>}
               <div
                 className={classNames("w-full truncate ltr:mr-4 rtl:ml-4 md:block", props.headerClassName)}>
+                {props.eyebrow && (
+                  <p className="text-subtle font-mono text-[11px] uppercase tracking-[0.18em]">
+                    {!isLocaleReady ? <SkeletonText invisible /> : props.eyebrow}
+                  </p>
+                )}
                 {props.heading && (
-                  <h3
+                  <h1
                     className={classNames(
-                      "font-cal text-emphasis max-w-28 sm:max-w-72 md:max-w-80 hidden truncate text-lg font-semibold tracking-wide sm:text-xl md:block xl:max-w-full",
-                      props.smallHeading ? "text-base" : "text-xl"
+                      "font-cal text-emphasis truncate font-bold tracking-tight xl:max-w-full",
+                      props.smallHeading ? "text-base" : "text-xl sm:text-2xl"
                     )}>
                     {!isLocaleReady ? <SkeletonText invisible /> : props.heading}
-                  </h3>
+                  </h1>
                 )}
                 {props.subtitle && (
-                  <p className="text-default hidden text-sm md:block" data-testid="subtitle">
+                  <p className="text-subtle hidden text-sm md:block" data-testid="subtitle">
                     {!isLocaleReady ? <SkeletonText invisible /> : props.subtitle}
                   </p>
                 )}
@@ -193,21 +193,15 @@ export function ShellMain(props: LayoutProps) {
   );
 }
 
-function MainContainer({
-  MobileNavigationContainer: MobileNavigationContainerProp = <MobileNavigationContainer />,
-  TopNavContainer: TopNavContainerProp = <TopNavContainer />,
-  ...props
-}: LayoutProps) {
+function MainContainer({ TopNavContainer: TopNavContainerProp = null, ...props }: LayoutProps) {
   return (
     <main className="bg-default relative z-0 flex-1 focus:outline-none">
-      {/* show top navigation for md and smaller (tablet and phones) */}
       {TopNavContainerProp}
-      <div className="max-w-full p-2 sm:p-4 lg:p-6">
+      {/* bottom padding keeps the floating dock clear of interactive content */}
+      <div className="mx-auto max-w-[1200px] p-2 pb-28 sm:p-4 sm:pb-28 lg:p-6 lg:pb-28">
         <ErrorBoundary>
           {!props.withoutMain ? <ShellMain {...props}>{props.children}</ShellMain> : props.children}
         </ErrorBoundary>
-        {/* show bottom navigation for md and smaller (tablet and phones) on pages where back button doesn't exist */}
-        {!props.backPath ? MobileNavigationContainerProp : null}
       </div>
     </main>
   );

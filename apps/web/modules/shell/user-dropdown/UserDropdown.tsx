@@ -4,22 +4,12 @@ import { useLocale } from "@calcom/lib/hooks/useLocale";
 import useMeQuery from "@calcom/trpc/react/hooks/useMeQuery";
 import classNames from "@calcom/ui/classNames";
 import { Avatar } from "@calcom/ui/components/avatar";
-import {
-  Menu,
-  MenuItem,
-  MenuPopup,
-  MenuSeparator,
-  MenuSub,
-  MenuSubPopup,
-  MenuSubTrigger,
-  MenuTrigger,
-} from "@coss/ui/components/menu";
+import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from "@coss/ui/components/menu";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
   CircleHelpIcon,
   LogOutIcon,
-  MapIcon,
   MoonIcon,
   SettingsIcon,
   UserIcon,
@@ -46,10 +36,13 @@ type BeaconFunction = {
 
 interface UserDropdownProps {
   small?: boolean;
+  /** Renders the trigger as a dock tile: avatar only, styled for the inverted dock plane. */
+  dock?: boolean;
 }
 
-export function UserDropdown({ small }: UserDropdownProps) {
+export function UserDropdown({ small: smallProp, dock }: UserDropdownProps) {
   const { signOut } = useCurrentAuthActions();
+  const small = smallProp || dock;
   const { t } = useLocale();
   const { data: user, isPending } = useMeQuery();
 
@@ -94,10 +87,12 @@ export function UserDropdown({ small }: UserDropdownProps) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!menuOpen && openSupportAfterClose) {
-      setTimeout(() => {
+      const supportTimeout = window.setTimeout(() => {
         window.Support?.open();
       }, 0);
       setOpenSupportAfterClose(false);
+
+      return () => window.clearTimeout(supportTimeout);
     }
   }, [menuOpen, openSupportAfterClose]);
 
@@ -113,10 +108,16 @@ export function UserDropdown({ small }: UserDropdownProps) {
         disabled={isPending}
         render={
           <button
+            type="button"
             data-testid="user-dropdown-trigger-button"
             className={classNames(
-              "hover:bg-emphasis todesktop:!bg-transparent group mx-0 flex w-full cursor-pointer appearance-none items-center rounded-full text-left outline-none transition focus:outline-none focus:ring-0 md:rounded-none lg:rounded",
-              small ? "p-2" : "px-2 py-1.5"
+              "group flex cursor-pointer appearance-none items-center transition",
+              dock
+                ? "h-11 w-11 justify-center rounded-full hover:bg-default/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-default/70"
+                : classNames(
+                    "hover:bg-emphasis todesktop:!bg-transparent mx-0 w-full rounded-full text-left outline-none focus:outline-none focus:ring-0 md:rounded-none lg:rounded",
+                    small ? "p-2" : "px-2 py-1.5"
+                  )
             )}
           />
         }>
@@ -128,21 +129,15 @@ export function UserDropdown({ small }: UserDropdownProps) {
           <Avatar
             size={small ? "xs" : "xsm"}
             imageSrc={user?.avatarUrl ?? user?.avatar}
-            alt={user?.username ? `${user.username} Avatar` : "Nameless User Avatar"}
+            alt={user?.username ?? t("profile_picture")}
             className="overflow-hidden"
-          />
-          <span
-            className={classNames(
-              "border-muted absolute -bottom-1 -right-1 rounded-full border bg-green-500",
-              small ? "-bottom-0.5 -right-0.5 h-2.5 w-2.5" : "-bottom-0.5 right-0 h-2 w-2"
-            )}
           />
         </span>
         {!small && (
           <span className="flex grow items-center gap-2">
             <span className="w-24 shrink-0 text-sm leading-none">
               <span className="text-emphasis block truncate py-0.5 font-medium leading-normal">
-                {isPending ? "Loading..." : (user?.name ?? "Nameless User")}
+                {isPending ? t("loading") : (user?.name ?? t("user"))}
               </span>
             </span>
             {menuOpen ? (
@@ -178,10 +173,6 @@ export function UserDropdown({ small }: UserDropdownProps) {
             <MenuSeparator />
           </>
 
-          <MenuItem render={<a href={ROADMAP} target="_blank" rel="noreferrer" />}>
-            <MapIcon />
-            {t("visit_roadmap")}
-          </MenuItem>
           <MenuItem onClick={handleHelpClick}>
             <CircleHelpIcon />
             {t("help")}

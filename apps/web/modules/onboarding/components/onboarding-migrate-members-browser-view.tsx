@@ -114,7 +114,7 @@ export const OnboardingMigrateMembersBrowserView = ({
                       size="lg"
                       imageSrc={organizationLogo}
                       alt={organizationName || ""}
-                      className="border-4 border-white"
+                      className="border-default border-4"
                     />
                   </div>
                 )}
@@ -144,9 +144,9 @@ export const OnboardingMigrateMembersBrowserView = ({
                         size="md"
                         alt={member.name || member.email}
                         imageSrc={member.avatarUrl || undefined}
-                        className="border-2 border-white"
+                        className="border-default border-2"
                         fallback={
-                          <div className="flex h-full w-full items-center justify-center bg-emphasis text-white">
+                          <div className="flex h-full w-full items-center justify-center bg-inverted text-inverted">
                             <span className="font-semibold text-sm">
                               {(member.name || member.email).charAt(0).toUpperCase()}
                             </span>

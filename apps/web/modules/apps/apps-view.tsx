@@ -1,22 +1,20 @@
 "use client";
 
-import type { ChangeEventHandler } from "react";
-import { useState } from "react";
-
-import { AllApps } from "@calcom/web/modules/apps/components/AllApps";
-import { AppStoreCategories } from "@calcom/web/modules/apps/components/Categories";
-import { PopularAppsSlider } from "@calcom/web/modules/apps/components/PopularAppsSlider";
-import { RecentAppsSlider } from "@calcom/web/modules/apps/components/RecentAppsSlider";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import type { AppCategories } from "@calcom/prisma/enums";
 import type { AppFrontendPayload } from "@calcom/types/App";
 import classNames from "@calcom/ui/classNames";
 import { TextField } from "@calcom/ui/components/form";
-import { SearchIcon } from "@coss/ui/icons";
 import type { HorizontalTabItemProps } from "@calcom/ui/components/navigation";
 import { HorizontalTabs } from "@calcom/ui/components/navigation";
-
+import { AllApps } from "@calcom/web/modules/apps/components/AllApps";
+import { AppStoreCategories } from "@calcom/web/modules/apps/components/Categories";
+import { PopularAppsSlider } from "@calcom/web/modules/apps/components/PopularAppsSlider";
+import { RecentAppsSlider } from "@calcom/web/modules/apps/components/RecentAppsSlider";
 import AppsLayout from "@components/apps/layouts/AppsLayout";
+import { SearchIcon } from "@coss/ui/icons";
+import type { ChangeEventHandler } from "react";
+import { useState } from "react";
 
 const tabs: HorizontalTabItemProps[] = [
   {
@@ -41,7 +39,7 @@ function AppsSearch({
     <TextField
       addOnLeading={<SearchIcon className="text-subtle h-4 w-4" />}
       addOnClassname="!border-muted"
-      containerClassName={classNames("focus:ring-offset-0! m-1", className)}
+      containerClassName={classNames("focus:ring-offset-0! m-1 w-40 sm:w-64", className)}
       type="search"
       autoComplete="false"
       onChange={onChange}
@@ -68,19 +66,17 @@ export default function Apps({ isAdmin, categories, appStore, userAdminTeams }: 
     <AppsLayout
       isPublic
       isAdmin={isAdmin}
+      eyebrow={t("integrations")}
       heading={t("app_store")}
       subtitle={t("app_store_description")}
       actions={(className) => (
-        <div className="flex w-full flex-col pt-4 md:flex-row md:justify-between md:pt-0 lg:w-auto">
-          <div className="ltr:mr-2 rtl:ml-2 lg:hidden">
-            <HorizontalTabs tabs={tabs} />
-          </div>
-          <div>
-            <AppsSearch className={className} onChange={(e) => setSearchText(e.target.value)} />
-          </div>
-        </div>
+        <AppsSearch className={className} onChange={(e) => setSearchText(e.target.value)} />
       )}
-      headerClassName="sm:hidden lg:block hidden"
+      afterHeading={
+        <div className="mb-4 lg:hidden">
+          <HorizontalTabs tabs={tabs} />
+        </div>
+      }
       emptyStore={!appStore.length}>
       <div className="flex flex-col gap-y-8">
         {!searchText && (

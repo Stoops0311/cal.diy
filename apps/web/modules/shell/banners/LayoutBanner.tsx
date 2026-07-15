@@ -42,7 +42,7 @@ interface BannerContainerProps {
 
 export const BannerContainer: React.FC<BannerContainerProps> = ({ banners }) => {
   return (
-    <div className="sticky top-0 z-10 w-full divide-y divide-black">
+    <div className="sticky top-0 z-10 w-full divide-y divide-subtle">
       {Object.keys(banners).map((key) => {
         if (key === "verifyEmailBanner") {
           const Banner = BannerComponent[key];

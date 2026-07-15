@@ -141,7 +141,7 @@ const Option = ({ ...props }: OptionProps<AvailabilityOption>) => {
     <components.Option {...props}>
       <span>{label}</span>
       {isDefault && (
-        <Badge variant="blue" className="ml-2">
+        <Badge variant="gray" className="ml-2">
           {t("default")}
         </Badge>
       )}
@@ -161,7 +161,7 @@ const SingleValue = ({ ...props }: SingleValueProps<AvailabilityOption>) => {
     <components.SingleValue {...props}>
       <span>{label}</span>
       {isDefault && (
-        <Badge variant="blue" className="ml-2">
+        <Badge variant="gray" className="ml-2">
           {t("default")}
         </Badge>
       )}
@@ -445,7 +445,11 @@ const EventTypeSchedule = ({
   const formMethods = useFormContext<FormValues>();
   const isManagedEventType = false;
   const isChildrenManagedEventType = false;
-  const shouldLockDisableProps = (_field: string) => ({ disabled: false, LockedIcon: false as const, isLocked: false });
+  const shouldLockDisableProps = (_field: string) => ({
+    disabled: false,
+    LockedIcon: false as const,
+    isLocked: false,
+  });
   const shouldLockIndicator = (_field: string) => false;
   const { watch, setValue } = formMethods;
 
@@ -631,7 +635,7 @@ const EventTypeSchedule = ({
       ) : (
         isManagedEventType &&
         fieldName === "schedule" && (
-          <p className="mt-2! ml-1 text-gray-600 text-sm">{t("members_default_schedule_description")}</p>
+          <p className="mt-2! ml-1 text-subtle text-sm">{t("members_default_schedule_description")}</p>
         )
       )}
     </div>
@@ -737,12 +741,12 @@ const TeamAvailability = ({
   return (
     <div
       className={classNames(
-        "flex flex-col rounded-md border-subtle",
+        "flex flex-col rounded-xl border-subtle",
         customClassNames?.teamAvailibilityContainer
       )}>
       <div
         className={classNames(
-          "mt-5 rounded-t-md border border-subtle p-6 pb-5",
+          "mt-5 rounded-t-xl border border-subtle bg-subtle p-6 pb-5",
           customClassNames?.chooseHostSchedulesLabelContainer
         )}>
         <Label
@@ -757,7 +761,7 @@ const TeamAvailability = ({
           {t("hosts_schedule_description")}
         </p>
       </div>
-      <div className="rounded-b-md border border-subtle border-t-0 p-6">
+      <div className="rounded-b-xl border border-subtle border-t-0 bg-default p-6">
         {hosts && hosts.length > 0 ? (
           <ul
             className={classNames("mt-3 mb-4 rounded-md", hosts.length >= 1 && "border border-subtle")}
@@ -842,7 +846,7 @@ const UseTeamEventScheduleSettingsToggle = ({
 
   return (
     <div className="stack-y-4">
-      <div className="stack-y-6 rounded-lg border border-subtle p-6">
+      <div className="stack-y-6 rounded-xl border border-subtle bg-subtle p-6">
         <SettingsToggle
           checked={!useHostSchedulesForTeamEvent}
           onCheckedChange={toggleScheduleState}
@@ -866,7 +870,7 @@ const UseTeamEventScheduleSettingsToggle = ({
         )}
       </div>
       {!isPlatform && isRestrictionScheduleEnabled ? (
-        <div className="stack-y-6 rounded-lg border border-subtle p-6">
+        <div className="stack-y-6 rounded-xl border border-subtle bg-subtle p-6">
           <SettingsToggle
             checked={restrictScheduleForHosts}
             onCheckedChange={toggleRestrictScheduleState}

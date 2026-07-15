@@ -7,6 +7,7 @@ import useMeQuery from "@calcom/trpc/react/hooks/useMeQuery";
 import { Alert } from "@calcom/ui/components/alert";
 import { Button } from "@calcom/ui/components/button";
 import { ButtonGroup } from "@calcom/ui/components/buttonGroup";
+import SkeletonLoader from "@components/booking/SkeletonLoader";
 import { ChevronLeftIcon, ChevronRightIcon } from "@coss/ui/icons";
 import { getCoreRowModel, getSortedRowModel, useReactTable } from "@tanstack/react-table";
 import React, { useEffect, useMemo } from "react";
@@ -58,6 +59,7 @@ function BookingCalendarInner({
   bookingsV3Enabled,
   data,
   allowedFilterIds,
+  isPending,
   hasError,
   errorMessage,
   hasNextPage,
@@ -148,6 +150,8 @@ function BookingCalendarInner({
       </div>
       {hasError && ErrorView ? (
         ErrorView
+      ) : isPending ? (
+        <SkeletonLoader />
       ) : (
         <BookingCalendarView
           bookings={bookings}

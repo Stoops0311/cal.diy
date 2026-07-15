@@ -1,11 +1,10 @@
-import { useRouter } from "next/navigation";
-
 import type { IOutOfOfficeData } from "@calcom/features/availability/lib/getUserAvailability";
 import ServerTrans from "@calcom/lib/components/ServerTrans";
 import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import classNames from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
+import { useRouter } from "next/navigation";
 
 interface IOutOfOfficeInSlotsProps {
   date: string;
@@ -46,7 +45,7 @@ export const OutOfOfficeInSlots = (props: IOutOfOfficeInSlotsProps) => {
     <div className={classNames("relative h-full pb-5", className)}>
       <div
         className={classNames(
-          "flex h-full flex-col items-center justify-start rounded-md border bg-white px-4 py-4 font-normal dark:bg-transparent",
+          "flex h-full flex-col items-center justify-start rounded-2xl border border-subtle bg-subtle px-4 py-4 font-normal",
           borderDashed && "border-dashed"
         )}>
         <div className="bg-emphasis flex h-14 w-14 flex-col items-center justify-center rounded-full">

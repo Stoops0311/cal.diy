@@ -1,17 +1,15 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import Cropper from "react-easy-crop";
-
 import checkIfItFallbackImage from "@calcom/lib/checkIfItFallbackImage";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
-
+import { useCallback, useState } from "react";
+import Cropper from "react-easy-crop";
 import type { ButtonColor, ButtonProps } from "../button";
 import { Button } from "../button";
-import { Dialog, DialogClose, DialogContent, DialogTrigger, DialogFooter } from "../dialog";
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTrigger } from "../dialog";
 import { showToast } from "../toast";
-import { useFileReader, createImage, Slider } from "./Common";
-import type { FileEvent, Area } from "./Common";
+import type { Area, FileEvent } from "./Common";
+import { createImage, Slider, useFileReader } from "./Common";
 
 const MAX_IMAGE_SIZE = 512;
 
@@ -140,7 +138,7 @@ export default function ImageUploader({
       </DialogTrigger>
       <DialogContent title={t("upload_target", { target })}>
         <div className="mb-4">
-          <div className="cropper mt-6 flex flex-col items-center justify-center p-8">
+          <div className="cropper border-subtle bg-default mt-6 flex flex-col items-center justify-center rounded-xl border p-8 shadow-sm">
             {!result && (
               <div className="bg-cal-muted flex h-20 max-h-20 w-20 items-center justify-start rounded-full">
                 {!imageSrc || checkIfItFallbackImage(imageSrc) ? (
@@ -156,7 +154,7 @@ export default function ImageUploader({
             {result && <CropContainer imageSrc={result as string} onCropComplete={setCroppedAreaPixels} />}
             <label
               data-testid={testId ? `open-upload-${testId}-filechooser` : "open-upload-image-filechooser"}
-              className="bg-subtle hover:bg-cal-muted hover:text-emphasis border-subtle text-default mt-8 cursor-pointer rounded-sm border px-3 py-1 text-xs font-medium leading-4 transition focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:ring-offset-1">
+              className="bg-subtle hover:bg-cal-muted hover:text-emphasis border-subtle text-default focus-within:ring-emphasis mt-8 cursor-pointer rounded-full border px-3 py-1 text-xs font-medium leading-4 transition focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2">
               <input
                 onInput={onInputFile}
                 type="file"
@@ -177,6 +175,7 @@ export default function ImageUploader({
           <DialogClose
             data-testid={testId ? `upload-${testId}` : "upload-avatar"}
             color="primary"
+            disabled={!result || !croppedAreaPixels}
             onClick={() => showCroppedImage(croppedAreaPixels)}>
             {t("save")}
           </DialogClose>

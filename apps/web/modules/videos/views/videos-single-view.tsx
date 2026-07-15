@@ -1,12 +1,7 @@
 "use client";
 
 import dayjs from "@calcom/dayjs";
-import {
-  RECORDING_DEFAULT_ICON,
-  TRANSCRIPTION_STOPPED_ICON,
-  WEBAPP_URL,
-  WEBSITE_URL,
-} from "@calcom/lib/constants";
+import { RECORDING_DEFAULT_ICON, TRANSCRIPTION_STOPPED_ICON, WEBAPP_URL } from "@calcom/lib/constants";
 import { formatToLocalizedDate, formatToLocalizedTime } from "@calcom/lib/dayjs";
 import { emailRegex } from "@calcom/lib/emailSchema";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -23,6 +18,7 @@ import DailyIframe from "@daily-co/daily-js";
 import { DailyProvider, useDailyEvent } from "@daily-co/daily-react";
 import type { getServerSideProps } from "@lib/video/[uid]/getServerSideProps";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ConvenioMark } from "../../auth/components/AuthShell";
 import { CalVideoPremiumFeatures } from "../cal-video-premium-features";
 
 export type PageProps = inferSSRProps<typeof getServerSideProps>;
@@ -183,22 +179,23 @@ export default function JoinCall(props: PageProps) {
           <img
             className="fixed z-10 hidden aspect-square h-16 min-h-16 w-16 min-w-16 rounded-full sm:inline-block"
             src={calVideoLogo}
-            alt="My Org Logo"
+            alt={t("organization_logo")}
             style={{
               top: 32,
               left: 32,
             }}
           />
         ) : (
-          <img
-            className="fixed z-10 hidden h-5 sm:inline-block"
-            src={`${WEBSITE_URL}/cal-logo-word-dark.svg`}
-            alt="Logo"
+          // text-white is deliberate: the Daily call canvas is always dark regardless of app theme
+          <div
+            className="fixed z-10 hidden items-center gap-2 text-white sm:flex"
             style={{
-              top: 47,
+              top: 44,
               left: 20,
-            }}
-          />
+            }}>
+            <ConvenioMark className="h-5 w-5" />
+            <span className="font-cal text-base tracking-tight">Convenio</span>
+          </div>
         )}
       </div>
       {!hideLoginModal && (
@@ -283,8 +280,11 @@ function ProgressBar(props: ProgressBarProps) {
         {duration} {t("minutes")}
       </p>
       <div className="relative h-2 max-w-xl overflow-hidden rounded-full">
-        <div className="absolute h-full w-full bg-gray-500/10" />
-        <div className={classNames("relative h-full bg-green-500")} style={{ width: `${percentage}%` }} />
+        <div className="bg-emphasis/10 absolute h-full w-full" />
+        <div
+          className={classNames("bg-semantic-success-emphasis relative h-full")}
+          style={{ width: `${percentage}%` }}
+        />
       </div>
     </div>
   );
@@ -446,7 +446,11 @@ export function LogInOverlay(props: LogInOverlayProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="p-6 sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent
+        type={null}
+        title={t("ready_to_join")}
+        className="p-6 sm:max-w-md"
+        onInteractOutside={(e) => e.preventDefault()}>
         <div className="flex flex-col gap-5">
           <div className="flex items-center justify-between rounded-lg border border-subtle p-3">
             <div className="flex items-center gap-3">
@@ -544,10 +548,10 @@ export function VideoMeetingInfo(props: VideoMeetingInfo) {
   return (
     <aside
       className={classNames(
-        "no-scrollbar fixed top-0 left-0 z-30 flex h-full w-64 transform justify-between overflow-x-hidden overflow-y-scroll transition-all duration-300 ease-in-out",
+        "no-scrollbar fixed top-0 left-0 z-30 flex h-full w-64 transform justify-between overflow-x-hidden overflow-y-scroll transition-transform duration-300 ease-in-out motion-reduce:transition-none",
         open ? "translate-x-0" : "-translate-x-[232px]"
       )}>
-      <main className="prose-sm prose scroll-bar scrollbar-track-w-20 overflow-x-hidden! w-full max-w-64 overflow-scroll border-subtle border-r bg-default p-4 prose-h3:font-cal prose-a:text-emphasis prose-h3:text-emphasis text-emphasis shadow-sm backdrop-blur-lg">
+      <main className="prose-sm prose scroll-bar scrollbar-track-w-20 overflow-x-hidden! w-full max-w-64 overflow-scroll border-subtle border-r bg-default p-4 prose-h3:font-cal prose-a:text-emphasis prose-h3:text-emphasis text-emphasis">
         <h3>{t("what")}:</h3>
         <p>{booking.title}</p>
         <h3>{t("invitee_timezone")}:</h3>
@@ -592,12 +596,13 @@ export function VideoMeetingInfo(props: VideoMeetingInfo) {
       </main>
       <div className="flex items-center justify-center">
         <button
-          aria-label={`${open ? "close" : "open"} booking description sidebar`}
-          className="h-20 w-6 rounded-r-md border border-gray-300/20 border-l-0 bg-black/60 text-white shadow-sm backdrop-blur-lg"
+          type="button"
+          aria-label={t(open ? "close_booking_description_sidebar" : "open_booking_description_sidebar")}
+          className="relative h-20 w-6 rounded-r-md border border-subtle border-l-0 bg-default text-emphasis after:absolute after:left-1/2 after:top-1/2 after:h-full after:w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
           onClick={() => setOpen(!open)}>
           <ChevronRightIcon
             aria-hidden
-            className={classNames(open && "rotate-180", "w-5 transition-all duration-300 ease-in-out")}
+            className={classNames(open && "rotate-180", "w-5 transition-transform duration-300 ease-in-out")}
           />
         </button>
       </div>

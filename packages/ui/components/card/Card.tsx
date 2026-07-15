@@ -1,12 +1,11 @@
 // @TODO: turn this into a more generic component that has the same Props API as MUI https://mui.com/material-ui/react-card/
+
+import classNames from "@calcom/ui/classNames";
 import type { VariantProps } from "class-variance-authority";
 import { cva } from "class-variance-authority";
 import Link from "next/link";
+import type React from "react";
 import type { ReactNode } from "react";
-import React from "react";
-
-import classNames from "@calcom/ui/classNames";
-
 import { Button } from "../button";
 
 const cvaCardTypeByVariant = cva("", {
@@ -102,17 +101,17 @@ const cvaCardTypeByVariant = cva("", {
     {
       variant: "NewLaunchSidebarCard",
       structure: "card",
-      className: "w-full p-3 border border-subtle bg-launch-dark text-white",
+      className: "w-full p-3 border border-subtle bg-inverted text-inverted",
     },
     {
       variant: "NewLaunchSidebarCard",
       structure: "title",
-      className: "text-sm font-cal text-white",
+      className: "font-cal text-inverted text-sm",
     },
     {
       variant: "NewLaunchSidebarCard",
       structure: "description",
-      className: "text-xs text-white",
+      className: "text-inverted text-xs",
     },
   ],
 });
@@ -203,6 +202,7 @@ export function Card({
       </div>
       {variant === "SidebarCard" && mediaLink && (
         <a
+          aria-label={title}
           onClick={mediaLinkOnClick}
           target="_blank"
           rel="noreferrer noopener"
@@ -211,7 +211,7 @@ export function Card({
           className="group relative my-3 flex aspect-video items-center overflow-hidden rounded">
           <div className="absolute inset-0 bg-black/50 transition group-hover:bg-black/40" />
           <svg
-            className="text-inverted absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 transform rounded-full shadow-lg transition-all hover:-mt-px"
+            className="text-inverted absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 transform rounded-full shadow-lg transition-transform hover:scale-105"
             viewBox="0 0 32 32"
             fill="none"
             xmlns="http://www.w3.org/2000/svg">
@@ -228,11 +228,11 @@ export function Card({
               strokeLinejoin="round"
             />
           </svg>
-          <img alt="play feature video" src={thumbnailUrl} />
+          <img alt="" src={thumbnailUrl} />
         </a>
       )}
       {variant === "NewLaunchSidebarCard" && coverPhoto && (
-        <img alt="cover" className="mt-3 w-full" src={coverPhoto} />
+        <img alt="" className="mt-3 w-full" src={coverPhoto} />
       )}
 
       {/* TODO: this should be CardActions https://mui.com/material-ui/api/card-actions/ */}
@@ -263,7 +263,8 @@ export function Card({
                   {learnMore.text}
                 </LinkComponent>
               ) : learnMore.onClick ? (
-                <button type="button"
+                <button
+                  type="button"
                   color="minimal"
                   onClick={learnMore.onClick}
                   className={classNames("cursor-pointer text-default text-xs font-medium", buttonClassName)}>
@@ -274,11 +275,11 @@ export function Card({
           )}
           {actionButton?.child && (
             <button
+              type="button"
               className={classNames(
                 "text-default hover:text-emphasis p-0 text-xs font-normal cursor-pointer",
                 buttonClassName
               )}
-              color="minimal"
               data-testid={actionButton?.["data-testid"]}
               onClick={actionButton?.onClick}>
               {actionButton?.child}

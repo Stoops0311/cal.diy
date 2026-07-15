@@ -1,18 +1,16 @@
-import type { ReactNode } from "react";
-import { forwardRef, useRef } from "react";
-
 import type { ScheduleLabelsType } from "@calcom/features/schedules/components/ScheduleComponent";
 import type { UpdateScheduleResponse } from "@calcom/features/schedules/services/ScheduleService";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import type { ApiErrorResponse, ApiResponse, UpdateScheduleInput_2024_06_11 } from "@calcom/platform-types";
-
+import type { ReactNode } from "react";
+import { forwardRef, useRef } from "react";
 import { useAtomSchedule } from "../../hooks/schedules/useAtomSchedule";
 import { useAtomUpdateSchedule } from "../../hooks/schedules/useAtomUpdateSchedule";
 import useDeleteSchedule from "../../hooks/schedules/useDeleteSchedule";
 import { useMe } from "../../hooks/useMe";
 import { AtomsWrapper } from "../../src/components/atoms-wrapper";
 import { useToast } from "../../src/components/ui/use-toast";
-import type { Availability } from "../AvailabilitySettings";
-import type { CustomClassNames } from "../AvailabilitySettings";
+import type { Availability, CustomClassNames } from "../AvailabilitySettings";
 import { AvailabilitySettings } from "../AvailabilitySettings";
 import type { AvailabilityFormValues, AvailabilitySettingsFormRef } from "../types";
 
@@ -60,6 +58,7 @@ export const AvailabilitySettingsPlatformWrapper = forwardRef<
     noScheduleChildren,
     loadingStateChildren,
   } = props;
+  const { t } = useLocale();
   const { isLoading, data: atomSchedule } = useAtomSchedule(id);
   const { data: me } = useMe();
   const { timeFormat } = me?.data || { timeFormat: null };
@@ -70,7 +69,7 @@ export const AvailabilitySettingsPlatformWrapper = forwardRef<
       onDeleteSuccess?.(res);
       if (!disableToasts) {
         toast({
-          description: "Schedule deleted successfully",
+          description: t("schedule_deleted_successfully"),
         });
       }
     },
@@ -91,7 +90,7 @@ export const AvailabilitySettingsPlatformWrapper = forwardRef<
       onUpdateSuccess?.(res);
       if (!disableToasts) {
         toast({
-          description: "Schedule updated successfully",
+          description: t("schedule_updated_successfully"),
         });
       }
       callbacksRef.current?.onSuccess?.();
@@ -132,7 +131,13 @@ export const AvailabilitySettingsPlatformWrapper = forwardRef<
   if (isLoading) {
     return (
       <>
-        {loadingStateChildren ? loadingStateChildren : <div className="px-10 py-4 text-xl">Loading...</div>}
+        {loadingStateChildren ? (
+          loadingStateChildren
+        ) : (
+          <div className="text-subtle px-10 py-4 text-sm" aria-live="polite">
+            {t("loading")}
+          </div>
+        )}
       </>
     );
   }
@@ -141,7 +146,7 @@ export const AvailabilitySettingsPlatformWrapper = forwardRef<
     return noScheduleChildren ? (
       <>{noScheduleChildren}</>
     ) : (
-      <div className="px-10 py-4 text-xl">No user schedule present</div>
+      <div className="text-subtle px-10 py-4 text-sm">{t("no_user_schedule")}</div>
     );
   }
 
@@ -153,7 +158,7 @@ export const AvailabilitySettingsPlatformWrapper = forwardRef<
         handleDelete={() => {
           if (isDryRun) {
             toast({
-              description: "Schedule deleted successfully",
+              description: t("schedule_deleted_successfully"),
             });
           }
 
@@ -164,7 +169,7 @@ export const AvailabilitySettingsPlatformWrapper = forwardRef<
         handleSubmit={async (data) => {
           if (isDryRun) {
             toast({
-              description: "Schedule updated successfully",
+              description: t("schedule_updated_successfully"),
             });
           }
 

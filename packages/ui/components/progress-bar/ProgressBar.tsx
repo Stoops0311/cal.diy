@@ -1,16 +1,15 @@
+import classNames from "@calcom/ui/classNames";
 import type { VariantProps } from "class-variance-authority";
 import { cva } from "class-variance-authority";
-
-import classNames from "@calcom/ui/classNames";
 
 const progressBarStyles = cva("h-2 rounded-full", {
   variants: {
     color: {
-      green: "bg-green-500",
-      blue: "bg-blue-500",
-      red: "bg-red-500",
-      yellow: "bg-yellow-500",
-      gray: "bg-gray-500",
+      green: "bg-semantic-success-emphasis",
+      blue: "bg-semantic-info-emphasis",
+      red: "bg-semantic-error-emphasis",
+      yellow: "bg-semantic-attention-emphasis",
+      gray: "bg-inverted",
     },
   },
   defaultVariants: {

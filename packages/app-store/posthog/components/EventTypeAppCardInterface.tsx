@@ -1,9 +1,9 @@
-import { useAppContextWithSchema } from "@calcom/app-store/EventTypeAppContext";
 import AppCard from "@calcom/app-store/_components/AppCard";
 import useIsAppEnabled from "@calcom/app-store/_utils/useIsAppEnabled";
+import { useAppContextWithSchema } from "@calcom/app-store/EventTypeAppContext";
 import type { EventTypeAppCardComponent } from "@calcom/app-store/types";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { TextField } from "@calcom/ui/components/form";
-
 import type { appDataSchema } from "../zod";
 
 const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({
@@ -11,6 +11,7 @@ const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({
   eventType,
   onAppInstallSuccess,
 }) {
+  const { t } = useLocale();
   const { getAppData, setAppData, disabled } = useAppContextWithSchema<typeof appDataSchema>();
   const trackingId = getAppData("TRACKING_ID");
   const apiHost = getAppData("API_HOST");
@@ -30,9 +31,10 @@ const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({
         <TextField
           required
           disabled={disabled}
-          name="Tracking ID"
+          name="trackingId"
+          label={t("tracking_id")}
           value={trackingId}
-          placeholder="Enter your Tracking ID"
+          placeholder={t("tracking_id_placeholder")}
           onChange={(e) => {
             setAppData("TRACKING_ID", e.target.value);
           }}
@@ -40,9 +42,10 @@ const EventTypeAppCard: EventTypeAppCardComponent = function EventTypeAppCard({
         <TextField
           required
           disabled={disabled}
-          name="Api host"
+          name="apiHost"
+          label={t("api_host")}
           value={apiHost}
-          placeholder="Enter your Api host url"
+          placeholder={t("api_host_placeholder")}
           onChange={(e) => {
             setAppData("API_HOST", e.target.value);
           }}

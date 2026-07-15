@@ -25,11 +25,11 @@ import {
   EventTypeEmbedDialog,
 } from "@calcom/web/modules/embed/components/EventTypeEmbed";
 import WebShell from "@calcom/web/modules/shell/Shell";
-import { LoaderIcon } from "@coss/ui/icons";
 import { Suspense, useMemo, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { Shell as PlatformShell } from "../../../../../packages/platform/atoms/src/components/ui/shell";
 import { DeleteDialog } from "./dialogs/DeleteDialog";
+import { EventTypeEditFormSkeleton } from "./SkeletonLoader";
 
 type Props = {
   children: React.ReactNode;
@@ -79,7 +79,11 @@ function EventTypeSingleLayout({
 
   const isManagedEventType = false;
   const isChildrenManagedEventType = false;
-  const shouldLockDisableProps = (_field: string) => ({ disabled: false, LockedIcon: false as const, isLocked: false });
+  const shouldLockDisableProps = (_field: string) => ({
+    disabled: false,
+    LockedIcon: false as const,
+    isLocked: false,
+  });
   const shouldLockIndicator = (_field: string) => false;
   const EventTypeTabs = tabsNavigation;
   const permalink = `${bookerUrl}/${
@@ -116,7 +120,7 @@ function EventTypeSingleLayout({
             <>
               <div
                 className={classNames(
-                  "hidden cursor-pointer items-center rounded-md transition sm:hover:bg-cal-muted",
+                  "hidden cursor-pointer items-center rounded-md transition sm:hover:bg-muted",
                   formMethods.watch("hidden") ? "pl-2" : "",
                   "lg:flex"
                 )}>
@@ -160,6 +164,7 @@ function EventTypeSingleLayout({
                     <Button
                       color="secondary"
                       data-testid="preview-button"
+                      aria-label={t("preview")}
                       target="_blank"
                       variant="icon"
                       href={permalink}
@@ -179,7 +184,7 @@ function EventTypeSingleLayout({
                     tooltipOffset={4}
                     onClick={() => {
                       navigator.clipboard.writeText(permalink);
-                      showToast("Link copied!", "success");
+                      showToast(t("link_copied"), "success");
                     }}
                   />
                 )}
@@ -216,7 +221,13 @@ function EventTypeSingleLayout({
 
           <Dropdown>
             <DropdownMenuTrigger asChild>
-              <Button className="lg:hidden" StartIcon="ellipsis" variant="icon" color="secondary" />
+              <Button
+                className="lg:hidden"
+                StartIcon="ellipsis"
+                variant="icon"
+                color="secondary"
+                aria-label={t("more")}
+              />
             </DropdownMenuTrigger>
             <DropdownMenuContent style={{ minWidth: "200px" }}>
               <DropdownMenuItem className="focus:ring-muted">
@@ -235,7 +246,7 @@ function EventTypeSingleLayout({
                   StartIcon="link"
                   onClick={() => {
                     navigator.clipboard.writeText(permalink);
-                    showToast("Link copied!", "success");
+                    showToast(t("link_copied"), "success");
                   }}>
                   {t("copy_link")}
                 </DropdownItem>
@@ -270,7 +281,7 @@ function EventTypeSingleLayout({
               </div>
             </DropdownMenuContent>
           </Dropdown>
-          <div className="border-default border-l-2" />
+          <VerticalDivider />
           <Button
             ref={saveButtonRef}
             className="ml-4 lg:ml-0"
@@ -283,12 +294,7 @@ function EventTypeSingleLayout({
           </Button>
         </div>
       }>
-      <Suspense
-        fallback={
-          <div className="flex h-64 items-center justify-center">
-            <LoaderIcon className="h-5 w-5 animate-spin" />
-          </div>
-        }>
+      <Suspense fallback={<EventTypeEditFormSkeleton />}>
         <div className="flex flex-col xl:flex-row xl:space-x-6">
           <div className="hidden xl:block">
             <VerticalTabs
@@ -306,7 +312,7 @@ function EventTypeSingleLayout({
           <div className="w-full ltr:mr-2 rtl:ml-2">
             <div
               className={classNames(
-                "mt-4 rounded-md border-subtle bg-default sm:mx-0 xl:mt-0",
+                "mt-4 rounded-2xl border-subtle bg-default sm:mx-0 xl:mt-0",
                 disableBorder ? "border-0" : "p-2 md:border md:p-6"
               )}>
               {children}

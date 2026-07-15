@@ -21,13 +21,13 @@ export const ProgressToast = ({ message, progress, onClose, toastId }: ProgressT
           <FileDownIcon className="h-4 w-4" />
         </span>
         <p className="m-0 w-full text-left">{message || defaultMessage}</p>
-        <button onClick={() => onClose(toastId)} aria-label={t("close")}>
-          <XIcon className="h-4 w-4 hover:cursor-pointer" />
+        <button type="button" onClick={() => onClose(toastId)} aria-label={t("close")}>
+          <XIcon aria-hidden="true" className="h-4 w-4 hover:cursor-pointer" />
         </button>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full">
         <div
-          className="bg-inverted h-2 rounded-full opacity-50 transition-all duration-300 ease-in-out"
+          className="bg-inverted h-2 rounded-full opacity-50 transition-[width] duration-300 ease-in-out"
           style={{ width: `${progress}%` }}
         />
       </div>

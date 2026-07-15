@@ -1,22 +1,23 @@
-import { useEffect } from "react";
-
 import type { EventTypeAppSettingsComponent } from "@calcom/app-store/types";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Label, Select, TextField } from "@calcom/ui/components/form";
+import { useEffect } from "react";
 
 const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
   getAppData,
   setAppData,
   disabled,
 }) => {
+  const { t } = useLocale();
   const trackingId = getAppData("trackingId");
   const trackingEvent = getAppData("trackingEvent");
 
   type EventOption = { label: string; value: string };
   const eventOptions: EventOption[] = [
-    { label: "Lead", value: "Lead" },
-    { label: "Complete Registration", value: "CompleteRegistration" },
-    { label: "Schedule", value: "Schedule" },
-    { label: "Page View (use for custom tracking)", value: "PageView" },
+    { label: t("meta_event_lead"), value: "Lead" },
+    { label: t("meta_event_complete_registration"), value: "CompleteRegistration" },
+    { label: t("meta_event_schedule"), value: "Schedule" },
+    { label: t("meta_event_page_view"), value: "PageView" },
   ];
 
   const currentOption = eventOptions.find((e) => e.value === trackingEvent) || eventOptions[0];
@@ -30,7 +31,8 @@ const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
   return (
     <div className="flex flex-col gap-2">
       <TextField
-        name="Pixel ID"
+        name="pixelId"
+        label={t("pixel_id")}
         value={trackingId}
         disabled={disabled}
         onChange={(e) => {
@@ -38,8 +40,9 @@ const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
         }}
       />
       <div className="flex flex-col gap-1">
-        <Label>Select Conversion Event to Fire</Label>
+        <Label htmlFor="meta-conversion-event">{t("select_conversion_event")}</Label>
         <Select
+          inputId="meta-conversion-event"
           options={eventOptions}
           value={currentOption}
           isDisabled={disabled}

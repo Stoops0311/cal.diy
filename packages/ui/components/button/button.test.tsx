@@ -1,13 +1,14 @@
 /* eslint-disable playwright/missing-playwright-await */
+
+import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { vi } from "vitest";
-
 import { Button, buttonClasses } from "./Button";
 
 const observeMock = vi.fn();
 
-window.ResizeObserver = vi.fn().mockImplementation(function() {
+window.ResizeObserver = vi.fn().mockImplementation(function () {
   return {
     disconnect: vi.fn(),
     observe: observeMock,
@@ -34,6 +35,22 @@ vi.mock("../tooltip", async () => {
   return {
     Tooltip: TooltipMock,
   };
+});
+
+describe("Convenio button semantics", () => {
+  test("makes destructive actions unmistakably destructive", () => {
+    expect(buttonClasses({ color: "destructive" }).split(" ")).toContain("bg-error");
+  });
+
+  test("uses a string tooltip as the accessible name for an icon-only button", () => {
+    render(
+      <TooltipProvider>
+        <Button variant="icon" StartIcon="copy" tooltip="Copy link" />
+      </TooltipProvider>
+    );
+
+    expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
+  });
 });
 
 // TODO: (SEAN) Fix tests for button component. Seems to be a change in the way vitest/react-testing-library is working with the DOM.

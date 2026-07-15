@@ -1,5 +1,5 @@
+import { APP_NAME, WEBSITE_URL } from "@calcom/lib/constants";
 import logger from "@calcom/lib/logger";
-
 import { LARK_HOST } from "../common";
 import { getAppAccessToken } from "./AppAccessToken";
 
@@ -7,18 +7,18 @@ const log = logger.getSubLogger({ prefix: [`[[LarkTenantCredential]`] });
 
 const msg = {
   en_us: {
-    title: "Welcome to Cal.diy!",
+    title: `Welcome to ${APP_NAME}!`,
     content: [
       [
         {
           tag: "text",
-          text: "Cal.diy is an open source scheduling infrastructure.",
+          text: `${APP_NAME} is a scheduling space where people arrive at a time together.`,
         },
       ],
       [
         {
           tag: "text",
-          text: 'It allows users to send a unique "cal.com" URL that allows anyone to create bookings on their calendars',
+          text: `Share a unique ${APP_NAME} link so invitees can choose a time that works for everyone.`,
         },
       ],
       [
@@ -36,13 +36,13 @@ const msg = {
       [
         {
           tag: "text",
-          text: "1. Visit https://cal.com and sign up for an account.",
+          text: `1. Visit ${WEBSITE_URL} and sign up for an account.`,
         },
       ],
       [
         {
           tag: "text",
-          text: '2. Then go to "Apps" in Cal -> install ',
+          text: `2. Then go to "Apps" in ${APP_NAME} and install `,
         },
         {
           tag: "a",

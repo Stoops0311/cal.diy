@@ -1,8 +1,6 @@
-import { _generateMetadata } from "app/_utils";
-import { getTranslate } from "app/_utils";
-
-import AdminAppsList from "~/apps/components/AdminAppsList";
 import SettingsHeader from "@calcom/features/settings/appDir/SettingsHeader";
+import { _generateMetadata, getTranslate } from "app/_utils";
+import AdminAppsList from "~/apps/components/AdminAppsList";
 
 export const generateMetadata = async ({ params }: { params: Promise<{ category: string }> }) =>
   await _generateMetadata(
@@ -22,7 +20,7 @@ const Page = async () => {
         <AdminAppsList
           baseURL="/settings/admin/apps"
           classNames={{
-            appCategoryNavigationRoot: "overflow-x-scroll",
+            appCategoryNavigationRoot: "overflow-x-auto",
           }}
         />
       </div>

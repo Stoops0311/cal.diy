@@ -267,6 +267,11 @@ const HostLocationRow = ({
   const { t } = useLocale();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [pendingLocationOption, setPendingLocationOption] = useState<LocationOption | null>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalTarget(document.body);
+  }, []);
 
   const currentLocation = host.location;
 
@@ -337,7 +342,7 @@ const HostLocationRow = ({
             isSearchable={false}
             className="w-72 text-sm"
             menuPlacement="auto"
-            menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+            menuPortalTarget={portalTarget}
             styles={{
               menuPortal: (base) => ({ ...base, zIndex: 9999 }) as CSSObjectWithLabel,
             }}

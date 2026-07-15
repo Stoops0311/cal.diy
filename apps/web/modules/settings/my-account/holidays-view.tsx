@@ -11,8 +11,8 @@ import { Button } from "@calcom/ui/components/button";
 import { Select, Switch } from "@calcom/ui/components/form";
 import { Icon } from "@calcom/ui/components/icon";
 import { SkeletonContainer, SkeletonText } from "@calcom/ui/components/skeleton";
-import { TriangleAlertIcon } from "@coss/ui/icons";
 import { showToast } from "@calcom/ui/components/toast";
+import { TriangleAlertIcon } from "@coss/ui/icons";
 import { memo, useCallback, useMemo } from "react";
 import { OutOfOfficeToggleGroup } from "~/settings/outOfOffice/OutOfOfficeToggleGroup";
 
@@ -243,11 +243,12 @@ export function HolidaysView() {
   if (isLoading) {
     return (
       <SettingsHeader
+        eyebrow={t("my_account")}
         title={t("holidays")}
         description={t("holidays_description")}
         borderInShellHeader={true}
         CTA={<HolidaysCTA />}>
-        <div className="border-subtle rounded-b-lg border border-t-0 px-4 py-6 sm:px-6">
+        <div className="py-6">
           <SkeletonContainer>
             <div className="space-y-4">
               <SkeletonText className="h-10 w-64" />
@@ -262,11 +263,12 @@ export function HolidaysView() {
   if (hasError) {
     return (
       <SettingsHeader
+        eyebrow={t("my_account")}
         title={t("holidays")}
         description={t("holidays_description")}
         borderInShellHeader={true}
         CTA={<HolidaysCTA />}>
-        <div className="border-subtle rounded-b-lg border border-t-0 px-4 py-6 sm:px-6">
+        <div className="py-6">
           <Alert
             severity="error"
             title={t("something_went_wrong")}
@@ -279,11 +281,12 @@ export function HolidaysView() {
 
   return (
     <SettingsHeader
+      eyebrow={t("my_account")}
       title={t("out_of_office")}
       description={t("out_of_office_description")}
       borderInShellHeader={true}
       CTA={<HolidaysCTA />}>
-      <div className="border-subtle rounded-b-lg border border-t-0 px-4 py-6 sm:px-6">
+      <div className="py-6">
         <div className="space-y-6">
           {conflictsData?.conflicts && conflictsData.conflicts.length > 0 && (
             <ConflictWarning conflicts={conflictsData.conflicts} />

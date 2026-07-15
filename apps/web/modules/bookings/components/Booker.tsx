@@ -25,6 +25,7 @@ import {
   PUBLIC_INVALIDATE_AVAILABLE_SLOTS_ON_BOOKING_FORM,
 } from "@calcom/lib/constants";
 import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { BookerLayouts } from "@calcom/prisma/zod-utils";
 import classNames from "@calcom/ui/classNames";
 import { DialogContent } from "@calcom/ui/components/dialog";
@@ -88,6 +89,7 @@ const BookerComponent = ({
   hideOrgTeamAvatar,
   showNoAvailabilityDialog,
 }: BookerProps & WrappedBookerProps): JSX.Element | null => {
+  const { t } = useLocale();
   const searchParams = useCompatSearchParams();
   const isPlatformBookerEmbed = useIsPlatformBookerEmbed();
   const [bookerState, setBookerState] = useBookerStoreContext(
@@ -349,7 +351,7 @@ const BookerComponent = ({
           data-testid="booker-container"
           className={classNames(
             ...getBookerSizeClassNames(layout, bookerState, hideEventTypeDetails),
-            `bg-default dark:bg-cal-muted grid max-w-full items-start dark:scheme-dark sm:transition-[width] sm:duration-300 sm:motion-reduce:transition-none md:flex-row`,
+            `grid max-w-full items-start bg-default dark:scheme-dark sm:transition-[width] sm:duration-300 sm:motion-reduce:transition-none md:flex-row`,
             // We remove border only when the content covers entire viewport. Because in embed, it can almost never be the case that it covers entire viewport, we show the border there
             (layout === BookerLayouts.MONTH_VIEW || isEmbed) && "border-subtle rounded-md",
             !isEmbed && "sm:transition-[width] sm:duration-300",
@@ -363,7 +365,7 @@ const BookerComponent = ({
               className={classNames(
                 layout === BookerLayouts.MONTH_VIEW && "fixed top-4 z-10 ltr:right-4 rtl:left-4",
                 (layout === BookerLayouts.COLUMN_VIEW || layout === BookerLayouts.WEEK_VIEW) &&
-                  "bg-default dark:bg-cal-muted sticky top-0 z-10"
+                  "sticky top-0 z-10 bg-default"
               )}>
               {isPlatform && layout === BookerLayouts.MONTH_VIEW ? (
                 <></>
@@ -398,12 +400,12 @@ const BookerComponent = ({
             <StickyOnDesktop key="meta" className={classNames("relative z-10 flex [grid-area:meta]")}>
               <BookerSection
                 area="meta"
-                className="max-w-screen flex w-full flex-col md:w-(--booker-meta-width)">
+                className="max-w-screen flex w-full flex-col bg-subtle md:w-(--booker-meta-width)">
                 {!hideEventTypeDetails && orgBannerUrl && (
                   <img
                     loading="eager"
                     className="-mb-9 h-auto w-full object-contain object-top ltr:rounded-tl-md rtl:rounded-tr-md sm:h-16 sm:object-cover"
-                    alt="org banner"
+                    alt={t("organization_banner")}
                     src={orgBannerUrl}
                   />
                 )}
@@ -452,7 +454,7 @@ const BookerComponent = ({
             <BookerSection
               key="book-event-form"
               area="main"
-              className="sticky top-0 -ml-px h-full p-6 md:w-(--booker-main-width) md:border-l"
+              className="sticky top-0 -ml-px h-full bg-default p-6 md:w-(--booker-main-width) md:border-l"
               {...fadeInLeft}
               visible={bookerState === "booking" && !shouldShowFormInDialog}>
               {EventBooker}
@@ -465,7 +467,7 @@ const BookerComponent = ({
               {...fadeInLeft}
               initial="visible"
               className={classNames(
-                "md:border-subtle -ml-px h-full shrink px-5 py-3  lg:w-(--booker-main-width)",
+                "-ml-px h-full shrink bg-default px-5 py-3 md:border-subtle lg:w-(--booker-main-width)",
                 hideEventTypeDetails ? "" : "md:border-l"
               )}>
               <DatePicker
@@ -482,7 +484,7 @@ const BookerComponent = ({
               key="enable-calendar"
               area="main"
               visible={layout === BookerLayouts.WEEK_VIEW}
-              className="border-subtle sticky top-0 -ml-px h-full md:border-l"
+              className="sticky top-0 -ml-px h-full border-subtle bg-default md:border-l"
               {...fadeInLeft}>
               <LargeCalendar
                 extraDays={extraDays}
@@ -501,7 +503,7 @@ const BookerComponent = ({
                   layout === BookerLayouts.COLUMN_VIEW)
               }
               className={classNames(
-                "border-subtle rtl:border-default flex h-full w-full flex-col overflow-x-auto px-5 py-3 pb-0 rtl:border-r ltr:md:border-l",
+                "flex h-full w-full flex-col overflow-x-auto border-subtle bg-default px-5 py-3 pb-0 rtl:border-default rtl:border-r ltr:md:border-l",
                 layout === BookerLayouts.MONTH_VIEW &&
                   "h-full overflow-hidden md:w-(--booker-timeslots-width)",
                 layout !== BookerLayouts.MONTH_VIEW && "sticky top-0"
@@ -589,7 +591,8 @@ const BookerComponent = ({
       </BookFormAsModal>
       <Dialog open={isMobile && isSlotSelectionModalVisible}>
         <DialogContent
-          type={undefined}
+          type={null}
+          title={t("select_time")}
           enableOverflow
           className="fixed! inset-0! top-0! left-0! h-screen! max-h-screen! w-screen! max-w-none! translate-x-0! translate-y-0! rounded-none! m-0! px-8 pt-0 pb-8">
           <SlotSelectionModalHeader

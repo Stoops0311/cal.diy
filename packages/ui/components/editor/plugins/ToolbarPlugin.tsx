@@ -27,6 +27,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "../../button";
 import { Dropdown, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../dropdown";
 import { ChevronDownIcon, ChevronUpIcon } from "@coss/ui/icons";
@@ -83,6 +84,7 @@ function positionEditorElement(editor: HTMLInputElement, rect: DOMRect | null) {
 }
 
 function FloatingLinkEditor({ editor }: { editor: LexicalEditor }) {
+  const { t } = useLocale();
   const editorRef = useRef<HTMLInputElement>(null);
   const mouseDownRef = useRef(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -182,6 +184,7 @@ function FloatingLinkEditor({ editor }: { editor: LexicalEditor }) {
       {isEditMode ? (
         <input
           ref={inputRef}
+          aria-label={t("link_url")}
           className="link-input"
           value={linkUrl}
           onChange={(event) => {
@@ -208,10 +211,10 @@ function FloatingLinkEditor({ editor }: { editor: LexicalEditor }) {
             <a href={linkUrl} target="_blank" rel="noopener noreferrer">
               {linkUrl}
             </a>
-            <div
+            <button
+              type="button"
+              aria-label={t("edit_link")}
               className="link-edit"
-              role="button"
-              tabIndex={0}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
                 setEditMode(true);
@@ -241,6 +244,7 @@ function getSelectedNode(selection: RangeSelection) {
 }
 
 export default function ToolbarPlugin(props: TextEditorProps) {
+  const { t } = useLocale();
   const [editor] = useLexicalComposerContext();
   const toolbarRef = useRef(null);
   const [blockType, setBlockType] = useState("paragraph");
@@ -501,7 +505,7 @@ export default function ToolbarPlugin(props: TextEditorProps) {
         <div className="flex gap-1">
           {!props.excludedToolbarItems?.includes("bold") && (
             <Button
-              aria-label="Bold"
+              aria-label={t("bold")}
               color="minimal"
               variant="icon"
               type="button"
@@ -514,7 +518,7 @@ export default function ToolbarPlugin(props: TextEditorProps) {
           )}
           {!props.excludedToolbarItems?.includes("italic") && (
             <Button
-              aria-label="Italic"
+              aria-label={t("italic")}
               color="minimal"
               variant="icon"
               type="button"
@@ -528,7 +532,7 @@ export default function ToolbarPlugin(props: TextEditorProps) {
           {!props.excludedToolbarItems?.includes("link") && (
             <>
               <Button
-                aria-label="Link"
+                aria-label={t("link")}
                 color="minimal"
                 variant="icon"
                 type="button"

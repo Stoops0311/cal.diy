@@ -8,14 +8,19 @@ const UnAvailableMessage = ({
   children: React.ReactNode;
   title: string;
   testId?: string;
-}) => (
-  <div className="mx-auto w-full max-w-2xl" data-testid={testId}>
-    <div className="border-subtle bg-default dark:bg-cal-muted overflow-hidden rounded-lg border p-10">
-      <h2 className="font-cal mb-4 text-3xl">{title}</h2>
-      {children}
+}) => {
+  const { t } = useLocale();
+
+  return (
+    <div className="mx-auto w-full max-w-2xl" data-testid={testId}>
+      <div className="overflow-hidden rounded-3xl border border-subtle bg-subtle p-8 shadow-xl sm:p-10">
+        <p className="font-mono text-[10px] text-subtle uppercase tracking-[0.18em]">{t("availability")}</p>
+        <h1 className="mt-3 mb-4 font-cal text-3xl text-emphasis">{title}</h1>
+        {children}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const Away = () => {
   const { t } = useLocale();

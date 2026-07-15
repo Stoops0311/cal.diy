@@ -1,8 +1,7 @@
-import { useState } from "react";
-
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "@calcom/ui/components/button";
 import { TextField } from "@calcom/ui/components/form";
+import { useState } from "react";
 
 export default function AppSettings() {
   const { t } = useLocale();
@@ -12,9 +11,10 @@ export default function AppSettings() {
   return (
     <div className="stack-y-4 text-sm">
       <TextField
-        placeholder="San Francisco"
+        placeholder={t("city_placeholder")}
         value={location}
-        name="Enter City"
+        name="city"
+        label={t("enter_city")}
         onChange={async (e) => {
           setLocation(e.target.value);
         }}

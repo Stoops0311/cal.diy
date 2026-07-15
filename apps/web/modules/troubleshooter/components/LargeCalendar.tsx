@@ -102,12 +102,12 @@ export const LargeCalendar = ({ extraDays }: { extraDays: number }) => {
 
         calendarEvents.push({
           id: calendarEvents.length,
-          title: "Date Override",
+          title: t("date_override"),
           start: dateOverrideStart.add(workingHoursForDay.startTime, "minutes").toDate(),
           end: dateOverrideEnd.add(workingHoursForDay.endTime, "minutes").toDate(),
           source: "date-override",
           options: {
-            color: "black",
+            color: "var(--cal-bg-inverted)",
             status: BookingStatus.ACCEPTED,
             "data-test-id": "troubleshooter-busy-time",
           },

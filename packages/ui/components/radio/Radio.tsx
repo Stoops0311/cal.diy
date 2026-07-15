@@ -1,8 +1,7 @@
+import classNames from "@calcom/ui/classNames";
 import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
 import type { ReactNode } from "react";
 import React from "react";
-
-import classNames from "@calcom/ui/classNames";
 
 export const Root = RadioGroupPrimitive.Root;
 
@@ -22,7 +21,7 @@ export const Radio = (props: RadioGroupPrimitive.RadioGroupItemProps & { childre
 export const Indicator = ({ disabled }: { disabled?: boolean }) => (
   <RadioGroupPrimitive.Indicator
     className={classNames(
-      "after:bg-default dark:after:bg-brand-accent relative flex h-full w-full items-center justify-center rounded-full bg-black after:h-[6px] after:w-[6px] after:rounded-full after:content-['']",
+      "relative flex h-full w-full items-center justify-center rounded-full bg-inverted after:h-[6px] after:w-[6px] after:rounded-full after:bg-default after:content-['']",
       disabled ? "after:bg-cal-muted" : "bg-brand-default"
     )}
   />

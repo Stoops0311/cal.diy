@@ -1,8 +1,8 @@
-import { SkeletonAvatar, SkeletonText, SkeletonButton } from "@calcom/ui/components/skeleton";
+import { SkeletonAvatar, SkeletonButton, SkeletonText } from "@calcom/ui/components/skeleton";
 
 export function StepConnectionLoader() {
   return (
-    <ul className="bg-default divide-subtle border-subtle divide-y rounded-md border p-0 dark:bg-black">
+    <ul className="divide-subtle rounded-2xl border border-subtle bg-default p-0 divide-y">
       {Array.from({ length: 4 }).map((_item, index) => {
         return (
           <li className="flex w-full flex-row justify-center border-b-0 py-6" key={index}>

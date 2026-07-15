@@ -54,6 +54,7 @@ const Page = async ({ searchParams: _searchParams }: PageProps) => {
 
   return (
     <ShellMainAppDir
+      eyebrow={t("schedules")}
       heading={t("availability")}
       subtitle={t("configure_availability")}
       CTA={<AvailabilityCTA />}>

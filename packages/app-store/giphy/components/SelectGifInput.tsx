@@ -1,8 +1,6 @@
-import { useState } from "react";
-
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "@calcom/ui/components/button";
-
+import { useState } from "react";
 import { SearchDialog } from "./SearchDialog";
 
 interface ISelectGifInput {
@@ -19,7 +17,7 @@ export default function SelectGifInput(props: ISelectGifInput) {
     <div className="flex flex-col items-start space-x-2 stack-y-2 rtl:space-x-reverse">
       {selectedGif && (
         <div className="min-h-[200px]">
-          <img alt="Selected Gif Image" src={selectedGif} />
+          <img alt={t("selected_gif")} src={selectedGif} />
         </div>
       )}
       <div className="flex gap-2">
@@ -30,7 +28,7 @@ export default function SelectGifInput(props: ISelectGifInput) {
             StartIcon="pencil"
             onClick={() => setShowDialog(true)}
             disabled={props.disabled}>
-            Change
+            {t("change_gif")}
           </Button>
         ) : (
           <Button
@@ -39,7 +37,7 @@ export default function SelectGifInput(props: ISelectGifInput) {
             StartIcon="plus"
             onClick={() => setShowDialog(true)}
             disabled={props.disabled}>
-            Add from Giphy
+            {t("add_from_giphy")}
           </Button>
         )}
 

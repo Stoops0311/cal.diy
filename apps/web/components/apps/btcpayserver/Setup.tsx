@@ -9,13 +9,12 @@ import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
 import { showToast } from "@calcom/ui/components/toast";
+import SetupShell from "@calcom/web/components/apps/SetupShell";
 import { LoaderIcon } from "@coss/ui/icons";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Toaster } from "sonner";
 import { z } from "zod";
 
 export default function BTCPaySetup(props: IBTCPaySetupProps) {
@@ -32,6 +31,7 @@ enum BTCPayOAuthError {
 }
 
 function BTCPaySetupCallback() {
+  const { t } = useLocale();
   const [error, setError] = useState<string | null>(null);
   const searchParams = useCompatSearchParams();
 
@@ -63,8 +63,8 @@ function BTCPaySetupCallback() {
 
   return (
     <div>
-      {error && <p>Authorization failed: {error}</p>}
-      {!error && <p>Connecting...</p>}
+      {error && <p>{t("authorization_failed", { error })}</p>}
+      {!error && <p>{t("connecting")}</p>}
     </div>
   );
 }
@@ -180,7 +180,7 @@ function BTCPaySetupPage(props: IBTCPaySetupProps) {
       });
       if (!response.ok) {
         const errorBody = await response.text();
-        showToast(`Failed to configure webhook: ${errorBody}`, "error");
+        showToast(t("webhook_configuration_failed", { error: errorBody }), "error");
         return false;
       }
       const webhookResponse = await response.json();
@@ -194,9 +194,9 @@ function BTCPaySetupPage(props: IBTCPaySetupProps) {
       return true;
     } catch (error) {
       if (error instanceof Error) {
-        showToast(error.message || "Failed to configure BTCPay webhook", "error");
+        showToast(error.message || t("btcpay_webhook_configuration_failed"), "error");
       } else {
-        showToast("An unknown error occurred while configuring BTCPay webhook", "error");
+        showToast(t("btcpay_webhook_unknown_error"), "error");
       }
       return false;
     } finally {
@@ -229,123 +229,116 @@ function BTCPaySetupPage(props: IBTCPaySetupProps) {
     deleteMutation.mutate({ id: credentialId });
   };
 
-  const btcpayIcon = (
-    <>
-      <img className="h-5 w-5" src="/app-store/btcpayserver/btcpay.svg" alt="BTCPay Server Icon" />
-    </>
-  );
-
   if (session.status === "loading") return <></>;
 
   if (integrations.isPending) {
-    return <div className="absolute z-50 flex h-screen w-full items-center bg-gray-200" />;
+    return (
+      <div
+        className="bg-default text-subtle flex min-h-screen items-center justify-center"
+        aria-live="polite">
+        {t("loading")}
+      </div>
+    );
+  }
+
+  if (!showContent) {
+    return (
+      <div className="bg-default flex min-h-screen p-4 sm:p-8">
+        <AppNotInstalledMessage appName="btcpayserver" />
+      </div>
+    );
   }
 
   const isNewCredential = !props.serverUrl && !props.storeId && !props.webhookSecret && !props.apiKey;
-  const webhookUri = `${WEBAPP_URL}/api/integrations/btcpayserver/webhook`;
-
   return (
-    <>
-      <div className="bg-default flex h-screen items-center justify-center">
-        {showContent ? (
-          <div className="flex w-full w-full max-w-[43em] flex-col items-center justify-center stack-y-4 p-4 lg:stack-y-5">
-            <form className="w-full stack-y-4" onSubmit={onSubmit}>
-              <div className="bg-default border-subtle overflow-auto rounded border">
-                <div className="border-subtle flex items-center justify-between border-b p-4 md:p-5">
-                  <h2 className="text-2xl font-semibold">BTCPay Server Information</h2>
-                </div>
-                <div className="w-full stack-y-4 p-4 md:p-5">
-                  <div className="w-full">
-                    <KeyField
-                      {...register("serverUrl", { required: true })}
-                      id="serverUrl"
-                      name="serverUrl"
-                      containerClassName="w-full"
-                      label="BTCPay Server Url"
-                      autoComplete="off"
-                      autoCorrect="off"
-                      defaultValue={keyData?.serverUrl || ""}
-                    />
-                    {errors.serverUrl && (
-                      <p data-testid="required" className="py-2 text-xs text-red-500">
-                        {errors.serverUrl?.message}
-                      </p>
-                    )}
-                  </div>
+    <SetupShell
+      logo={
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src="/api/app-store/btcpayserver/icon.svg" alt="BTCPay Server" className="h-12 w-12" />
+      }
+      name="BTCPay Server">
+      <form className="w-full stack-y-4" onSubmit={onSubmit}>
+        <div className="w-full">
+          <KeyField
+            {...register("serverUrl", { required: true })}
+            id="serverUrl"
+            name="serverUrl"
+            containerClassName="w-full"
+            label={t("btcpay_server_url")}
+            autoComplete="off"
+            autoCorrect="off"
+            defaultValue={keyData?.serverUrl || ""}
+          />
+          {errors.serverUrl && (
+            <p data-testid="required" className="text-error py-2 text-xs" role="alert">
+              {errors.serverUrl?.message}
+            </p>
+          )}
+        </div>
 
-                  <div className="w-full">
-                    <KeyField
-                      {...register("storeId", { required: true })}
-                      id="storeId"
-                      name="storeId"
-                      containerClassName="w-full"
-                      label="BTCPay Store Id"
-                      autoComplete="off"
-                      autoCorrect="off"
-                      defaultValue={keyData?.storeId || ""}
-                    />
-                    {errors.storeId && (
-                      <p data-testid="required" className="py-2 text-xs text-red-500">
-                        {errors.storeId?.message}
-                      </p>
-                    )}
-                  </div>
+        <div className="w-full">
+          <KeyField
+            {...register("storeId", { required: true })}
+            id="storeId"
+            name="storeId"
+            containerClassName="w-full"
+            label={t("btcpay_store_id")}
+            autoComplete="off"
+            autoCorrect="off"
+            defaultValue={keyData?.storeId || ""}
+          />
+          {errors.storeId && (
+            <p data-testid="required" className="text-error py-2 text-xs" role="alert">
+              {errors.storeId?.message}
+            </p>
+          )}
+        </div>
 
-                  <div className="w-full">
-                    <KeyField
-                      {...register("apiKey", { required: true })}
-                      id="apiKey"
-                      name="apiKey"
-                      containerClassName="w-full"
-                      label="API Key"
-                      autoComplete="off"
-                      autoCorrect="off"
-                      defaultValue={keyData?.apiKey || ""}
-                    />
-                    {errors.apiKey && (
-                      <p data-testid="required" className="py-2 text-xs text-red-500">
-                        {errors.apiKey?.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-end gap-4">
-                {isNewCredential ? (
+        <div className="w-full">
+          <KeyField
+            {...register("apiKey", { required: true })}
+            id="apiKey"
+            name="apiKey"
+            containerClassName="w-full"
+            label={t("api_key")}
+            autoComplete="off"
+            autoCorrect="off"
+            defaultValue={keyData?.apiKey || ""}
+          />
+          {errors.apiKey && (
+            <p data-testid="required" className="text-error py-2 text-xs" role="alert">
+              {errors.apiKey?.message}
+            </p>
+          )}
+        </div>
+        <div className="flex justify-end gap-2">
+          {isNewCredential ? (
+            <>
+              <Button color="secondary" className="h-10" onClick={onCancel}>
+                {t("cancel")}
+              </Button>
+              <Button
+                className="h-10"
+                color="primary"
+                type="submit"
+                disabled={loading || validating || !updatable}>
+                {loading ? (
                   <>
-                    <Button color="secondary" className="h-10" onClick={onCancel}>
-                      Cancel
-                    </Button>
-                    <Button
-                      className="h-10"
-                      color="primary"
-                      type="submit"
-                      disabled={loading || validating || !updatable}>
-                      {loading ? (
-                        <>
-                          <LoaderIcon className="mr-2 animate-spin" />
-                          {t("connecting")}
-                        </>
-                      ) : (
-                        t("connect")
-                      )}
-                    </Button>
+                    <LoaderIcon className="mr-2 animate-spin" />
+                    {t("connecting")}
                   </>
                 ) : (
-                  <>
-                    <Link href="/apps/btcpayserver" className="inline-block">
-                      <Button color="secondary">Go to App Store</Button>
-                    </Link>
-                  </>
+                  t("connect")
                 )}
-              </div>
-            </form>
-          </div>
-        ) : (
-          <AppNotInstalledMessage appName="btcpayserver" />
-        )}
-        <Toaster position="bottom-right" />
-      </div>
-    </>
+              </Button>
+            </>
+          ) : (
+            <Button color="secondary" href="/apps/btcpayserver">
+              {t("go_to_app_store")}
+            </Button>
+          )}
+        </div>
+      </form>
+    </SetupShell>
   );
 }

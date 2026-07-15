@@ -1,9 +1,8 @@
 import { getLocationByType, getTranslatedLocation } from "@calcom/app-store/locations";
 import type { BookerEvent } from "@calcom/features/bookings/types";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
-import { Tooltip } from "@calcom/ui/components/tooltip";
 import classNames from "@calcom/ui/classNames";
-
+import { Tooltip } from "@calcom/ui/components/tooltip";
 import { EventMetaBlock } from "./Details";
 
 export const EventLocations = ({ event }: { event: BookerEvent }) => {
@@ -51,7 +50,7 @@ export const EventLocations = ({ event }: { event: BookerEvent }) => {
                               ? "dark:invert-[.65]"
                               : ""
                           )}
-                          alt={`${getLocationByType(location.type)?.label} icon`}
+                          alt=""
                         />
                         <span>{getLocationToDisplay(location)}</span>
                       </div>

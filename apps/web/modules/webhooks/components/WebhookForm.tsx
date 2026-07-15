@@ -1,8 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-
 import SectionBottomActions from "@calcom/features/settings/SectionBottomActions";
 import customTemplate, { hasTemplateIntegration } from "@calcom/features/webhooks/lib/integrationTemplate";
 import { WebhookVersion } from "@calcom/features/webhooks/lib/interface/IWebhookRepository";
@@ -11,15 +8,9 @@ import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { TimeUnit, WebhookTriggerEvents } from "@calcom/prisma/enums";
 import type { RouterOutputs } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
-import { Select } from "@calcom/ui/components/form";
-import { TextArea } from "@calcom/ui/components/form";
-import { ToggleGroup } from "@calcom/ui/components/form";
-import { Form } from "@calcom/ui/components/form";
-import { Label } from "@calcom/ui/components/form";
-import { TextField } from "@calcom/ui/components/form";
-import { Switch } from "@calcom/ui/components/form";
-
-
+import { Form, Label, Select, Switch, TextArea, TextField, ToggleGroup } from "@calcom/ui/components/form";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import WebhookTestDisclosure from "./WebhookTestDisclosure";
 
 export type TWebhook = RouterOutputs["viewer"]["webhook"]["list"][number];
@@ -456,8 +447,8 @@ const WebhookForm = (props: {
             <div className="mt-6">
               {!!hasSecretKey && !changeSecret && (
                 <>
-                  <Label className="font-sm text-emphasis font-medium">Secret</Label>
-                  <div className="bg-default stack-y-0 rounded-md border-0 border-neutral-200 sm:mx-0 md:border">
+                  <Label className="font-sm text-emphasis font-medium">{t("secret")}</Label>
+                  <div className="bg-default border-subtle stack-y-0 rounded-xl border-0 sm:mx-0 md:border">
                     <div className="text-emphasis rounded-sm border-b p-2 text-sm">
                       {t("forgotten_secret_description")}
                     </div>
@@ -561,9 +552,10 @@ const WebhookForm = (props: {
                           <h4 className="mb-2 text-sm font-medium">{category}</h4>
                           <div className="stack-y-2">
                             {variables.map(({ name, variable, description }) => (
-                              <div
+                              <button
+                                type="button"
                                 key={name}
-                                className="hover:bg-cal-muted cursor-pointer rounded p-2 text-sm transition-colors"
+                                className="hover:bg-cal-muted w-full cursor-pointer rounded p-2 text-left text-sm transition-colors"
                                 onClick={() => {
                                   const currentValue = formMethods.getValues("payloadTemplate") || "{}";
                                   const updatedValue = insertVariableIntoTemplate(
@@ -577,7 +569,7 @@ const WebhookForm = (props: {
                                 }}>
                                 <div className="text-emphasis font-mono">{variable}</div>
                                 <div className="text-muted mt-1 text-xs">{description}</div>
-                              </div>
+                              </button>
                             ))}
                           </div>
                         </div>

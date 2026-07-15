@@ -1,6 +1,6 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { vi } from "vitest";
-
+import { ConfirmationContent } from "./ConfirmationDialogContent";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTrigger } from "./Dialog";
 
 vi.mock("@calcom/lib/hooks/useCompatSearchParams", () => ({
@@ -78,6 +78,36 @@ describe("Dialog", () => {
 
       expect(screen.getByTestId("dialog-confirmation")).toBeInTheDocument();
     });
+
+    it("keeps custom-layout dialogs named for assistive technology", () => {
+      render(
+        <Dialog open>
+          <DialogContent type={null} title="Choose a time">
+            <p>{content}</p>
+          </DialogContent>
+        </Dialog>
+      );
+
+      expect(screen.getByText("Choose a time")).toHaveClass("sr-only");
+    });
+
+    it("uses the visible heading as the dialog's accessible name", () => {
+      render(
+        <Dialog open>
+          <DialogContent title="Create webhook">
+            <p>{content}</p>
+          </DialogContent>
+        </Dialog>
+      );
+
+      expect(screen.getByRole("dialog", { name: "Create webhook" })).toBeInTheDocument();
+    });
+
+    it("lifts the dialog above the page with a distinct surface", () => {
+      render(<TestDialog open />);
+
+      expect(screen.getByRole("dialog")).toHaveClass("bg-subtle", "border-subtle", "overscroll-contain");
+    });
   });
 
   describe("Visibility", () => {
@@ -117,6 +147,12 @@ describe("Dialog", () => {
 
       expect(screen.getByTestId("divider")).toBeInTheDocument();
     });
+
+    it("uses a contrasting action plane", () => {
+      render(<TestDialog open />);
+
+      expect(screen.getByTestId("dialog-footer")).toHaveClass("bg-default", "border-t");
+    });
   });
 
   describe("Behavior", () => {
@@ -125,6 +161,22 @@ describe("Dialog", () => {
 
       const dialogContent = screen.getByRole("dialog");
       expect(dialogContent.className).toContain("overflow-y-auto");
+    });
+  });
+
+  describe("Confirmation", () => {
+    it("keeps destructive confirmation actions semantically red", () => {
+      render(
+        <Dialog open>
+          <DialogContent>
+            <ConfirmationContent title="Delete account" variety="danger">
+              This cannot be undone.
+            </ConfirmationContent>
+          </DialogContent>
+        </Dialog>
+      );
+
+      expect(screen.getByTestId("dialog-confirmation")).toHaveClass("text-error");
     });
   });
 });

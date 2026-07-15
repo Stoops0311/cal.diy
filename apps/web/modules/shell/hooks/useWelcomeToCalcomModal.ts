@@ -1,7 +1,6 @@
+import { sessionStorage } from "@calcom/lib/webstorage";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
-
-import { sessionStorage } from "@calcom/lib/webstorage";
 
 const STORAGE_KEY = "showWelcomeToCalcomModal";
 const ORG_MODAL_STORAGE_KEY = "showNewOrgModal";
@@ -12,7 +11,11 @@ export function useWelcomeToCalcomModal() {
     parseAsBoolean.withDefault(false)
   );
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => {
+    const hasOrgModalFlag = sessionStorage.getItem(ORG_MODAL_STORAGE_KEY) === "true";
+    const hasPersonalModalFlag = sessionStorage.getItem(STORAGE_KEY) === "true";
+    return !hasOrgModalFlag && (welcomeToCalcomModal || hasPersonalModalFlag);
+  });
 
   useEffect(() => {
     // Don't show personal modal if org modal flag is set (org modal takes precedence)

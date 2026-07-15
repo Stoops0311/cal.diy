@@ -15,8 +15,9 @@ interface CalendarToggleItemProps {
   }[];
 }
 function CalendarToggleItem(props: CalendarToggleItemProps) {
+  const { t } = useLocale();
   const badgeStatus = props.status === "connected" ? "green" : "orange";
-  const badgeText = props.status === "connected" ? "Connected" : "Not found";
+  const badgeText = props.status === "connected" ? t("connected") : t("not_found");
   return (
     <TroubleshooterListItemContainer
       title={props.title}
@@ -60,7 +61,7 @@ function EmptyCalendarToggleItem({
       subtitle={t("please_install_a_calendar")}
       prefixSlot={
         <>
-          <div className="h-4 w-4 self-center rounded-[4px] bg-blue-500" />
+          <div className="bg-inverted h-4 w-4 self-center rounded-sm" />
         </>
       }
       suffixSlot={
@@ -127,7 +128,7 @@ export function CalendarToggleContainerComponent({
               <CalendarToggleItem
                 key={calendar.credentialId}
                 title={calendar.integration.name}
-                colorDot="#000000"
+                colorDot="var(--cal-bg-inverted)"
                 subtitle={foundPrimary?.name ?? t("nameless_calendar")}
                 status={calendar.error ? "not_found" : "connected"}
                 calendars={calendar.calendars?.map((item) => {

@@ -38,7 +38,7 @@ export const inputStyles = cva(
     "shadow-outline-gray-rested",
 
     // Transitions
-    "transition-all",
+    "transition-[color,background-color,border-color,box-shadow]",
   ],
   {
     variants: {
@@ -84,7 +84,19 @@ const Addon = ({
   position: _position = "start",
 }: AddonProps) => (
   <div
-    onClick={onClickAddon && onClickAddon}
+    onClick={onClickAddon}
+    onKeyDown={
+      onClickAddon
+        ? (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.currentTarget.click();
+            }
+          }
+        : undefined
+    }
+    role={onClickAddon ? "button" : undefined}
+    tabIndex={onClickAddon ? 0 : undefined}
     className={classNames(
       "flex shrink-0 items-center justify-center whitespace-nowrap",
       onClickAddon && "pointer-events-auto cursor-pointer disabled:hover:cursor-not-allowed",
@@ -101,12 +113,13 @@ const Addon = ({
 );
 
 export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputField(props, ref) {
-  const id = useId();
+  const generatedId = useId();
   const { t: _t, isLocaleReady, i18n } = useLocale();
   const t = props.t || _t;
   const name = props.name || "";
   const {
     label = t(name),
+    id: providedId,
     labelProps,
     labelClassName,
     disabled,
@@ -132,6 +145,7 @@ export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function
     size,
     ...passThrough
   } = props;
+  const id = providedId ?? generatedId;
 
   const [inputValue, setInputValue] = useState<string>("");
 

@@ -1,34 +1,36 @@
-import { getTranslate } from "app/_utils";
-import type { Metadata } from "next";
-
 import { IS_DUB_REFERRALS_ENABLED } from "@calcom/lib/constants";
-
+import { _generateMetadata, getTranslate } from "app/_utils";
 import Shell from "~/shell/Shell";
-
 import { DubReferralsPage } from "./DubReferralsPage";
 
-export const metadata: Metadata = {
-  title: "Cal.diy referral program - Earn money by sharing your link",
-  description:
-    "Earn 20% recurring commissions for a full year by referring others to Cal.diy, while giving your referrals 20% off for 12 months. Share your link and start earning today!",
-};
+export const generateMetadata = async () =>
+  await _generateMetadata(
+    (t) => t("referral_program"),
+    (t) => t("referral_text"),
+    undefined,
+    undefined,
+    "/refer"
+  );
 
-// Export the appropriate component based on the feature flag
 export default async function ReferralsPage() {
   const t = await getTranslate();
 
+  if (!IS_DUB_REFERRALS_ENABLED) {
+    return (
+      <Shell
+        eyebrow={t("referrals")}
+        heading={t("referral_program")}
+        subtitle={t("referrals_not_available_description")}>
+        {null}
+      </Shell>
+    );
+  }
+
   return (
     <Shell withoutMain={true}>
-      {IS_DUB_REFERRALS_ENABLED ? (
-        <div className="-m-4 sm:-mt-6 md:-mt-4">
-          <DubReferralsPage />
-        </div>
-      ) : (
-        <div className="mx-auto max-w-4xl p-8 text-center">
-          <h2 className="mb-4 text-xl font-semibold">{t("referral_program")}</h2>
-          <p>{t("dub_disabled_error_message")}</p>
-        </div>
-      )}
+      <div className="-m-4 sm:-mt-6 md:-mt-4">
+        <DubReferralsPage />
+      </div>
     </Shell>
   );
 }

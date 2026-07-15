@@ -22,7 +22,7 @@ export const AppDependencyComponent = ({
       {dependencyData &&
         dependencyData.map((dependency) => {
           return dependency.installed ? (
-            <div className="items-start space-x-2.5">
+            <div key={dependency.slug} className="items-start space-x-2.5">
               <div className="flex items-start">
                 <div>
                   <CheckIcon className="mr-2 mt-1 font-semibold" />
@@ -46,7 +46,7 @@ export const AppDependencyComponent = ({
               </div>
             </div>
           ) : (
-            <div className="items-start space-x-2.5">
+            <div key={dependency.slug} className="items-start space-x-2.5">
               <div className="text-error flex items-start">
                 <div>
                   <CircleXIcon className="mr-2 mt-1 font-semibold" />

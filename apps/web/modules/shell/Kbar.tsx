@@ -1,10 +1,11 @@
 import { appStoreMetadata } from "@calcom/app-store/appStoreMetaData";
 import dayjs from "@calcom/dayjs";
 import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
+import { SUPPORT_MAIL_ADDRESS } from "@calcom/lib/constants";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { isMac } from "@calcom/lib/isMac";
 import { trpc } from "@calcom/trpc/react";
-import { Tooltip } from "@calcom/ui/components/tooltip";
+import classNames from "@calcom/ui/classNames";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -52,7 +53,7 @@ type AppAction = {
 const getApps: AppAction[] = Object.values(appStoreMetadata).map(({ name, slug }) => ({
   id: slug,
   name,
-  section: "Installable Apps",
+  section: "installable_apps",
   keywords: `app ${name}`,
 }));
 
@@ -186,7 +187,7 @@ const KBAR_ACTION_CONFIGS: ActionConfig[] = [
   },
   {
     id: "webhooks",
-    name: "Webhooks",
+    name: "webhooks",
     section: "developer",
     shortcut: ["w", "h"],
     keywords: "webhook automation",
@@ -326,7 +327,7 @@ const KBarContent = (): JSX.Element => {
   return (
     <KBarPortal>
       <KBarPositioner className="overflow-scroll">
-        <KBarAnimator className="z-10 w-full max-w-(--breakpoint-sm) overflow-hidden rounded-md bg-default shadow-lg">
+        <KBarAnimator className="border-subtle z-10 w-full max-w-(--breakpoint-sm) overflow-hidden rounded-xl border bg-default shadow-dropdown">
           <div className="flex items-center justify-center border-subtle border-b">
             <SearchIcon className="mx-3 h-4 w-4 text-default" />
             <KBarSearch
@@ -345,35 +346,9 @@ const KBarContent = (): JSX.Element => {
             <span className="pr-2">{t("close")}</span>
           </div>
         </KBarAnimator>
-        <div className="fixed inset-0 z-1 bg-neutral-800/70" />
+        <div className="fixed inset-0 z-1 bg-overlay" />
       </KBarPositioner>
     </KBarPortal>
-  );
-};
-
-function getTooltipContent(): string {
-  if (isMac) {
-    return "⌘ + K";
-  }
-  return "CTRL + K";
-}
-
-const KBarTrigger = (): JSX.Element | null => {
-  const { query } = useKBar();
-
-  if (!query) {
-    return null;
-  }
-
-  return (
-    <Tooltip side="right" content={getTooltipContent()}>
-      <button
-        color="minimal"
-        onClick={query.toggle}
-        className="todesktop:hover:!bg-transparent group flex rounded-md px-3 py-2 font-medium text-default text-sm transition hover:bg-subtle lg:px-2 lg:hover:bg-emphasis lg:hover:text-emphasis">
-        <SearchIcon className="h-4 w-4 shrink-0 text-inherit" />
-      </button>
-    </Tooltip>
   );
 };
 
@@ -386,7 +361,7 @@ function DisplayShortcuts(item: ShortcutArrayType): JSX.Element {
         return (
           <kbd
             key={shortcut}
-            className="rounded-sm border bg-default px-2 py-1 text-emphasis transition hover:bg-subtle">
+            className="border-subtle rounded-sm border bg-default px-2 py-1 font-mono text-[11px] uppercase text-subtle">
             {shortcut}
           </kbd>
         );
@@ -402,20 +377,19 @@ type RenderItemProps = {
 
 function renderResultItem(item: string | Action, active: boolean, t: (key: string) => string): JSX.Element {
   if (typeof item === "string") {
-    return <div className="bg-default p-4 font-bold text-emphasis text-xs uppercase">{t(item)}</div>;
-  }
-
-  let background = "var(--cal-bg-default)";
-  let borderLeft = "2px solid transparent";
-  if (active) {
-    background = "var(--cal-bg-subtle)";
-    borderLeft = "2px solid var(--cal-border)";
+    return (
+      <div className="bg-default px-4 pb-2 pt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-subtle">
+        {t(item)}
+      </div>
+    );
   }
 
   return (
     <div
-      style={{ background, borderLeft, color: "var(--cal-text)" }}
-      className="flex items-center justify-between px-4 py-2.5 text-sm transition hover:cursor-pointer">
+      className={classNames(
+        "flex items-center justify-between px-4 py-2.5 text-sm transition hover:cursor-pointer",
+        active ? "bg-emphasis text-emphasis" : "bg-default text-default"
+      )}>
       <span>{t(item.name)}</span>
       <DisplayShortcuts shortcuts={item.shortcut} />
     </div>
@@ -424,7 +398,7 @@ function renderResultItem(item: string | Action, active: boolean, t: (key: strin
 
 function NoResultsFound({ searchQuery }: { searchQuery: string }): JSX.Element {
   const { t } = useLocale();
-  const helpUrl = `https://cal.com/help/welcome?search=${encodeURIComponent(searchQuery)}`;
+  const helpUrl = `mailto:${SUPPORT_MAIL_ADDRESS}?subject=${encodeURIComponent(`Help with ${searchQuery}`)}`;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
@@ -444,8 +418,6 @@ function NoResultsFound({ searchQuery }: { searchQuery: string }): JSX.Element {
       <p className="mb-3 text-sm text-subtle">{t("kbar_no_results_found")}</p>
       <a
         href={helpUrl}
-        target="_blank"
-        rel="noopener noreferrer"
         className="flex items-center justify-center gap-2 text-emphasis text-sm transition hover:text-default">
         <ExternalLinkIcon className="h-4 w-4" />
         {t("kbar_search_help_desk_prefix")} <span className="underline">&quot;{searchQuery}&quot;</span>{" "}
@@ -475,4 +447,4 @@ function RenderResults(): JSX.Element {
   );
 }
 
-export { KBarRoot, KBarContent, KBarTrigger };
+export { KBarRoot, KBarContent };

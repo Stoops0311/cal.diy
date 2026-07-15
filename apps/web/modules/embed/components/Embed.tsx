@@ -23,7 +23,12 @@ import type {
   EmbedTypes,
   PreviewState,
 } from "@calcom/features/embed/types";
-import { APP_NAME, DEFAULT_DARK_BRAND_COLOR, DEFAULT_LIGHT_BRAND_COLOR } from "@calcom/lib/constants";
+import {
+  APP_NAME,
+  DEFAULT_DARK_BRAND_COLOR,
+  DEFAULT_LIGHT_BRAND_COLOR,
+  SUPPORT_MAIL_ADDRESS,
+} from "@calcom/lib/constants";
 import { weekdayToWeekIndex } from "@calcom/lib/dayjs";
 import { useCompatSearchParams } from "@calcom/lib/hooks/useCompatSearchParams";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -201,7 +206,11 @@ const ChooseEmbedTypesDialogContent = ({
   const { t } = useLocale();
   const { gotoState } = useEmbedGoto(noQueryParamMode);
   return (
-    <DialogContent className="rounded-lg p-10" type="creation" size="lg">
+    <DialogContent
+      className="rounded-lg p-10"
+      type={null}
+      title={t("how_you_want_add_cal_site", { appName: APP_NAME })}
+      size="lg">
       <div className="mb-2">
         <h3 className="font-cal text-emphasis mb-2 text-2xl font-semibold leading-none" id="modal-title">
           {t("how_you_want_add_cal_site", { appName: APP_NAME })}
@@ -211,14 +220,17 @@ const ChooseEmbedTypesDialogContent = ({
         </div>
       </div>
       <div className="items-start stack-y-2 md:flex md:stack-y-0">
-        {types.map((embed, index) => (
+        {types.map((embed) => (
           <button
+            type="button"
             className="hover:bg-subtle bg-cal-muted	w-full self-stretch rounded-md border border-transparent p-6 text-left transition hover:rounded-md ltr:mr-4 ltr:last:mr-0 rtl:ml-4 rtl:last:ml-0 lg:w-1/3"
-            key={index}
+            key={embed.type}
             data-testid={embed.type}
             onClick={() => {
               if (embed.type === "headless") {
-                window.open("https://cal.com/help/routing/headless-routing", "_blank");
+                window.location.href = `mailto:${SUPPORT_MAIL_ADDRESS}?subject=${encodeURIComponent(
+                  "Help with headless routing"
+                )}`;
               } else {
                 gotoState({
                   embedType: embed.type as EmbedType,
@@ -681,7 +693,7 @@ const EmailEmbedPreview = ({
             }}>
             <span>{t("powered_by")}</span>{" "}
             <b style={{ color: "black" }}>
-              <span> Cal.diy</span>
+              <span> {APP_NAME}</span>
             </b>
           </div>
         </div>
@@ -914,9 +926,9 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
   }
 
   const ThemeOptions = [
-    { value: EmbedTheme.auto, label: "Auto" },
-    { value: EmbedTheme.dark, label: "Dark Theme" },
-    { value: EmbedTheme.light, label: "Light Theme" },
+    { value: EmbedTheme.auto, label: t("theme_auto") },
+    { value: EmbedTheme.dark, label: t("theme_dark") },
+    { value: EmbedTheme.light, label: t("theme_light") },
   ];
 
   const layoutOptions = [
@@ -928,11 +940,11 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
   const FloatingPopupPositionOptions = [
     {
       value: "bottom-right" as const,
-      label: "Bottom right",
+      label: t("bottom_right"),
     },
     {
       value: "bottom-left" as const,
-      label: "Bottom left",
+      label: t("bottom_left"),
     },
   ];
   const previewTab = tabs.find((tab) => tab.name === "Preview");
@@ -941,14 +953,19 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
     <DialogContent
       enableOverflow
       ref={dialogContentRef}
-      className="rounded-lg p-0.5 sm:max-w-7xl!"
-      type="creation">
-      <div className="flex">
-        <div className="bg-cal-muted flex h-[95vh] w-1/3 flex-col overflow-y-auto p-8">
+      className="overflow-hidden rounded-3xl p-0 sm:max-w-7xl!"
+      type={null}
+      title={embed.title}>
+      <div className="flex max-h-[95vh] flex-col lg:flex-row">
+        <div className="bg-subtle flex max-h-[44vh] w-full flex-col overflow-y-auto overscroll-contain p-6 lg:h-[95vh] lg:max-h-none lg:w-1/3 lg:p-8">
           <h3
             className="text-emphasis mb-2.5 flex items-center text-xl font-semibold leading-5"
             id="modal-title">
-            <button className="h-6 w-6" onClick={gotoEmbedTypeSelectionState}>
+            <button
+              type="button"
+              aria-label={t("go_back")}
+              className="focus-visible:ring-emphasis h-7 w-7 rounded-full focus-visible:outline-none focus-visible:ring-2"
+              onClick={gotoEmbedTypeSelectionState}>
               <ArrowLeftIcon className="mr-4 w-4" />
             </button>
             {embed.title}
@@ -975,11 +992,12 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
                     {embedType === "inline" && embedParams.embedTabName !== EmbedTabName.ATOM_REACT && (
                       <div>
                         {/*TODO: Add Auto/Fixed toggle from Figma */}
-                        <div className="text-default mb-[9px] text-sm">Window sizing</div>
+                        <div className="text-default mb-[9px] text-sm">{t("window_sizing")}</div>
                         <div className="justify-left mb-6 flex items-center font-normal! ">
                           <div className="mr-[9px]">
                             <TextField
                               labelProps={{ className: "hidden" }}
+                              aria-label={t("width")}
                               className="focus:ring-offset-0"
                               required
                               value={previewState.inline.width}
@@ -1002,6 +1020,7 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
 
                           <TextField
                             labelProps={{ className: "hidden" }}
+                            aria-label={t("height")}
                             className="focus:ring-offset-0"
                             value={previewState.inline.height}
                             required
@@ -1028,10 +1047,11 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
                         "items-center justify-between",
                         embedType === "floating-popup" ? "text-emphasis" : "hidden"
                       )}>
-                      <div className="mb-2 text-sm">Button text</div>
+                      <div className="mb-2 text-sm">{t("button_text")}</div>
                       {/* Default Values should come from preview iframe */}
                       <TextField
                         labelProps={{ className: "hidden" }}
+                        aria-label={t("button_text")}
                         onChange={(e) => {
                           setPreviewState((previewState) => {
                             return {
@@ -1055,6 +1075,7 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
                           : "hidden"
                       )}>
                       <Switch
+                        label={t("display_calendar_icon")}
                         defaultChecked={true}
                         onCheckedChange={(checked) => {
                           setPreviewState((previewState) => {
@@ -1068,14 +1089,13 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
                           });
                         }}
                       />
-                      <div className="text-default my-2 text-sm">Display calendar icon</div>
                     </div>
                     <div
                       className={classNames(
                         "mt-4 items-center justify-between",
                         embedType === "floating-popup" ? "text-emphasis" : "hidden"
                       )}>
-                      <div className="mb-2">Position of button</div>
+                      <div className="mb-2">{t("button_position")}</div>
                       <Select
                         onChange={(position) => {
                           setPreviewState((previewState) => {
@@ -1094,7 +1114,7 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
                     </div>
                     <div className="mt-3 flex flex-col xl:flex-row xl:justify-between">
                       <div className={classNames("mt-4", embedType === "floating-popup" ? "" : "hidden")}>
-                        <div className="whitespace-nowrap">Button color</div>
+                        <div className="whitespace-nowrap">{t("button_color")}</div>
                         <div className="mt-2 w-40 xl:mt-0 xl:w-full">
                           <ColorPicker
                             className="w-[130px]"
@@ -1116,7 +1136,7 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
                         </div>
                       </div>
                       <div className={classNames("mt-4", embedType === "floating-popup" ? "" : "hidden")}>
-                        <div className="whitespace-nowrap">Text color</div>
+                        <div className="whitespace-nowrap">{t("text_color")}</div>
                         <div className="mb-6 mt-2 w-40 xl:mt-0 xl:w-full">
                           <ColorPicker
                             className="w-[130px]"
@@ -1150,7 +1170,7 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
                       {/* Conditionally render EmbedTheme only if NOT React Atom */}
                       {embedParams.embedTabName !== EmbedTabName.ATOM_REACT && (
                         <Label className="mb-6">
-                          <div className="mb-2">Embed theme</div>
+                          <div className="mb-2">{t("embed_theme")}</div>
                           <Select
                             className="w-full"
                             defaultValue={ThemeOptions[0]}
@@ -1196,6 +1216,7 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
                       embedParams.embedTabName !== EmbedTabName.ATOM_REACT ? (
                         <div className="mb-6 flex items-center justify-start space-x-2 rtl:space-x-reverse">
                           <Switch
+                            label={t("hide_eventtype_details")}
                             checked={previewState.hideEventTypeDetails}
                             onCheckedChange={(checked) => {
                               setPreviewState((previewState) => {
@@ -1206,7 +1227,6 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
                               });
                             }}
                           />
-                          <div className="text-default text-sm">{t("hide_eventtype_details")}</div>
                         </div>
                       ) : null}
                       {/* Conditionally render Brand Colors only if NOT React Atom */}
@@ -1280,7 +1300,7 @@ const EmbedTypeCodeAndPreviewDialogContent = ({
             </div>
           )}
         </div>
-        <div className="flex h-[95vh] w-2/3 flex-col px-8 pt-8">
+        <div className="bg-default flex min-h-0 w-full flex-1 flex-col px-6 pt-6 lg:h-[95vh] lg:w-2/3 lg:px-8 lg:pt-8">
           <HorizontalTabs
             data-testid="embed-tabs"
             tabs={

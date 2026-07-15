@@ -1,7 +1,3 @@
-import type { InferGetServerSidePropsType } from "next";
-import { useState } from "react";
-import { Toaster } from "sonner";
-
 import AppNotInstalledMessage from "@calcom/app-store/_components/AppNotInstalledMessage";
 import type { getServerSideProps } from "@calcom/app-store/make/pages/setup/_getServerSideProps";
 import ServerTrans from "@calcom/lib/components/ServerTrans";
@@ -10,7 +6,10 @@ import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
 import { showToast } from "@calcom/ui/components/toast";
 import { Tooltip } from "@calcom/ui/components/tooltip";
+import SetupShell from "@calcom/web/components/apps/SetupShell";
 import { ClipboardIcon } from "@coss/ui/icons";
+import type { InferGetServerSidePropsType } from "next";
+import { useState } from "react";
 
 const MAKE = "make";
 
@@ -35,7 +34,7 @@ export default function MakeSetup({ inviteLink }: InferGetServerSidePropsType<ty
 
   async function createApiKey(teamId?: number) {
     const event = { note: "Make", expiresAt: null, appId: MAKE, teamId };
-    const apiKey = `cal_live_${Math.random().toString(36).substring(2)}`;
+    const apiKey = `convenio_live_${Math.random().toString(36).substring(2)}`;
 
     if (oldApiKey?.data) {
       const oldKey = teamId
@@ -58,90 +57,89 @@ export default function MakeSetup({ inviteLink }: InferGetServerSidePropsType<ty
   }
 
   if (integrations.isPending) {
-    return <div className="bg-emphasis absolute z-50 flex h-screen w-full items-center" />;
+    return (
+      <div
+        className="bg-default text-subtle flex min-h-screen items-center justify-center"
+        aria-live="polite">
+        {t("loading")}
+      </div>
+    );
+  }
+
+  if (!showContent) {
+    return (
+      <div className="bg-default flex min-h-screen p-4 sm:p-8">
+        <AppNotInstalledMessage appName="make" />
+      </div>
+    );
   }
 
   return (
-    <div className="bg-emphasis flex h-screen">
-      {showContent ? (
-        <div className="bg-default m-auto max-w-[43em] overflow-auto rounded pb-10 md:p-10">
-          <div className="md:flex md:flex-row">
-            <div className="invisible md:visible">
-              {/* eslint-disable @next/next/no-img-element */}
-              <img className="h-11" src="/api/app-store/make/icon.svg" alt="Make Logo" />
-            </div>
-            <div className="ml-2 md:ml-5 ltr:mr-2 rtl:ml-2">
-              <div className="text-default">{t("setting_up_make")}</div>
-
-              <>
-                <div className="mt-1 text-xl">{t("generate_api_key")}:</div>
-                {!teams ? (
-                  <Button color="secondary" onClick={() => createApiKey()} className="mb-4 mt-2">
+    <SetupShell
+      logo={
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="h-12 w-12" src="/api/app-store/make/icon.svg" alt="Make Logo" />
+      }
+      name="Make"
+      description={t("setting_up_make")}>
+      <div className="text-emphasis text-sm font-semibold">{t("generate_api_key")}:</div>
+      {!teams ? (
+        !newApiKeys[""] ? (
+          <Button color="secondary" onClick={() => generateApiKey()} className="mb-4 mt-2">
+            {t("generate_api_key")}
+          </Button>
+        ) : (
+          <CopyApiKey apiKey={newApiKeys[""]} />
+        )
+      ) : (
+        <>
+          <div className="mt-8 text-sm font-semibold">{t("your_event_types")}:</div>
+          {!newApiKeys[""] ? (
+            <Button color="secondary" onClick={() => generateApiKey()} className="mb-4 mt-2">
+              {t("generate_api_key")}
+            </Button>
+          ) : (
+            <CopyApiKey apiKey={newApiKeys[""]} />
+          )}
+          {teams.map((team) => {
+            return (
+              <div key={team.name}>
+                <div className="mt-2 text-sm font-semibold">{team.name}:</div>
+                {!newApiKeys[team.id] ? (
+                  <Button color="secondary" onClick={() => generateApiKey(team.id)} className="mb-4 mt-2">
                     {t("generate_api_key")}
                   </Button>
                 ) : (
-                  <>
-                    <div className="mt-8 text-sm font-semibold">Your event types:</div>
-                    {!newApiKeys[""] ? (
-                      <Button color="secondary" onClick={() => generateApiKey()} className="mb-4 mt-2">
-                        {t("generate_api_key")}
-                      </Button>
-                    ) : (
-                      <CopyApiKey apiKey={newApiKeys[""]} />
-                    )}
-                    {teams.map((team) => {
-                      return (
-                        <div key={team.name}>
-                          <div className="mt-2 text-sm font-semibold">{team.name}:</div>
-                          {!newApiKeys[team.id] ? (
-                            <Button
-                              color="secondary"
-                              onClick={() => generateApiKey(team.id)}
-                              className="mb-4 mt-2">
-                              {t("generate_api_key")}
-                            </Button>
-                          ) : (
-                            <CopyApiKey apiKey={newApiKeys[team.id]} />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </>
+                  <CopyApiKey apiKey={newApiKeys[team.id]} />
                 )}
-              </>
-
-              <ol className="mb-5 ml-5 mt-5 list-decimal ltr:mr-5 rtl:ml-5">
-                <li>
-                  <ServerTrans
-                    t={t}
-                    i18nKey="make_setup_instructions_1"
-                    components={[
-                      <a
-                        key="make-invite-link"
-                        href={inviteLink}
-                        className="ml-1 mr-1 text-orange-600 underline">
-                        Make Invite Link
-                      </a>,
-                    ]}
-                  />
-                </li>
-                <li>{t("make_setup_instructions_2")}</li>
-                <li>{t("make_setup_instructions_3")}</li>
-                <li>{t("make_setup_instructions_4")}</li>
-                <li>{t("make_setup_instructions_5")}</li>
-                <li>{t("make_setup_instructions_6")}</li>
-              </ol>
-              <Button href="/apps/installed/automation?hl=make" color="secondary">
-                {t("done")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <AppNotInstalledMessage appName="make" />
+              </div>
+            );
+          })}
+        </>
       )}
-      <Toaster position="bottom-right" />
-    </div>
+
+      <ol className="text-default mb-5 ml-5 mt-5 list-decimal text-sm leading-6 ltr:mr-5 rtl:ml-5">
+        <li>
+          <ServerTrans
+            t={t}
+            i18nKey="make_setup_instructions_1"
+            components={[
+              <a key="make-invite-link" href={inviteLink} className="text-emphasis ml-1 mr-1 underline">
+                {t("make_invite_link")}
+              </a>,
+            ]}
+          />
+        </li>
+        <li>{t("make_setup_instructions_2")}</li>
+        <li>{t("make_setup_instructions_3")}</li>
+        <li>{t("make_setup_instructions_4")}</li>
+        <li>{t("make_setup_instructions_5")}</li>
+        <li>{t("make_setup_instructions_6")}</li>
+      </ol>
+      <Button href="/apps/installed/automation?hl=make" color="secondary">
+        {t("done")}
+      </Button>
+    </SetupShell>
   );
 }
 

@@ -1,19 +1,20 @@
+import SectionBottomActions from "@calcom/features/settings/SectionBottomActions";
+import ServerTrans from "@calcom/lib/components/ServerTrans";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import {
+  type BookerLayoutSettings,
+  BookerLayouts,
+  bookerLayoutOptions,
+  defaultBookerLayoutSettings,
+} from "@calcom/prisma/zod-utils";
+import type { RouterOutputs } from "@calcom/trpc/react";
+import classNames from "@calcom/ui/classNames";
+import { Button } from "@calcom/ui/components/button";
+import { CheckboxField, Label } from "@calcom/ui/components/form";
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
-
-import ServerTrans from "@calcom/lib/components/ServerTrans";
-import { useLocale } from "@calcom/lib/hooks/useLocale";
-import { BookerLayouts, defaultBookerLayoutSettings } from "@calcom/prisma/zod-utils";
-import { bookerLayoutOptions, type BookerLayoutSettings } from "@calcom/prisma/zod-utils";
-import type { RouterOutputs } from "@calcom/trpc/react";
-import classNames from "@calcom/ui/classNames";
-import { Button } from "@calcom/ui/components/button";
-import { Label } from "@calcom/ui/components/form";
-import { CheckboxField } from "@calcom/ui/components/form";
-
-import SectionBottomActions from "@calcom/features/settings/SectionBottomActions";
 
 type BookerLayoutSelectorProps = {
   title?: string;
@@ -61,7 +62,7 @@ export const BookerLayoutSelector = ({
 
   return (
     <div className={classNames(isOuterBorder && "border-subtle rounded-lg border p-6")}>
-      <div className={classNames(isOuterBorder ? "pb-5" : "border-subtle rounded-t-xl border p-6")}>
+      <div className={classNames(isOuterBorder ? "pb-5" : "mt-8")}>
         <Label className={classNames("mb-1 font-semibold", isOuterBorder ? "text-sm" : "text-base")}>
           {title ? title : t("layout")}
         </Label>
@@ -176,7 +177,7 @@ const BookerLayoutFields = ({
     if (user?.defaultBookerLayouts) onChange(user.defaultBookerLayouts);
   };
   return (
-    <div className={classNames("stack-y-5", !isOuterBorder && "border-subtle border-x px-6 py-8")}>
+    <div className={classNames("stack-y-5", !isOuterBorder && "py-8")}>
       <div
         className={classNames(
           "flex flex-col gap-5 transition-opacity sm:flex-row sm:gap-3",
@@ -189,7 +190,7 @@ const BookerLayoutFields = ({
               <img
                 className="mb-3 w-full max-w-none cursor-pointer"
                 src={`/bookerlayout_${layout}${isDark ? "_dark" : ""}.svg`}
-                alt="Layout preview"
+                alt={t("layout_preview")}
               />
               <CheckboxField
                 value={layout}

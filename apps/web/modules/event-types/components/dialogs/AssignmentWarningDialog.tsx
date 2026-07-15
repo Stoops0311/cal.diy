@@ -1,11 +1,9 @@
-import { useRouter } from "next/navigation";
-import type { Dispatch, SetStateAction } from "react";
-import type { MutableRefObject } from "react";
-
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "@calcom/ui/components/button";
 import { DialogContent, DialogFooter } from "@calcom/ui/components/dialog";
+import { useRouter } from "next/navigation";
+import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 
 interface AssignmentWarningDialogProps {
   isOpenAssignmentWarnDialog: boolean;
@@ -40,7 +38,7 @@ const AssignmentWarningDialog = (props: AssignmentWarningDialogProps) => {
               setIsOpenAssignmentWarnDialog(false);
               router.replace(`/event-types/${id}?tabName=team`);
             }}
-            color="minimal">
+            color="primary">
             {t("go_back_and_assign")}
           </Button>
           <Button
@@ -49,7 +47,8 @@ const AssignmentWarningDialog = (props: AssignmentWarningDialogProps) => {
               setIsOpenAssignmentWarnDialog(false);
               leaveWithoutAssigningHosts.current = true;
               router.replace(pendingRoute);
-            }}>
+            }}
+            color="secondary">
             {t("leave_without_assigning")}
           </Button>
         </DialogFooter>

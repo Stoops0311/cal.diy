@@ -1,9 +1,7 @@
-import Link from "next/link";
-import { createElement } from "react";
-
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import classNames from "@calcom/ui/classNames";
-
+import Link from "next/link";
+import { createElement } from "react";
 import { Badge } from "../badge";
 
 export type ListProps = {
@@ -44,7 +42,7 @@ export function ListItem(props: ListItemProps) {
     {
       ...passThroughProps,
       className: classNames(
-        "items-center bg-default min-w-0 flex-1 flex border-neutral-200 p-4 sm:mx-0 md:border md:p-4 xl:mt-0 border-subtle",
+        "items-center bg-default min-w-0 flex-1 flex p-4 sm:mx-0 md:border md:p-4 xl:mt-0 border-subtle",
         expanded ? "my-2 border" : "border -mb-px last:mb-0",
         // Pass rounded false to not round the corners -> Useful when used in list we can use roundedContainer to create the right design
         rounded ? "rounded-md" : "rounded-none",
@@ -56,13 +54,7 @@ export function ListItem(props: ListItemProps) {
     props.children
   );
 
-  return href ? (
-    <Link href={href}>
-      {element}
-    </Link>
-  ) : (
-    element
-  );
+  return href ? <Link href={href}>{element}</Link> : element;
 }
 
 export type ListLinkItemProps = {
@@ -112,7 +104,7 @@ export function ListLinkItem(props: ListLinkItemProps) {
             </Badge>
           )}
         </div>
-        <h2 className="min-h-4 mt-2 text-sm font-normal leading-none text-neutral-600">
+        <h2 className="text-subtle min-h-4 mt-2 text-sm font-normal leading-none">
           {subHeading.substring(0, 100)}
           {subHeading.length > 100 && "..."}
         </h2>

@@ -1,8 +1,7 @@
 import { TooltipProvider } from "@radix-ui/react-tooltip";
-import { render, fireEvent } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { vi } from "vitest";
-
-import { EmailField, TextAreaField, PasswordField, NumberInput, FilterSearchField } from "./Input";
+import { EmailField, FilterSearchField, NumberInput, PasswordField, TextAreaField } from "./Input";
 import { InputField } from "./TextField";
 
 const onChangeMock = vi.fn();
@@ -15,6 +14,12 @@ describe("Tests for InputField Component", () => {
 
     expect(getByLabelText("Test Label")).toBeInTheDocument();
     expect(getByPlaceholderText("Test Placeholder")).toBeInTheDocument();
+  });
+
+  test("Should associate the label when a custom id is provided", () => {
+    const { getByLabelText } = render(<InputField id="custom-input" name="testInput" label="Test Label" />);
+
+    expect(getByLabelText("Test Label")).toHaveAttribute("id", "custom-input");
   });
 
   test("Should handle input correctly", () => {
@@ -102,6 +107,14 @@ describe("Tests for TextAreaField Component", () => {
     expect(getByText("Test Label")).toBeInTheDocument();
     expect(getByPlaceholderText("Test Placeholder")).toBeInTheDocument();
     expect(getByRole("textbox")).toBeInTheDocument();
+  });
+
+  test("Should associate the label when a custom id is provided", () => {
+    const { getByLabelText } = render(
+      <TextAreaField id="custom-textarea" name="testTextArea" label="Test Label" />
+    );
+
+    expect(getByLabelText("Test Label")).toHaveAttribute("id", "custom-textarea");
   });
 
   test("Should handle input correctly", () => {

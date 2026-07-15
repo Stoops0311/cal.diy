@@ -1,12 +1,11 @@
 "use client";
 
-import { DubEmbed } from "@dub/embed-react";
-import { useTheme } from "next-themes";
-import { useState, useEffect } from "react";
-
 import { IS_DUB_REFERRALS_ENABLED } from "@calcom/lib/constants";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { showToast } from "@calcom/ui/components/toast";
+import { DubEmbed } from "@dub/embed-react";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 const fetchReferralsToken = async () => {
   try {
@@ -60,7 +59,8 @@ export const DubReferralsPage = () => {
       options={{
         theme,
         themeOptions: {
-          backgroundColor: `${theme === "dark" ? "#0F0F0F" : "#FFFFFF"}`,
+          // Third-party embed only accepts hex; these are the night/paper canvas token values
+          backgroundColor: `${theme === "dark" ? "#050505" : "#FFFFFF"}`,
         },
       }}
     />

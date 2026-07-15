@@ -1,0 +1,458 @@
+/*
+ * Convenio marketing system — strict monochrome per brand brief.
+ * Light and dark are mirror-image systems, not a dimmed variant:
+ * both prefers-color-scheme and the app's html.dark class flip the same tokens.
+ */
+.cv-root {
+  --cv-bg: #ffffff;
+  --cv-ink: #0a0a0a;
+  --cv-muted: #6b6b6b;
+  --cv-hairline: rgba(10, 10, 10, 0.14);
+  --cv-hairline-strong: rgba(10, 10, 10, 0.4);
+  --cv-wash: rgba(10, 10, 10, 0.04);
+
+  background: var(--cv-bg);
+  color: var(--cv-ink);
+  font-family: var(--font-sans, system-ui);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light) .cv-root {
+    --cv-bg: #050505;
+    --cv-ink: #f2f2f2;
+    --cv-muted: #9a9a9a;
+    --cv-hairline: rgba(242, 242, 242, 0.16);
+    --cv-hairline-strong: rgba(242, 242, 242, 0.45);
+    --cv-wash: rgba(242, 242, 242, 0.05);
+  }
+}
+html.dark .cv-root {
+  --cv-bg: #050505;
+  --cv-ink: #f2f2f2;
+  --cv-muted: #9a9a9a;
+  --cv-hairline: rgba(242, 242, 242, 0.16);
+  --cv-hairline-strong: rgba(242, 242, 242, 0.45);
+  --cv-wash: rgba(242, 242, 242, 0.05);
+}
+
+.cv-root *,
+.cv-root *::before,
+.cv-root *::after {
+  box-sizing: border-box;
+}
+
+/* :where() keeps this reset at class-level specificity so single-class
+   rules below (.cv-pill, .cv-nav-link) can still set their own color. */
+.cv-root :where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.cv-root :focus-visible {
+  outline: 2px solid var(--cv-ink);
+  outline-offset: 3px;
+}
+
+.cv-container {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ---------- type roles ---------- */
+
+.cv-eyebrow {
+  font-family: var(--font-cv-mono, monospace);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--cv-muted);
+}
+
+.cv-display {
+  font-family: var(--font-cv-display, var(--font-sans, system-ui));
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  margin: 0;
+}
+
+.cv-body {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--cv-muted);
+  max-width: 34em;
+}
+
+/* ---------- header / footer ---------- */
+
+.cv-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--cv-bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--cv-hairline);
+}
+
+.cv-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.cv-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-cv-display, var(--font-sans, system-ui));
+  font-weight: 700;
+  font-size: 1.0625rem;
+  letter-spacing: -0.02em;
+}
+
+.cv-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.cv-nav-link {
+  font-family: var(--font-cv-mono, monospace);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cv-muted);
+  transition: color 120ms ease;
+}
+
+.cv-nav-link:hover,
+.cv-nav-link[aria-current="page"] {
+  color: var(--cv-ink);
+}
+
+/* Inverted solid pill — the brief's substitute for an accent color. */
+.cv-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 1px solid var(--cv-ink);
+  background: var(--cv-ink);
+  color: var(--cv-bg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: opacity 120ms ease;
+}
+
+.cv-pill:hover {
+  opacity: 0.82;
+}
+
+.cv-pill--ghost {
+  background: transparent;
+  color: var(--cv-ink);
+  border-color: var(--cv-hairline-strong);
+}
+
+.cv-pill--ghost:hover {
+  border-color: var(--cv-ink);
+  opacity: 1;
+}
+
+.cv-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--cv-hairline);
+  padding: 48px 0 40px;
+}
+
+.cv-footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.cv-footer-etym {
+  font-family: var(--font-cv-mono, monospace);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cv-muted);
+  margin-top: 14px;
+}
+
+.cv-footer-legal {
+  font-size: 0.8125rem;
+  color: var(--cv-muted);
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--cv-hairline);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+/* ---------- hero ---------- */
+
+.cv-hero {
+  padding-block: 96px 80px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 48px;
+  align-items: center;
+}
+
+.cv-hero h1 {
+  font-size: clamp(2.75rem, 7vw, 5.5rem);
+  margin: 20px 0 28px;
+}
+
+.cv-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 36px;
+}
+
+/* Signature: two arcs draw themselves toward a single point of agreement. */
+.cv-mark-hero {
+  width: 100%;
+  max-width: 380px;
+  justify-self: end;
+}
+
+.cv-arc {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: cv-draw 1.3s cubic-bezier(0.6, 0, 0.2, 1) forwards;
+}
+
+.cv-arc--lower {
+  animation-delay: 0.15s;
+}
+
+.cv-meet {
+  opacity: 0;
+  transform-origin: center;
+  animation: cv-meet 0.5s ease 1.25s forwards;
+}
+
+@keyframes cv-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes cv-meet {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-arc {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .cv-meet {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* ---------- numbered rows (01 / 02 / 03) ---------- */
+
+.cv-rows {
+  border-top: 1px solid var(--cv-hairline);
+}
+
+.cv-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 32px;
+  padding: 56px 0;
+  border-bottom: 1px solid var(--cv-hairline);
+}
+
+.cv-row-num {
+  font-family: var(--font-cv-mono, monospace);
+  font-size: 0.8125rem;
+  letter-spacing: 0.1em;
+  color: var(--cv-muted);
+  padding-top: 6px;
+}
+
+.cv-row h3 {
+  font-family: var(--font-cv-display, var(--font-sans, system-ui));
+  font-size: clamp(1.5rem, 3vw, 2.125rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin: 10px 0 0;
+}
+
+.cv-row-body p {
+  margin: 0;
+}
+
+.cv-row-body p + p {
+  margin-top: 12px;
+}
+
+/* mono spec list used on the products page */
+.cv-spec {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  font-family: var(--font-cv-mono, monospace);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cv-muted);
+}
+
+.cv-spec li {
+  padding: 9px 0;
+  border-top: 1px solid var(--cv-hairline);
+}
+
+/* ---------- statement band ---------- */
+
+.cv-band {
+  background: var(--cv-ink);
+  color: var(--cv-bg);
+  padding: 96px 0;
+}
+
+.cv-band p {
+  font-family: var(--font-cv-display, var(--font-sans, system-ui));
+  font-size: clamp(1.75rem, 4.5vw, 3.25rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  margin: 0;
+  max-width: 20em;
+}
+
+.cv-band .cv-eyebrow {
+  color: color-mix(in srgb, var(--cv-bg) 60%, transparent);
+  margin-bottom: 24px;
+  display: block;
+}
+
+/* ---------- closing cta ---------- */
+
+.cv-cta {
+  padding-block: 112px;
+  text-align: center;
+}
+
+.cv-cta h2 {
+  font-family: var(--font-cv-display, var(--font-sans, system-ui));
+  font-size: clamp(2.25rem, 5.5vw, 4rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  margin: 18px 0 32px;
+}
+
+.cv-cta .cv-hero-actions {
+  justify-content: center;
+  margin-top: 0;
+}
+
+/* ---------- page hero (products / manifesto) ---------- */
+
+.cv-page-hero {
+  padding-block: 88px 64px;
+}
+
+.cv-page-hero h1 {
+  font-size: clamp(2.5rem, 6vw, 4.75rem);
+  margin: 20px 0 24px;
+  max-width: 14em;
+}
+
+/* ---------- manifesto ---------- */
+
+.cv-manifesto {
+  padding-block: 0 96px;
+}
+
+.cv-manifesto-body {
+  max-width: 42rem;
+}
+
+.cv-manifesto-body p {
+  font-size: clamp(1.125rem, 1.8vw, 1.375rem);
+  line-height: 1.75;
+  color: var(--cv-ink);
+  margin: 0 0 2em;
+}
+
+.cv-manifesto-body em {
+  font-style: italic;
+}
+
+.cv-manifesto-close {
+  margin-top: 72px;
+  padding-top: 40px;
+  border-top: 1px solid var(--cv-hairline);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 860px) {
+  .cv-hero {
+    grid-template-columns: 1fr;
+    padding-block: 64px 56px;
+  }
+
+  .cv-mark-hero {
+    max-width: 240px;
+    justify-self: start;
+    order: -1;
+  }
+
+  .cv-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 40px 0;
+  }
+
+  .cv-nav {
+    gap: 18px;
+  }
+
+  .cv-nav-link--secondary {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .cv-container {
+    padding-inline: 20px;
+  }
+}

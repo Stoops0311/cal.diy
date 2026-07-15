@@ -1,11 +1,11 @@
 "use client";
 
 import { useBookerUrl } from "@calcom/features/bookings/hooks/useBookerUrl";
+import SettingsHeader from "@calcom/features/settings/appDir/SettingsHeader";
 import { APP_NAME, WEBAPP_URL } from "@calcom/lib/constants";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import type { RouterOutputs } from "@calcom/trpc/react";
 import { Avatar, AvatarImage } from "@coss/ui/components/avatar";
-import { Card, CardFrame, CardFrameHeader, CardPanel } from "@coss/ui/components/card";
 import {
   Empty,
   EmptyContent,
@@ -14,12 +14,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@coss/ui/components/empty";
-import {
-  AppHeader,
-  AppHeaderActions,
-  AppHeaderContent,
-  AppHeaderDescription,
-} from "@coss/ui/shared/app-header";
 import { WebhookIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CreateNewWebhookButton, WebhookListItem } from "../components";
@@ -45,19 +39,13 @@ const WebhooksList = ({ webhooksByViewer }: { webhooksByViewer: WebhooksByViewer
   const bookerUrl = useBookerUrl();
 
   return (
-    <>
-      <AppHeader>
-        <AppHeaderContent title={t("webhooks")}>
-          <AppHeaderDescription>{t("add_webhook_description", { appName: APP_NAME })}</AppHeaderDescription>
-        </AppHeaderContent>
-        {webhookGroups.length > 0 && (
-          <AppHeaderActions>
-            <CreateNewWebhookButton />
-          </AppHeaderActions>
-        )}
-      </AppHeader>
-
-      <div className="flex flex-col gap-6">
+    <SettingsHeader
+      eyebrow={t("developer")}
+      title={t("webhooks")}
+      description={t("add_webhook_description", { appName: APP_NAME })}
+      CTA={webhookGroups.length > 0 ? <CreateNewWebhookButton /> : undefined}
+      borderInShellHeader={true}>
+      <div className="flex flex-col gap-8 py-6">
         {webhookGroups.length ? (
           webhookGroups.map((group) => {
             const userName = group.profile.name ?? group.profile.slug ?? "";
@@ -66,41 +54,35 @@ const WebhooksList = ({ webhooksByViewer }: { webhooksByViewer: WebhooksByViewer
               (group.profile.slug ? `${bookerUrl}/${group.profile.slug}/avatar.png` : undefined);
             return (
               <section key={group.teamId ?? group.profile.slug ?? ""}>
-                <CardFrame>
-                  <CardFrameHeader>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="size-5">
-                        {userAvatar ? <AvatarImage alt={userName} src={userAvatar} /> : null}
-                      </Avatar>
-                      <span className="font-medium text-sm">{userName}</span>
-                    </div>
-                  </CardFrameHeader>
-                  <Card>
-                    <CardPanel className="p-0">
-                      {[...group.webhooks]
-                        .sort((a, b) => a.id.localeCompare(b.id))
-                        .map((webhook) => (
-                          <WebhookListItem
-                            key={webhook.id}
-                            webhook={webhook}
-                            editHref={`${WEBAPP_URL}/settings/developer/webhooks/${webhook.id}`}
-                            permissions={{
-                              canEditWebhook: group?.metadata?.canModify ?? false,
-                              canDeleteWebhook: group?.metadata?.canDelete ?? false,
-                            }}
-                            onEditWebhookAction={() =>
-                              router.push(`${WEBAPP_URL}/settings/developer/webhooks/${webhook.id}`)
-                            }
-                          />
-                        ))}
-                    </CardPanel>
-                  </Card>
-                </CardFrame>
+                <div className="mb-2 flex items-center gap-2">
+                  <Avatar className="size-5">
+                    {userAvatar ? <AvatarImage alt={userName} src={userAvatar} /> : null}
+                  </Avatar>
+                  <span className="font-medium text-sm">{userName}</span>
+                </div>
+                <div className="border-subtle divide-subtle divide-y border-y">
+                  {[...group.webhooks]
+                    .sort((a, b) => a.id.localeCompare(b.id))
+                    .map((webhook) => (
+                      <WebhookListItem
+                        key={webhook.id}
+                        webhook={webhook}
+                        editHref={`${WEBAPP_URL}/settings/developer/webhooks/${webhook.id}`}
+                        permissions={{
+                          canEditWebhook: group?.metadata?.canModify ?? false,
+                          canDeleteWebhook: group?.metadata?.canDelete ?? false,
+                        }}
+                        onEditWebhookAction={() =>
+                          router.push(`${WEBAPP_URL}/settings/developer/webhooks/${webhook.id}`)
+                        }
+                      />
+                    ))}
+                </div>
               </section>
             );
           })
         ) : (
-          <Empty className="rounded-xl border border-dashed">
+          <Empty>
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <WebhookIcon />
@@ -116,7 +98,7 @@ const WebhooksList = ({ webhooksByViewer }: { webhooksByViewer: WebhooksByViewer
           </Empty>
         )}
       </div>
-    </>
+    </SettingsHeader>
   );
 };
 

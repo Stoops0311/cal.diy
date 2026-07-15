@@ -1,18 +1,16 @@
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import classNames from "@calcom/ui/classNames";
+import type React from "react";
 import type { Dispatch, SetStateAction } from "react";
-import React from "react";
 import type {
   GroupBase,
-  OptionProps,
   MultiValueProps,
   MultiValue as MultiValueType,
+  OptionProps,
+  Props,
   SingleValue,
 } from "react-select";
 import { components } from "react-select";
-import type { Props } from "react-select";
-
-import { useLocale } from "@calcom/lib/hooks/useLocale";
-import classNames from "@calcom/ui/classNames";
-
 import { Select } from "../select";
 
 export type Option = {
@@ -41,6 +39,7 @@ const InputOption: React.FC<OptionProps<Option, boolean, GroupBase<Option>>> = (
       innerProps={props}>
       <input
         type="checkbox"
+        aria-label={typeof children === "string" ? children : undefined}
         className="text-emphasis focus:ring-emphasis dark:text-muted border-default h-4 w-4 rounded transition ltr:mr-2 rtl:ml-2"
         checked={isSelected}
         readOnly

@@ -1,5 +1,6 @@
 "use client";
 
+import process from "node:process";
 import getStripe from "@calcom/app-store/stripepayment/lib/client";
 import { getPremiumPlanPriceValue } from "@calcom/app-store/stripepayment/lib/utils";
 import {
@@ -34,7 +35,6 @@ import classNames from "@calcom/ui/classNames";
 import { Alert } from "@calcom/ui/components/alert";
 import { Button } from "@calcom/ui/components/button";
 import { CheckboxField, Form, PasswordField, SelectField, TextField } from "@calcom/ui/components/form";
-import { Icon } from "@calcom/ui/components/icon";
 import { showToast } from "@calcom/ui/components/toast";
 import { InfoIcon, ShieldCheckIcon, StarIcon } from "@coss/ui/icons";
 import { Analytics as DubAnalytics } from "@dub/analytics/react";
@@ -51,6 +51,7 @@ import type { SubmitHandler } from "react-hook-form";
 import { useForm, useFormContext } from "react-hook-form";
 import { Toaster } from "sonner";
 import { z } from "zod";
+import AuthShell from "./auth/components/AuthShell";
 
 const signupSchema = apiSignupSchema.extend({
   apiError: z.string().optional(), // Needed to display API errors doesn't get passed to the API
@@ -64,30 +65,6 @@ const TurnstileCaptcha = dynamic(() => import("@calcom/web/modules/auth/componen
 type FormValues = z.infer<typeof signupSchema>;
 
 export type SignupProps = inferSSRProps<typeof getServerSideProps>;
-
-const FEATURES = [
-  {
-    title: "connect_all_calendars",
-    description: "connect_all_calendars_description",
-    i18nOptions: {
-      appName: APP_NAME,
-    },
-    icon: "calendar-heart" as const,
-  },
-  {
-    title: "set_availability",
-    description: "set_availbility_description",
-    icon: "users" as const,
-  },
-  {
-    title: "share_a_link_or_embed",
-    description: "share_a_link_or_embed_description",
-    icon: "link-2" as const,
-    i18nOptions: {
-      appName: APP_NAME,
-    },
-  },
-];
 
 function truncateDomain(domain: string) {
   const maxLength = 25;
@@ -158,7 +135,7 @@ function UsernameField({
         data-testid="signup-usernamefield"
       />
       {(!formState.isSubmitting || !formState.isSubmitted) && (
-        <div className="flex items-center text-default text-gray text-sm">
+        <div className="flex items-center text-default text-sm">
           <div className="text-sm">
             {usernameTaken ? (
               <div className="flex items-center text-error">
@@ -209,6 +186,7 @@ export default function Signup({
   const [displayEmailForm, setDisplayEmailForm] = useState(token);
   const [turnstileKey, setTurnstileKey] = useState(0);
   const searchParams = useCompatSearchParams();
+  const [signupRegion, setSignupRegion] = useState<"eu" | "us">(WEBAPP_URL.includes("cal.eu") ? "eu" : "us");
   const { t, i18n } = useLocale();
   const router = useRouter();
   const formMethods = useForm<FormValues>({
@@ -227,6 +205,11 @@ export default function Signup({
       localStorage.setItem("onBoardingRedirect", redirectUrl);
     }
   }, [redirectUrl]);
+
+  useEffect(() => {
+    if (!WEBAPP_URL.includes("localhost")) return;
+    setSignupRegion(searchParams?.get("region") === "eu" ? "eu" : "us");
+  }, [searchParams]);
 
   const [userConsentToCookie, setUserConsentToCookie] = useState(false); // No need to be checked for user to proceed
 
@@ -373,493 +356,373 @@ export default function Signup({
           />
         </>
       ) : null}
-      <div
-        className={classNames(
-          "light flex min-h-screen w-full flex-col items-center justify-center bg-cal-muted [--cal-brand:#111827] 2xl:bg-default dark:[--cal-brand:#FFFFFF]",
-          "[--cal-brand-subtle:#9CA3AF]",
-          "[--cal-brand-text:#FFFFFF] dark:[--cal-brand-text:#000000]",
-          "[--cal-brand-emphasis:#101010] dark:[--cal-brand-emphasis:#e1e1e1]"
-        )}>
-        <div className="grid w-full max-w-[1440px] grid-cols-1 grid-rows-1 overflow-hidden bg-cal-muted lg:grid-cols-2 2xl:rounded-[20px] 2xl:border 2xl:border-subtle 2xl:py-6">
-          {/* Left side */}
-          <div className="mt-0 mr-auto ml-auto flex w-full max-w-xl flex-col px-4 pt-6 sm:px-16 md:px-20 lg:mt-24 2xl:px-28">
-            {accountUnderReview ? (
-              <div
-                className="flex flex-col items-center gap-4 py-10 text-center"
-                data-testid="account-under-review">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-subtle">
-                  <ShieldCheckIcon className="h-6 w-6 text-default" />
-                </div>
-                <h1 className="font-cal text-[28px] leading-none">{t("account_under_review_title")}</h1>
-                <p className="font-medium text-base text-subtle leading-5">
-                  {t("account_under_review_description")}
-                </p>
-                <Button href="/auth/login" className="mt-4">
-                  {t("go_back_login")}
-                </Button>
+      <AuthShell>
+        <div className="flex w-full flex-col">
+          {accountUnderReview ? (
+            <div
+              className="flex flex-col items-center gap-4 py-10 text-center"
+              data-testid="account-under-review">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-subtle">
+                <ShieldCheckIcon className="h-6 w-6 text-default" />
               </div>
-            ) : (
-              <>
-                {displayBackButton && (
-                  <div className="flex w-fit lg:-mt-12">
-                    <Button
-                      color="minimal"
-                      className="todesktop:mt-10 mb-6 flex h-6 max-h-6 w-full items-center rounded-md px-3 py-2 hover:bg-subtle"
-                      StartIcon="arrow-left"
-                      data-testid="signup-back-button"
-                      onClick={() => {
-                        setDisplayEmailForm(false);
-                      }}>
-                      {t("back")}
-                    </Button>
-                  </div>
-                )}
-                <div className="flex flex-col gap-2">
-                  <h1 className="font-cal text-[28px] leading-none">
-                    {IS_CALCOM ? t("create_your_calcom_account") : t("create_your_account")}
-                  </h1>
-                  {IS_CALCOM ? (
-                    <p className="font-medium text-base text-subtle leading-5">
-                      {t("cal_signup_description")}
-                    </p>
-                  ) : (
-                    <p className="font-medium text-base text-subtle leading-5">
-                      {t("calcom_explained", {
-                        appName: APP_NAME,
-                      })}
-                    </p>
-                  )}
-                  {IS_CALCOM && (
-                    <div className="mt-12">
-                      <SelectField
-                        label={t("data_region")}
-                        value={{
-                          label: t(
-                            // Use WEBAPP_URL for SSR-safe region detection
-                            WEBAPP_URL.includes("cal.eu") ||
-                              (typeof window !== "undefined" &&
-                                window.location.hostname === "localhost" &&
-                                new URL(window.location.href).searchParams.get("region") === "eu")
-                              ? "european_union"
-                              : "united_states"
-                          ),
-                          value:
-                            // Use WEBAPP_URL for SSR-safe region detection
-                            WEBAPP_URL.includes("cal.eu") ||
-                            (typeof window !== "undefined" &&
-                              window.location.hostname === "localhost" &&
-                              new URL(window.location.href).searchParams.get("region") === "eu")
-                              ? "eu"
-                              : "us",
-                        }}
-                        options={[
-                          { label: t("united_states"), value: "us" },
-                          { label: t("european_union"), value: "eu" },
-                        ]}
-                        onChange={(option) => {
-                          if (option && "value" in option) {
-                            const currentUrl = new URL(window.location.href);
-
-                            // Handle localhost - add region as URL parameter
-                            if (currentUrl.hostname === "localhost") {
-                              currentUrl.searchParams.set("region", option.value);
-                              window.location.href = currentUrl.toString();
-                              return;
-                            }
-
-                            // Handle production domains - modify hostname only to preserve query params
-                            if (option.value === "eu") {
-                              currentUrl.hostname = currentUrl.hostname.replace("cal.com", "cal.eu");
-                            } else {
-                              currentUrl.hostname = currentUrl.hostname.replace("cal.eu", "cal.com");
-                            }
-                            window.location.href = currentUrl.toString();
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
+              <h1 className="font-cal text-[28px] leading-none">{t("account_under_review_title")}</h1>
+              <p className="font-medium text-base text-subtle leading-5">
+                {t("account_under_review_description")}
+              </p>
+              <Button href="/auth/login" className="mt-4">
+                {t("go_back_login")}
+              </Button>
+            </div>
+          ) : (
+            <>
+              {displayBackButton && (
+                <div className="flex w-fit lg:-mt-12">
+                  <Button
+                    color="minimal"
+                    className="todesktop:mt-10 mb-6 flex h-6 max-h-6 w-full items-center rounded-md px-3 py-2 hover:bg-subtle"
+                    StartIcon="arrow-left"
+                    data-testid="signup-back-button"
+                    onClick={() => {
+                      setDisplayEmailForm(false);
+                    }}>
+                    {t("back")}
+                  </Button>
                 </div>
+              )}
+              <div className="flex flex-col gap-2">
+                <h1 className="font-cal text-[28px] leading-none">
+                  {IS_CALCOM ? t("create_your_calcom_account") : t("create_your_account")}
+                </h1>
+                {IS_CALCOM ? (
+                  <p className="font-medium text-base text-subtle leading-5">{t("cal_signup_description")}</p>
+                ) : (
+                  <p className="font-medium text-base text-subtle leading-5">
+                    {t("calcom_explained", {
+                      appName: APP_NAME,
+                    })}
+                  </p>
+                )}
+                {IS_CALCOM && (
+                  <div className="mt-12">
+                    <SelectField
+                      label={t("data_region")}
+                      value={{
+                        label: t(signupRegion === "eu" ? "european_union" : "united_states"),
+                        value: signupRegion,
+                      }}
+                      options={[
+                        { label: t("united_states"), value: "us" },
+                        { label: t("european_union"), value: "eu" },
+                      ]}
+                      onChange={(option) => {
+                        if (option && "value" in option) {
+                          const currentUrl = new URL(window.location.href);
 
-                {/* Form Container */}
-                {displayEmailForm && (
-                  <div className="mt-6">
-                    <Form
-                      className="flex flex-col gap-4"
-                      form={formMethods}
-                      handleSubmit={async (values) => {
-                        let updatedValues = values;
-                        if (!formMethods.getValues().username && isOrgInviteByLink) {
-                          updatedValues = {
-                            ...values,
-                            username: getOrgUsernameFromEmail(values.email, orgAutoAcceptEmail),
-                          };
-                        }
-                        await signUp(updatedValues);
-                      }}>
-                      {/* Username */}
-                      {!isOrgInviteByLink ? (
-                        <UsernameField
-                          orgSlug={orgSlug}
-                          label={t("username")}
-                          username={watch("username") || ""}
-                          premium={premiumUsername}
-                          usernameTaken={usernameTaken}
-                          disabled={!!orgSlug}
-                          setUsernameTaken={(value) => setUsernameTaken(value)}
-                          data-testid="signup-usernamefield"
-                          setPremium={(value) => setPremiumUsername(value)}
-                          addOnLeading={
-                            orgSlug
-                              ? truncateDomain(
-                                  `${WEBAPP_URL.replace(
-                                    URL_PROTOCOL_REGEX,
-                                    ""
-                                  )}/`
-                                )
-                              : truncateDomain(
-                                  `${WEBSITE_URL.replace(URL_PROTOCOL_REGEX, "")}/`
-                                )
+                          // Handle localhost - add region as URL parameter
+                          if (currentUrl.hostname === "localhost") {
+                            currentUrl.searchParams.set("region", option.value);
+                            window.location.href = currentUrl.toString();
+                            return;
                           }
-                        />
-                      ) : null}
-                      {/* Email */}
-                      <TextField
-                        id="signup-email"
-                        {...register("email")}
-                        label={t("email")}
-                        placeholder="john@doe.com"
-                        type="email"
-                        autoComplete="email"
-                        disabled={prepopulateFormValues?.email}
-                        data-testid="signup-emailfield"
-                      />
 
-                      {/* Password */}
-                      <PasswordField
-                        id="signup-password"
-                        data-testid="signup-passwordfield"
-                        autoComplete="new-password"
-                        label={t("password")}
-                        {...register("password")}
-                        hintErrors={["caplow", "min", "num"]}
-                      />
-                      {/* Cloudflare Turnstile Captcha */}
-                      {CLOUDFLARE_SITE_ID ? (
-                        <TurnstileCaptcha
-                          key={turnstileKey}
-                          appearance="interaction-only"
-                          onVerify={(token) => {
-                            formMethods.setValue("cfToken", token);
-                          }}
-                          onExpire={() => {
-                            formMethods.setValue("cfToken", undefined);
-                          }}
-                          onError={() => {
-                            formMethods.setValue("cfToken", undefined);
-                          }}
-                        />
-                      ) : null}
-
-                      <CheckboxField
-                        data-testid="signup-cookie-content-checkbox"
-                        onChange={() => handleConsentChange(userConsentToCookie)}
-                        description={t("cookie_consent_checkbox")}
-                      />
-                      {errors.apiError && (
-                        <Alert
-                          className="mb-3"
-                          severity="error"
-                          message={errors.apiError?.message}
-                          data-testid="signup-error-message"
-                        />
-                      )}
-                      <Button
-                        type="submit"
-                        data-testid="signup-submit-button"
-                        className="my-2 w-full justify-center"
-                        loading={loadingSubmitState}
-                        disabled={
-                          !!formMethods.formState.errors.username ||
-                          !!formMethods.formState.errors.email ||
-                          !formMethods.getValues("email") ||
-                          !formMethods.getValues("password") ||
-                          (CLOUDFLARE_SITE_ID && !process.env.NEXT_PUBLIC_IS_E2E && !watch("cfToken")) ||
-                          isSubmitting ||
-                          usernameTaken
-                        }>
-                        {premiumUsername && !usernameTaken
-                          ? `${t("get_started")} (${getPremiumPlanPriceValue()})`
-                          : t("get_started")}
-                      </Button>
-                    </Form>
+                          // Handle production domains - modify hostname only to preserve query params
+                          if (option.value === "eu") {
+                            currentUrl.hostname = currentUrl.hostname.replace("cal.com", "cal.eu");
+                          } else {
+                            currentUrl.hostname = currentUrl.hostname.replace("cal.eu", "cal.com");
+                          }
+                          window.location.href = currentUrl.toString();
+                        }
+                      }}
+                    />
                   </div>
                 )}
-                {!displayEmailForm && (
-                  <div className="mt-8 flex flex-col gap-6">
-                    {/* Upper Row */}
-                    {isGoogleLoginEnabled && (
-                      <div className="flex flex-col gap-2 md:flex-row">
-                        <Button
-                          color="primary"
-                          loading={isGoogleLoading}
-                          disabled={isMicrosoftLoading}
-                          CustomStartIcon={
-                            <>
-                              {/* eslint-disable @next/next/no-img-element */}
-                              <img
-                                className={classNames(
-                                  "mr-2 h-4 w-4 text-subtle",
-                                  premiumUsername && "opacity-50"
-                                )}
-                                src="/google-icon-colored.svg"
-                                alt="Continue with Google Icon"
-                              />
-                            </>
-                          }
-                          className={classNames("w-full justify-center rounded-md text-center")}
-                          data-testid="continue-with-google-button"
-                          onClick={async () => {
-                            posthog.capture("signup_google_button_clicked", {
-                              has_token: !!token,
-                              is_org_invite: isOrgInviteByLink,
-                              org_slug: orgSlug,
-                              has_prepopulated_username: !!prepopulateFormValues?.username,
-                            });
-                            setIsGoogleLoading(true);
-                            const baseUrl = process.env.NEXT_PUBLIC_WEBAPP_URL;
-                            const GOOGLE_AUTH_URL = `${baseUrl}/auth/sso/google`;
-                            const searchQueryParams = new URLSearchParams();
-                            if (prepopulateFormValues?.username) {
-                              // If username is present we save it in query params to check for premium
-                              searchQueryParams.set("username", prepopulateFormValues.username);
-                              localStorage.setItem("username", prepopulateFormValues.username);
-                            }
-                            if (token && prepopulateFormValues?.email) {
-                              searchQueryParams.set("email", prepopulateFormValues.email);
-                            }
-                            const url = searchQueryParams.toString()
-                              ? `${GOOGLE_AUTH_URL}?${searchQueryParams.toString()}`
-                              : GOOGLE_AUTH_URL;
+              </div>
 
-                            router.push(url);
-                          }}>
-                          {t("continue_with_google")}
-                        </Button>
-                      </div>
+              {/* Form Container */}
+              {displayEmailForm && (
+                <div className="mt-6">
+                  <Form
+                    className="flex flex-col gap-4"
+                    form={formMethods}
+                    handleSubmit={async (values) => {
+                      let updatedValues = values;
+                      if (!formMethods.getValues().username && isOrgInviteByLink) {
+                        updatedValues = {
+                          ...values,
+                          username: getOrgUsernameFromEmail(values.email, orgAutoAcceptEmail),
+                        };
+                      }
+                      await signUp(updatedValues);
+                    }}>
+                    {/* Username */}
+                    {!isOrgInviteByLink ? (
+                      <UsernameField
+                        orgSlug={orgSlug}
+                        label={t("username")}
+                        username={watch("username") || ""}
+                        premium={premiumUsername}
+                        usernameTaken={usernameTaken}
+                        disabled={!!orgSlug}
+                        setUsernameTaken={(value) => setUsernameTaken(value)}
+                        data-testid="signup-usernamefield"
+                        setPremium={(value) => setPremiumUsername(value)}
+                        addOnLeading={
+                          orgSlug
+                            ? truncateDomain(`${WEBAPP_URL.replace(URL_PROTOCOL_REGEX, "")}/`)
+                            : truncateDomain(`${WEBSITE_URL.replace(URL_PROTOCOL_REGEX, "")}/`)
+                        }
+                      />
+                    ) : null}
+                    {/* Email */}
+                    <TextField
+                      id="signup-email"
+                      {...register("email")}
+                      label={t("email")}
+                      placeholder="john@doe.com"
+                      type="email"
+                      autoComplete="email"
+                      disabled={prepopulateFormValues?.email}
+                      data-testid="signup-emailfield"
+                    />
+
+                    {/* Password */}
+                    <PasswordField
+                      id="signup-password"
+                      data-testid="signup-passwordfield"
+                      autoComplete="new-password"
+                      label={t("password")}
+                      {...register("password")}
+                      hintErrors={["caplow", "min", "num"]}
+                    />
+                    {/* Cloudflare Turnstile Captcha */}
+                    {CLOUDFLARE_SITE_ID ? (
+                      <TurnstileCaptcha
+                        key={turnstileKey}
+                        appearance="interaction-only"
+                        onVerify={(token) => {
+                          formMethods.setValue("cfToken", token);
+                        }}
+                        onExpire={() => {
+                          formMethods.setValue("cfToken", undefined);
+                        }}
+                        onError={() => {
+                          formMethods.setValue("cfToken", undefined);
+                        }}
+                      />
+                    ) : null}
+
+                    <CheckboxField
+                      data-testid="signup-cookie-content-checkbox"
+                      onChange={() => handleConsentChange(userConsentToCookie)}
+                      description={t("cookie_consent_checkbox")}
+                    />
+                    {errors.apiError && (
+                      <Alert
+                        className="mb-3"
+                        severity="error"
+                        message={errors.apiError?.message}
+                        data-testid="signup-error-message"
+                      />
                     )}
-
-                    {isOutlookLoginEnabled && (
-                      <div className="flex flex-col gap-2 md:flex-row">
-                        <Button
-                          color="secondary"
-                          loading={isMicrosoftLoading}
-                          disabled={isGoogleLoading}
-                          CustomStartIcon={
-                            <>
-                              {/* eslint-disable @next/next/no-img-element */}
-                              <img
-                                className={classNames(
-                                  "text-subtle mr-2 h-4 w-4",
-                                  premiumUsername && "opacity-50"
-                                )}
-                                src="/microsoft-logo.svg"
-                                alt="Continue with Microsoft Icon"
-                              />
-                            </>
-                          }
-                          className={classNames("w-full justify-center rounded-md text-center")}
-                          data-testid="continue-with-microsoft-button"
-                          onClick={async () => {
-                            posthog.capture("signup_microsoft_button_clicked", {
-                              has_token: !!token,
-                              is_org_invite: isOrgInviteByLink,
-                              org_slug: orgSlug,
-                              has_prepopulated_username: !!prepopulateFormValues?.username,
-                            });
-                            setIsMicrosoftLoading(true);
-                            const baseUrl = process.env.NEXT_PUBLIC_WEBAPP_URL;
-                            const MICROSOFT_AUTH_URL = `${baseUrl}/auth/sso/microsoft`;
-                            const searchQueryParams = new URLSearchParams();
-                            if (prepopulateFormValues?.username) {
-                              // If username is present we save it in query params to check for premium
-                              searchQueryParams.set("username", prepopulateFormValues.username);
-                              localStorage.setItem("username", prepopulateFormValues.username);
-                            }
-                            if (token && prepopulateFormValues?.email) {
-                              searchQueryParams.set("email", prepopulateFormValues.email);
-                            }
-                            const url = searchQueryParams.toString()
-                              ? `${MICROSOFT_AUTH_URL}?${searchQueryParams.toString()}`
-                              : MICROSOFT_AUTH_URL;
-
-                            router.push(url);
-                          }}>
-                          {t("continue_with_microsoft")}
-                        </Button>
-                      </div>
-                    )}
-
-                    {(isGoogleLoginEnabled || isOutlookLoginEnabled) && (
-                      <div>
-                        <div className="relative flex items-center">
-                          <div className="grow border-subtle border-t" />
-                          <span className="mx-2 shrink font-normal text-sm text-subtle leading-none">
-                            {t("or").toLocaleLowerCase()}
-                          </span>
-                          <div className="grow border-subtle border-t" />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Lower Row */}
-                    <div className="flex flex-col gap-2">
+                    <Button
+                      type="submit"
+                      data-testid="signup-submit-button"
+                      className="my-2 w-full justify-center"
+                      loading={loadingSubmitState}
+                      disabled={
+                        !!formMethods.formState.errors.username ||
+                        !!formMethods.formState.errors.email ||
+                        !formMethods.getValues("email") ||
+                        !formMethods.getValues("password") ||
+                        (CLOUDFLARE_SITE_ID && !process.env.NEXT_PUBLIC_IS_E2E && !watch("cfToken")) ||
+                        isSubmitting ||
+                        usernameTaken
+                      }>
+                      {premiumUsername && !usernameTaken
+                        ? `${t("get_started")} (${getPremiumPlanPriceValue()})`
+                        : t("get_started")}
+                    </Button>
+                  </Form>
+                </div>
+              )}
+              {!displayEmailForm && (
+                <div className="mt-8 flex flex-col gap-6">
+                  {/* Upper Row */}
+                  {isGoogleLoginEnabled && (
+                    <div className="flex flex-col gap-2 md:flex-row">
                       <Button
-                        color="secondary"
-                        disabled={isGoogleLoading || isMicrosoftLoading}
+                        color="primary"
+                        loading={isGoogleLoading}
+                        disabled={isMicrosoftLoading}
+                        CustomStartIcon={
+                          <>
+                            {/* eslint-disable @next/next/no-img-element */}
+                            <img
+                              className={classNames(
+                                "mr-2 h-4 w-4 text-subtle",
+                                premiumUsername && "opacity-50"
+                              )}
+                              src="/google-icon-colored.svg"
+                              alt=""
+                            />
+                          </>
+                        }
                         className={classNames("w-full justify-center rounded-md text-center")}
-                        onClick={() => {
-                          posthog.capture("signup_email_button_clicked", {
+                        data-testid="continue-with-google-button"
+                        onClick={async () => {
+                          posthog.capture("signup_google_button_clicked", {
                             has_token: !!token,
                             is_org_invite: isOrgInviteByLink,
                             org_slug: orgSlug,
+                            has_prepopulated_username: !!prepopulateFormValues?.username,
                           });
-                          setDisplayEmailForm(true);
-                        }}
-                        data-testid="continue-with-email-button">
-                        {t("continue_with_email")}
+                          setIsGoogleLoading(true);
+                          const baseUrl = process.env.NEXT_PUBLIC_WEBAPP_URL;
+                          const GOOGLE_AUTH_URL = `${baseUrl}/auth/sso/google`;
+                          const searchQueryParams = new URLSearchParams();
+                          if (prepopulateFormValues?.username) {
+                            // If username is present we save it in query params to check for premium
+                            searchQueryParams.set("username", prepopulateFormValues.username);
+                            localStorage.setItem("username", prepopulateFormValues.username);
+                          }
+                          if (token && prepopulateFormValues?.email) {
+                            searchQueryParams.set("email", prepopulateFormValues.email);
+                          }
+                          const url = searchQueryParams.toString()
+                            ? `${GOOGLE_AUTH_URL}?${searchQueryParams.toString()}`
+                            : GOOGLE_AUTH_URL;
+
+                          router.push(url);
+                        }}>
+                        {t("continue_with_google")}
                       </Button>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Already have an account & T&C */}
-                <div className="mt-10 flex h-full flex-col justify-end pb-6 text-xs">
-                  <div className="flex flex-col text-sm">
-                    <div className="flex gap-1">
-                      <p className="text-subtle">{t("already_have_account")}</p>
-                      <Link href="/auth/login" className="text-emphasis hover:underline">
-                        {t("sign_in")}
-                      </Link>
-                    </div>
-                    <div className="text-subtle">
-                      <ServerTrans
-                        t={t}
-                        i18nKey="signing_up_terms"
-                        values={{ appName: APP_NAME }}
-                        components={[
-                          <Link
-                            className="text-emphasis hover:underline"
-                            key="terms"
-                            href={`${WEBSITE_TERMS_URL}`}
-                            target="_blank">
-                            Terms
-                          </Link>,
-                          <Link
-                            className="text-emphasis hover:underline"
-                            key="privacy"
-                            href={`${WEBSITE_PRIVACY_POLICY_URL}`}
-                            target="_blank">
-                            Privacy Policy.
-                          </Link>,
-                        ]}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-          <div className="mx-auto mt-24 w-full max-w-2xl flex-col justify-between rounded-l-2xl border-subtle pl-4 lg:mt-0 lg:flex lg:max-w-full lg:border lg:bg-subtle lg:py-12 lg:pl-12 dark:bg-none">
-            {IS_CALCOM && (
-              <>
-                <div className="-mt-4 mr-12 mb-6 grid w-full grid-cols-3 gap-5 pr-4 sm:gap-3 lg:grid-cols-4">
-                  <div>
-                    {/* eslint-disable @next/next/no-img-element */}
-                    <img
-                      src="/product-cards/product-of-the-day.svg"
-                      className="h-[34px] w-full dark:invert"
-                      alt="Cal.diy was Product of the Day at ProductHunt"
-                    />
-                  </div>
-                  <div>
-                    {/* eslint-disable @next/next/no-img-element */}
-                    <img
-                      src="/product-cards/product-of-the-week.svg"
-                      className="h-[34px] w-full dark:invert"
-                      alt="Cal.diy was Product of the Week at ProductHunt"
-                    />
-                  </div>
-                  <div>
-                    {/* eslint-disable @next/next/no-img-element */}
-                    <img
-                      src="/product-cards/product-of-the-month.svg"
-                      className="h-[34px] w-full dark:invert"
-                      alt="Cal.diy was Product of the Month at ProductHunt"
-                    />
-                  </div>
-                </div>
-                <div className="mr-12 mb-6 grid w-full grid-cols-3 gap-5 pr-4 sm:gap-3 lg:grid-cols-4">
-                  <div>
-                    {/* eslint-disable @next/next/no-img-element */}
-                    <img
-                      src="/product-cards/producthunt.svg"
-                      className="h-[54px] w-full"
-                      alt="ProductHunt Rating of 5 Stars"
-                    />
-                  </div>
-                  <div>
-                    {/* eslint-disable @next/next/no-img-element */}
-                    <img
-                      src="/product-cards/google-reviews.svg"
-                      className="h-[54px] w-full"
-                      alt="Google Reviews Rating of 4.7 Stars"
-                    />
-                  </div>
-                  <div>
-                    {/* eslint-disable @next/next/no-img-element */}
-                    <img
-                      src="/product-cards/g2.svg"
-                      className="h-[54px] w-full"
-                      alt="G2 Rating of 4.7 Stars"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-            <div className="hidden rounded-tl-2xl rounded-br-none rounded-bl-2xl border border-default border-r-0 border-dashed bg-black/3 lg:block lg:py-[6px] lg:pl-[6px] dark:bg-white/5">
-              <img className="block dark:hidden" src="/mock-event-type-list.svg" alt="Cal.diy Booking Page" />
-              {/* eslint-disable @next/next/no-img-element */}
-              <img
-                className="hidden dark:block"
-                src="/mock-event-type-list-dark.svg"
-                alt="Cal.diy Booking Page"
-              />
-            </div>
-            <div className="mt-8 mr-12 hidden h-full w-full grid-cols-3 gap-4 overflow-hidden lg:grid">
-              {FEATURES.map((feature, index) => (
-                <div key={index} className="mb-8 flex max-w-52 flex-col leading-none sm:mb-0">
-                  <div className="items-center text-emphasis">
-                    <Icon name={feature.icon} className="mb-1 h-4 w-4" />
-                    <span className="font-medium text-sm">{t(feature.title)}</span>
-                  </div>
-                  <div className="text-sm text-subtle">
-                    <p>
-                      {t(
-                        feature.description,
-                        feature.i18nOptions && {
-                          ...feature.i18nOptions,
+                  {isOutlookLoginEnabled && (
+                    <div className="flex flex-col gap-2 md:flex-row">
+                      <Button
+                        color="secondary"
+                        loading={isMicrosoftLoading}
+                        disabled={isGoogleLoading}
+                        CustomStartIcon={
+                          <>
+                            {/* eslint-disable @next/next/no-img-element */}
+                            <img
+                              className={classNames(
+                                "text-subtle mr-2 h-4 w-4",
+                                premiumUsername && "opacity-50"
+                              )}
+                              src="/microsoft-logo.svg"
+                              alt=""
+                            />
+                          </>
                         }
-                      )}
-                    </p>
+                        className={classNames("w-full justify-center rounded-md text-center")}
+                        data-testid="continue-with-microsoft-button"
+                        onClick={async () => {
+                          posthog.capture("signup_microsoft_button_clicked", {
+                            has_token: !!token,
+                            is_org_invite: isOrgInviteByLink,
+                            org_slug: orgSlug,
+                            has_prepopulated_username: !!prepopulateFormValues?.username,
+                          });
+                          setIsMicrosoftLoading(true);
+                          const baseUrl = process.env.NEXT_PUBLIC_WEBAPP_URL;
+                          const MICROSOFT_AUTH_URL = `${baseUrl}/auth/sso/microsoft`;
+                          const searchQueryParams = new URLSearchParams();
+                          if (prepopulateFormValues?.username) {
+                            // If username is present we save it in query params to check for premium
+                            searchQueryParams.set("username", prepopulateFormValues.username);
+                            localStorage.setItem("username", prepopulateFormValues.username);
+                          }
+                          if (token && prepopulateFormValues?.email) {
+                            searchQueryParams.set("email", prepopulateFormValues.email);
+                          }
+                          const url = searchQueryParams.toString()
+                            ? `${MICROSOFT_AUTH_URL}?${searchQueryParams.toString()}`
+                            : MICROSOFT_AUTH_URL;
+
+                          router.push(url);
+                        }}>
+                        {t("continue_with_microsoft")}
+                      </Button>
+                    </div>
+                  )}
+
+                  {(isGoogleLoginEnabled || isOutlookLoginEnabled) && (
+                    <div>
+                      <div className="relative flex items-center">
+                        <div className="grow border-subtle border-t" />
+                        <span className="mx-2 shrink font-normal text-sm text-subtle leading-none">
+                          {t("or").toLocaleLowerCase()}
+                        </span>
+                        <div className="grow border-subtle border-t" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Lower Row */}
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      color="secondary"
+                      disabled={isGoogleLoading || isMicrosoftLoading}
+                      className={classNames("w-full justify-center rounded-md text-center")}
+                      onClick={() => {
+                        posthog.capture("signup_email_button_clicked", {
+                          has_token: !!token,
+                          is_org_invite: isOrgInviteByLink,
+                          org_slug: orgSlug,
+                        });
+                        setDisplayEmailForm(true);
+                      }}
+                      data-testid="continue-with-email-button">
+                      {t("continue_with_email")}
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
+              )}
+
+              {/* Already have an account & T&C */}
+              <div className="mt-10 flex h-full flex-col justify-end pb-6 text-xs">
+                <div className="flex flex-col text-sm">
+                  <div className="flex gap-1">
+                    <p className="text-subtle">{t("already_have_account")}</p>
+                    <Link href="/auth/login" className="text-emphasis hover:underline">
+                      {t("sign_in")}
+                    </Link>
+                  </div>
+                  <div className="text-subtle">
+                    <ServerTrans
+                      t={t}
+                      i18nKey="signing_up_terms"
+                      values={{ appName: APP_NAME }}
+                      components={[
+                        <Link
+                          className="text-emphasis hover:underline"
+                          key="terms"
+                          href={`${WEBSITE_TERMS_URL}`}
+                          target="_blank">
+                          Terms
+                        </Link>,
+                        <Link
+                          className="text-emphasis hover:underline"
+                          key="privacy"
+                          href={`${WEBSITE_PRIVACY_POLICY_URL}`}
+                          target="_blank">
+                          Privacy Policy.
+                        </Link>,
+                      ]}
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
         <Toaster position="bottom-right" />
-      </div>
+      </AuthShell>
     </>
   );
 }

@@ -37,7 +37,7 @@ export const DropdownMenuContent = forwardRef<HTMLDivElement, DropdownMenuConten
         {...props}
         sideOffset={sideOffset}
         className={classNames(
-          "shadow-dropdown bg-default border-subtle relative z-50 origin-top-right stack-y-px rounded-xl border p-1 text-sm",
+          "shadow-dropdown bg-subtle border-subtle relative z-50 origin-top-right stack-y-px overscroll-contain rounded-xl border p-1 text-sm",
           "w-[220px]",
           props.className
         )}
@@ -61,7 +61,7 @@ type DropdownMenuItemProps = ComponentProps<(typeof DropdownMenuPrimitive)["Chec
 export const DropdownMenuItem = forwardRef<HTMLDivElement, DropdownMenuItemProps>(
   ({ className = "", ...props }, forwardedRef) => (
     <DropdownMenuPrimitive.Item
-      className={`hover:bg-subtle hover:text-emphasis text-default text-sm ring-inset first-of-type:rounded-t-[inherit] last-of-type:rounded-b-[inherit] hover:ring-0 focus:outline-none focus:bg-subtle focus:text-emphasis ${className}`}
+      className={`hover:bg-default hover:text-emphasis text-default text-sm ring-inset first-of-type:rounded-t-[inherit] last-of-type:rounded-b-[inherit] hover:ring-0 focus:outline-none focus:bg-default focus:text-emphasis ${className}`}
       {...props}
       ref={forwardedRef}
     />
@@ -80,7 +80,7 @@ export const DropdownMenuCheckboxItem = forwardRef<HTMLDivElement, DropdownMenuC
         checked={checked}
         onCheckedChange={onCheckedChange}
         ref={forwardedRef}
-        className="hover:text-emphasis text-default hover:bg-subtle flex flex-1 items-center space-x-2 px-3 py-2 hover:outline-none hover:ring-0 disabled:cursor-not-allowed">
+        className="hover:text-emphasis text-default hover:bg-default flex flex-1 items-center space-x-2 px-3 py-2 hover:outline-none hover:ring-0 disabled:cursor-not-allowed">
         <div className="w-full">{children}</div>
         {!checked && (
           <input
@@ -117,7 +117,7 @@ export const DropdownMenuSubTrigger = forwardRef<HTMLDivElement, DropdownMenuSub
   ({ className = "", children, ...props }, forwardedRef) => (
     <DropdownMenuPrimitive.SubTrigger
       className={classNames(
-        "hover:bg-subtle hover:text-emphasis text-default flex cursor-pointer select-none items-center justify-between rounded-lg p-2 text-sm font-medium outline-none ring-inset first-of-type:rounded-t-[inherit] last-of-type:rounded-b-[inherit] focus:bg-subtle focus:text-emphasis",
+        "hover:bg-default hover:text-emphasis text-default flex cursor-pointer select-none items-center justify-between rounded-lg p-2 text-sm font-medium outline-none ring-inset first-of-type:rounded-t-[inherit] last-of-type:rounded-b-[inherit] focus:bg-default focus:text-emphasis",
         className
       )}
       {...props}
@@ -138,7 +138,7 @@ export const DropdownMenuSubContent = forwardRef<HTMLDivElement, DropdownMenuSub
         alignOffset={alignOffset}
         {...props}
         className={classNames(
-          "shadow-dropdown bg-default border-subtle relative z-50 min-w-[180px] origin-top-left stack-y-px rounded-xl border p-1 text-sm",
+          "shadow-dropdown bg-subtle border-subtle relative z-50 min-w-[180px] origin-top-left stack-y-px overscroll-contain rounded-xl border p-1 text-sm",
           props.className
         )}
         ref={forwardedRef}>
@@ -198,7 +198,7 @@ export const DropdownItem = (props: DropdownItemProps) => {
       {...rest}
       className={classNames(
         "hover:text-emphasis text-default inline-flex w-full items-center space-x-1 rounded-lg  p-2 disabled:cursor-not-allowed",
-        color === "destructive" ? "hover:bg-error hover:text-error text-error" : "hover:bg-subtle",
+        color === "destructive" ? "hover:bg-error hover:text-error text-error" : "hover:bg-default",
         props.className
       )}>
       <>

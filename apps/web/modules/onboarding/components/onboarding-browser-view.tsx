@@ -132,7 +132,7 @@ export const OnboardingBrowserView = ({
             <div className="flex flex-col gap-4 border-subtle border-b p-4">
               <div className="flex flex-col items-start gap-4">
                 {avatar && (
-                  <Avatar size="lg" imageSrc={avatar} alt={name || ""} className="border-2 border-white" />
+                  <Avatar size="lg" imageSrc={avatar} alt={name || ""} className="border-default border-2" />
                 )}
                 <div className="flex w-full flex-col gap-2">
                   <h2 className="w-full truncate font-semibold text-emphasis text-xl leading-tight">

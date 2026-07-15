@@ -1,6 +1,3 @@
-import { useState } from "react";
-import type { UseFormReturn } from "react-hook-form";
-
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
@@ -11,8 +8,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@calcom/ui/components/dropdown";
-import { InputError, Input } from "@calcom/ui/components/form";
-
+import { Input, InputError } from "@calcom/ui/components/form";
+import { useState } from "react";
+import type { UseFormReturn } from "react-hook-form";
 import type { FormValues } from "~/settings/my-account/profile-view";
 
 type CustomEmailTextFieldProps = {
@@ -44,7 +42,7 @@ const CustomEmailTextField = ({
   return (
     <>
       <div
-        className={`mt-2 flex w-full items-center rounded-[10px] border transition-all ${
+        className={`mt-2 flex w-full items-center rounded-[10px] border transition-colors ${
           inputFocus
             ? "border-emphasis shadow-outline-gray-focused"
             : "border-default hover:border-emphasis shadow-outline-gray-rested"
@@ -58,7 +56,7 @@ const CustomEmailTextField = ({
         />
         <div className="flex items-center pr-2">
           {emailPrimary && (
-            <Badge variant="blue" size="sm" data-testid={`${dataTestId}-primary-badge`}>
+            <Badge variant="gray" size="sm" data-testid={`${dataTestId}-primary-badge`}>
               {t("primary")}
             </Badge>
           )}

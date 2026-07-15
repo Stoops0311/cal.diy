@@ -17,9 +17,8 @@ export const EditableHeading = function EditableHeading({
 } & Omit<JSX.IntrinsicElements["input"], "name" | "onChange"> &
   ControllerRenderProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const enableEditing = () => setIsEditing(!disabled);
   return (
-    <div className="group pointer-events-auto relative truncate" onClick={enableEditing}>
+    <div className="group pointer-events-auto relative truncate">
       <div className={classNames(!disabled && "cursor-pointer", "flex items-center")}>
         <label className="min-w-8 relative inline-block">
           <span

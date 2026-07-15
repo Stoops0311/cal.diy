@@ -1,10 +1,3 @@
-import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { Dispatch, SetStateAction } from "react";
-import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { useDebounce } from "@calcom/lib/hooks/useDebounce";
@@ -14,15 +7,21 @@ import { trpc } from "@calcom/trpc/react";
 import classNames from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
 import {
+  ConfirmationDialogContent,
+  DialogClose,
   DialogContent,
   DialogFooter,
-  DialogClose,
-  ConfirmationDialogContent,
 } from "@calcom/ui/components/dialog";
-import { TextAreaField, Form, Label, Input } from "@calcom/ui/components/form";
+import { Form, Input, Label, TextAreaField } from "@calcom/ui/components/form";
 import { RadioAreaGroup as RadioArea } from "@calcom/ui/components/radio";
 import { showToast } from "@calcom/ui/components/toast";
 import { CheckIcon, LoaderIcon } from "@coss/ui/icons";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { Dispatch, SetStateAction } from "react";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 enum ReassignType {
   AUTO = "auto",
@@ -43,17 +42,6 @@ type FormValues = {
   reassignReason?: string;
 };
 
-const formSchema = z.object({
-  reassignType: z.nativeEnum(ReassignType),
-  teamMemberId: z.number().optional(),
-  reassignReason: z
-    .string()
-    .optional()
-    .refine((val) => !val || val.length >= 10, {
-      message: "Reassign reason must be at least 10 characters long if provided",
-    }),
-});
-
 interface TeamMemberOption {
   label: string;
   value: number;
@@ -68,6 +56,16 @@ export const ReassignDialog = ({
   isManagedEvent,
 }: ReassignDialog) => {
   const { t } = useLocale();
+  const formSchema = z.object({
+    reassignType: z.nativeEnum(ReassignType),
+    teamMemberId: z.number().optional(),
+    reassignReason: z
+      .string()
+      .optional()
+      .refine((val) => !val || val.length >= 10, {
+        message: t("at_least_characters", { count: 10 }),
+      }),
+  });
   const utils = trpc.useUtils();
   const [animationParentRef] = useAutoAnimate<HTMLFormElement>({
     duration: 150,
@@ -77,21 +75,39 @@ export const ReassignDialog = ({
   const debouncedSearch = useDebounce(searchTerm, 500);
 
   const managedEventQuery: {
-    data: { pages: { items: { id: number; name: string | null; email: string; status: string }[] }[] } | undefined;
+    data:
+      | { pages: { items: { id: number; name: string | null; email: string; status: string }[] }[] }
+      | undefined;
     fetchNextPage: () => void;
     hasNextPage: boolean;
     isFetching: boolean;
     isFetchingNextPage: boolean;
-  } = { data: undefined, fetchNextPage: () => {}, hasNextPage: false, isFetching: false, isFetchingNextPage: false };
+  } = {
+    data: undefined,
+    fetchNextPage: () => {},
+    hasNextPage: false,
+    isFetching: false,
+    isFetchingNextPage: false,
+  };
 
-  const roundRobinQuery: typeof managedEventQuery = { data: undefined, fetchNextPage: () => {}, hasNextPage: false, isFetching: false, isFetchingNextPage: false };
+  const roundRobinQuery: typeof managedEventQuery = {
+    data: undefined,
+    fetchNextPage: () => {},
+    hasNextPage: false,
+    isFetching: false,
+    isFetchingNextPage: false,
+  };
 
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } = isManagedEvent
     ? managedEventQuery
     : roundRobinQuery;
 
   const allRows = useMemo(() => {
-    return data?.pages.flatMap((page: { items: { id: number; name: string | null; email: string; status: string }[] }) => page.items) ?? [];
+    return (
+      data?.pages.flatMap(
+        (page: { items: { id: number; name: string | null; email: string; status: string }[] }) => page.items
+      ) ?? []
+    );
   }, [data]);
 
   const teamMemberOptions = useMemo(() => {
@@ -102,11 +118,13 @@ export const ReassignDialog = ({
     })) as TeamMemberOption[];
   }, [allRows]);
 
+  const [dialogRoot, setDialogRoot] = useState<HTMLDivElement | null>(null);
+
   const { ref: observerRef } = useInViewObserver(() => {
     if (hasNextPage && !isFetching) {
       fetchNextPage();
     }
-  }, document.querySelector('[role="dialog"]'));
+  }, dialogRoot);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -115,17 +133,29 @@ export const ReassignDialog = ({
     },
   });
 
-  const roundRobinReassignMutation = { mutate: (..._args: unknown[]) => {}, mutateAsync: async () => ({}), isPending: false };
+  const roundRobinReassignMutation = {
+    mutate: (..._args: unknown[]) => {},
+    mutateAsync: async () => ({}),
+    isPending: false,
+  };
 
+  const managedEventReassignMutation = {
+    mutate: (..._args: unknown[]) => {},
+    mutateAsync: async () => ({}),
+    isPending: false,
+  };
 
-  const managedEventReassignMutation = { mutate: (..._args: unknown[]) => {}, mutateAsync: async () => ({}), isPending: false };
+  const roundRobinManualReassignMutation = {
+    mutate: (..._args: unknown[]) => {},
+    mutateAsync: async () => ({}),
+    isPending: false,
+  };
 
-
-  const roundRobinManualReassignMutation = { mutate: (..._args: unknown[]) => {}, mutateAsync: async () => ({}), isPending: false };
-
-
-  const managedEventManualReassignMutation = { mutate: (..._args: unknown[]) => {}, mutateAsync: async () => ({}), isPending: false };
-
+  const managedEventManualReassignMutation = {
+    mutate: (..._args: unknown[]) => {},
+    mutateAsync: async () => ({}),
+    isPending: false,
+  };
 
   const [confirmationModal, setConfirmationModal] = useState<{
     show: boolean;
@@ -166,6 +196,7 @@ export const ReassignDialog = ({
           setIsOpenDialog(open);
         }}>
         <DialogContent
+          ref={setDialogRoot}
           title={isManagedEvent ? t("reassign_booking") : t("reassign_round_robin_host")}
           description={isManagedEvent ? t("reassign_to_another_user") : t("reassign_to_another_rr_host")}
           enableOverflow>
@@ -231,30 +262,21 @@ export const ReassignDialog = ({
                       teamMemberOptions.map((member) => (
                         <label
                           key={member.value}
-                          tabIndex={watchedTeamMemberId === member.value ? -1 : 0}
-                          role="radio"
-                          aria-checked={watchedTeamMemberId === member.value}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              form.setValue("teamMemberId", member.value);
-                            }
-                          }}
                           className={classNames(
-                            "hover:bg-subtle focus:bg-subtle focus:ring-emphasis cursor-pointer items-center justify-between gap-0.5 rounded-sm py-2 outline-none focus:ring-2",
+                            "hover:bg-subtle focus-within:bg-subtle focus-within:ring-emphasis cursor-pointer items-center justify-between gap-0.5 rounded-sm py-2 outline-none focus-within:ring-2",
                             watchedTeamMemberId === member.value && "bg-subtle"
                           )}>
                           <div className="flex flex-1 items-center space-x-3">
                             <input
                               type="radio"
-                              className="hidden"
+                              className="sr-only"
                               checked={watchedTeamMemberId === member.value}
                               onChange={() => form.setValue("teamMemberId", member.value)}
                             />
                             <div
                               className={classNames(
                                 "h-3 w-3 shrink-0 rounded-full",
-                                member.status === "unavailable" ? "bg-red-500" : "bg-green-500"
+                                member.status === "unavailable" ? "bg-error" : "bg-cal-success"
                               )}
                             />
                             <span className="text-emphasis w-full text-sm">{member.label}</span>

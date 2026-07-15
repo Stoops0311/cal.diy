@@ -1,23 +1,21 @@
 "use client";
 
-import { format } from "date-fns";
-import Link from "next/link";
-
+import type { BlocklistEntry, BlocklistEntryDetails, BlocklistScope } from "@calcom/features/blocklist/types";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
-import { ExternalLinkIcon } from "@coss/ui/icons";
 import {
   Sheet,
-  SheetContent,
   SheetBody,
+  SheetContent,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
-  SheetFooter,
 } from "@calcom/ui/components/sheet";
 import { SkeletonText } from "@calcom/ui/components/skeleton";
-
-import type { BlocklistEntry, BlocklistEntryDetails, BlocklistScope } from "@calcom/features/blocklist/types";
+import { ExternalLinkIcon } from "@coss/ui/icons";
+import { format } from "date-fns";
+import Link from "next/link";
 
 export interface BlocklistEntryDetailsSheetProps<T extends BlocklistEntry> {
   scope: BlocklistScope;
@@ -72,14 +70,14 @@ export function BlocklistEntryDetailsSheet<T extends BlocklistEntry>({
 
                 <div className="bg-default space-y-3 rounded-xl p-5">
                   <div>
-                    <label className="text-default block text-sm font-semibold">
+                    <p className="text-default block text-sm font-semibold">
                       {detailsData.entry.type === "EMAIL" ? t("email") : t("domain")}
-                    </label>
+                    </p>
                     <p className="text-subtle text-sm">{detailsData.entry.value}</p>
                   </div>
 
                   <div>
-                    <label className="text-default block text-sm font-semibold">{t("type")}</label>
+                    <p className="text-default block text-sm font-semibold">{t("type")}</p>
                     <p className="text-subtle text-sm">
                       {detailsData.entry.type === "EMAIL" ? t("email") : t("domain")}
                     </p>
@@ -88,12 +86,12 @@ export function BlocklistEntryDetailsSheet<T extends BlocklistEntry>({
                   {isSystem && (
                     <>
                       <div>
-                        <label className="text-default block text-sm font-semibold">{t("scope")}</label>
+                        <p className="text-default block text-sm font-semibold">{t("scope")}</p>
                         <Badge variant="gray">{t("system_wide_all_organizations")}</Badge>
                       </div>
 
                       <div>
-                        <label className="text-default block text-sm font-semibold">{t("source")}</label>
+                        <p className="text-default block text-sm font-semibold">{t("source")}</p>
                         <p className="text-subtle text-sm">
                           {detailsData.entry.source === "MANUAL"
                             ? t("manual")
@@ -106,16 +104,16 @@ export function BlocklistEntryDetailsSheet<T extends BlocklistEntry>({
                   )}
 
                   <div>
-                    <label className="text-default block text-sm font-semibold">
+                    <p className="text-default block text-sm font-semibold">
                       {t(isSystem ? "blocked_by_system_admin" : "blocked_by")}
-                    </label>
+                    </p>
                     <p className="text-subtle text-sm">
                       {detailsData.auditHistory[0]?.changedByUser?.email || "—"}
                     </p>
                   </div>
 
                   <div>
-                    <label className="text-default block text-sm font-semibold">{t("description")}</label>
+                    <p className="text-default block text-sm font-semibold">{t("description")}</p>
                     <p className="text-subtle text-sm">
                       {detailsData.entry.description || t("no_description_provided")}
                     </p>
@@ -123,9 +121,7 @@ export function BlocklistEntryDetailsSheet<T extends BlocklistEntry>({
 
                   {detailsData.entry.bookingReports && detailsData.entry.bookingReports.length > 0 && (
                     <div>
-                      <label className="text-default block text-sm font-semibold">
-                        {t("related_booking")}
-                      </label>
+                      <p className="text-default block text-sm font-semibold">{t("related_booking")}</p>
 
                       {detailsData.entry.bookingReports.map((report) => {
                         return (

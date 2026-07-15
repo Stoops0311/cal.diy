@@ -1,15 +1,12 @@
-import { useState, useEffect } from "react";
-
 import type { EventTypeAppSettingsComponent } from "@calcom/app-store/types";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Alert } from "@calcom/ui/components/alert";
-import { Select } from "@calcom/ui/components/form";
-import { TextField } from "@calcom/ui/components/form";
-
+import { Select, TextField } from "@calcom/ui/components/form";
+import { useEffect, useState } from "react";
 import {
-  currencyOptions,
-  convertToSmallestCurrencyUnit,
   convertFromSmallestToPresentableCurrencyUnit,
+  convertToSmallestCurrencyUnit,
+  currencyOptions,
 } from "../lib/currencyOptions";
 import { BTCPayPaymentOptions as paymentOptions } from "../zod";
 
@@ -66,12 +63,12 @@ const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
               </label>
               <TextField
                 label={t("price")}
-                className="text-black dark:text-white w-auto"
+                className="text-default w-auto"
                 addOnClassname="h-[38px]"
                 min="1"
                 type="number"
                 required
-                placeholder="Price"
+                placeholder={t("price")}
                 onChange={(e) => {
                   setAppData("price", convertToSmallestCurrencyUnit(Number(e.target.value), currency));
                 }}
@@ -110,8 +107,8 @@ const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
                   paymentOptionSelectValue
                     ? { ...paymentOptionSelectValue, label: t(paymentOptionSelectValue.label) }
                     : paymentOptions.length > 0
-                    ? { ...paymentOptions[0], label: t(paymentOptions[0].label) }
-                    : undefined
+                      ? { ...paymentOptions[0], label: t(paymentOptions[0].label) }
+                      : undefined
                 }
                 options={paymentOptions.map((option) => {
                   return { ...option, label: t(option.label) || option.label };
@@ -134,4 +131,3 @@ const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
 };
 
 export default EventTypeAppSettingsInterface;
-

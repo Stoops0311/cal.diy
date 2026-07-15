@@ -1,10 +1,9 @@
+import { normalizeAppBrandText } from "@calcom/web/modules/apps/lib/normalizeAppBrandText";
+import { getStaticProps } from "@lib/apps/[slug]/getStaticProps";
 import type { PageProps as _PageProps } from "app/_types";
 import { generateAppMetadata } from "app/_utils";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-
-import { getStaticProps } from "@lib/apps/[slug]/getStaticProps";
-
 import AppView from "~/apps/[slug]/slug-view";
 
 const paramsSchema = z.object({
@@ -26,9 +25,14 @@ export const generateMetadata = async ({ params }: _PageProps) => {
   const { name, logo, dirName: appStoreDirSlug, slug: appSlug, description } = props.data;
 
   return await generateAppMetadata(
-    { slug: appStoreDirSlug ?? appSlug, logoUrl: logo, name, description },
-    () => name,
-    () => description,
+    {
+      slug: appStoreDirSlug ?? appSlug,
+      logoUrl: logo,
+      name: normalizeAppBrandText(name),
+      description: normalizeAppBrandText(description),
+    },
+    () => normalizeAppBrandText(name),
+    () => normalizeAppBrandText(description),
     undefined,
     undefined,
     `/apps/${appSlug}`

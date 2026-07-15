@@ -1,8 +1,3 @@
-import type { FC } from "react";
-import type { SubmitHandler } from "react-hook-form";
-import { FormProvider } from "react-hook-form";
-import { useForm, useFormContext } from "react-hook-form";
-
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import type { EventNameObjectType } from "@calcom/features/eventtypes/lib/eventNaming";
 import { getEventName, validateCustomEventName } from "@calcom/features/eventtypes/lib/eventNaming";
@@ -10,8 +5,11 @@ import type { InputClassNames } from "@calcom/features/eventtypes/lib/types";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import classNames from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
-import { DialogContent, DialogFooter, DialogClose } from "@calcom/ui/components/dialog";
+import { DialogClose, DialogContent, DialogFooter } from "@calcom/ui/components/dialog";
 import { TextField } from "@calcom/ui/components/form";
+import type { FC } from "react";
+import type { SubmitHandler } from "react-hook-form";
+import { FormProvider, useForm, useFormContext } from "react-hook-form";
 
 interface FormValues {
   customEventName: string;
@@ -102,13 +100,13 @@ const CustomEventTypeModalForm: FC<CustomEventTypeModalFormProps> = (props) => {
             "bg-subtle mb-6 rounded-md p-2",
             customClassNames?.availableVariables?.container
           )}>
-          <h1
+          <h3
             className={classNames(
               "text-emphasis mb-2 ml-1 font-medium",
               customClassNames?.availableVariables?.header
             )}>
             {t("available_variables")}
-          </h1>
+          </h3>
           <div
             className={classNames(
               "scroll-bar h-[216px] overflow-y-auto",
@@ -312,13 +310,13 @@ const CustomEventTypeModalForm: FC<CustomEventTypeModalFormProps> = (props) => {
               ))}
           </div>
         </div>
-        <h1
+        <h3
           className={classNames(
             "mb-2 text-[14px] font-medium leading-4",
             customClassNames?.previewSection?.header
           )}>
           {t("preview")}
-        </h1>
+        </h3>
         <div
           className={classNames(
             "flex h-[212px] w-full rounded-md border-y bg-cover bg-center dark:invert",
@@ -330,7 +328,7 @@ const CustomEventTypeModalForm: FC<CustomEventTypeModalFormProps> = (props) => {
           <div className="m-auto flex items-center justify-center self-stretch">
             <div
               className={classNames(
-                "bg-subtle ml-11 mt-3 box-border h-[110px] w-[120px] flex-col items-start gap-1 rounded-md border border-solid border-black text-[12px] leading-3",
+                "bg-subtle border-default ml-11 mt-3 box-border h-[110px] w-[120px] flex-col items-start gap-1 rounded-md border border-solid text-xs leading-3",
                 customClassNames?.previewSection?.previewEventBox?.container
               )}>
               <p

@@ -1,12 +1,10 @@
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import { Avatar } from "@calcom/ui/components/avatar";
+import { Button } from "@calcom/ui/components/button";
+import { EmptyScreen } from "@calcom/ui/components/empty-screen";
+import { Label, Select } from "@calcom/ui/components/form";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import type { Props } from "react-select";
-
-import { useLocale } from "@calcom/lib/hooks/useLocale";
-import { Icon } from "@calcom/ui/components/icon";
-import { Label } from "@calcom/ui/components/form";
-import { Select } from "@calcom/ui/components/form";
-import { Avatar } from "@calcom/ui/components/avatar";
-import { EmptyScreen } from "@calcom/ui/components/empty-screen";
 
 export type CheckedUserSelectOption = {
   avatar: string;
@@ -41,19 +39,24 @@ export const CheckedUserSelect = ({
       {value.length > 0 ? (
         <div className="mt-6">
           <Label>{t("assigned_to")}</Label>
-          <div className="flex overflow-hidden rounded-md border border-gray-200 bg-white">
-            <ul className="w-full" data-testid="managed-event-types" ref={animationRef}>
-              {value.map((option, index) => {
+          <div className="flex overflow-hidden rounded-2xl border border-subtle bg-default">
+            <ul
+              className="w-full divide-y divide-subtle"
+              data-testid="managed-event-types"
+              ref={animationRef}>
+              {value.map((option) => {
                 return (
-                  <li
-                    key={option.value}
-                    className={`flex px-3 py-2 ${index === value.length - 1 ? "" : "border-b"}`}>
+                  <li key={option.value} className="flex items-center px-3 py-2.5">
                     <Avatar size="sm" imageSrc={option.avatar} alt={option.label} />
-                    <p className="my-auto ml-3 text-sm text-gray-900">{option.label}</p>
-                    <Icon
-                      name="x"
+                    <p className="ml-3 text-emphasis text-sm">{option.label}</p>
+                    <Button
+                      type="button"
+                      variant="icon"
+                      color="minimal"
+                      StartIcon="x"
+                      tooltip={t("remove_member_name", { name: option.label })}
                       onClick={() => props.onChange(value.filter((item) => item.value !== option.value))}
-                      className="my-auto ml-auto"
+                      className="ml-auto"
                     />
                   </li>
                 );

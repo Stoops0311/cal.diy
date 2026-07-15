@@ -1,7 +1,6 @@
 /* eslint-disable playwright/missing-playwright-await */
 import { render, screen } from "@testing-library/react";
 import { vi } from "vitest";
-
 import Credits from "./Credits";
 
 vi.mock("@calcom/lib/constants", async () => {
@@ -9,27 +8,22 @@ vi.mock("@calcom/lib/constants", async () => {
   return {
     ...actual,
     CALCOM_VERSION: "mockedVersion",
+    COMPANY_NAME: "Convenio",
   };
 });
 
 describe("Tests for Credits component", () => {
-  test("Should render credits section with links", () => {
+  test("Should render company name and version", () => {
     render(<Credits />);
 
-    const creditsLinkElement = screen.getByRole("link", { name: /Cal\.com, Inc\./i });
-    expect(creditsLinkElement).toBeInTheDocument();
-    expect(creditsLinkElement).toHaveAttribute("href", "https://go.cal.com/credits");
-
-    const versionLinkElement = screen.getByRole("link", { name: /mockedVersion/i });
-    expect(versionLinkElement).toBeInTheDocument();
-    expect(versionLinkElement).toHaveAttribute("href", "https://go.cal.com/releases");
+    expect(screen.getByText(/Convenio/i)).toBeInTheDocument();
+    expect(screen.getByText(/mockedVersion/i)).toBeInTheDocument();
   });
 
-  test("Should render credits section with correct text", () => {
+  test("Should render copyright with current year", () => {
     render(<Credits />);
 
     const currentYear = new Date().getFullYear();
-    const copyrightElement = screen.getByText(`© ${currentYear}`);
-    expect(copyrightElement).toHaveTextContent(`${currentYear}`);
+    expect(screen.getByText(new RegExp(`${currentYear}`))).toBeInTheDocument();
   });
 });

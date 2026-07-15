@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-13T00:00:00.000Z",
+  "title": "Design System: Convenio",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "primary", "displayName": "Ink", "canonical": "#0A0A0A", "tonalRamp": ["#0A0A0A", "#242424", "#3D3D3D", "#575757", "#707070", "#949494", "#C2C2C2", "#F2F2F2"] },
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "#FFFFFF", "tonalRamp": ["#151515", "#292929", "#424242", "#5C5C5C", "#757575", "#9E9E9E", "#D1D1D1", "#FFFFFF"] },
+      "night": { "role": "neutral", "displayName": "Night", "canonical": "#050505", "tonalRamp": ["#050505", "#1F1F1F", "#383838", "#525252", "#6B6B6B", "#8F8F8F", "#BDBDBD", "#EDEDED"] },
+      "fog": { "role": "neutral", "displayName": "Fog", "canonical": "#F2F2F2", "tonalRamp": ["#161616", "#2E2E2E", "#474747", "#606060", "#7A7A7A", "#9E9E9E", "#C6C6C6", "#F2F2F2"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Marketing theses and rare celebratory statements." },
+      "headline": { "displayName": "Headline", "purpose": "Auth, onboarding, and major product moments." },
+      "body": { "displayName": "Body", "purpose": "Product instructions, labels, and dense scheduling work." },
+      "label": { "displayName": "Technical label", "purpose": "Metadata, sequences, and terse eyebrows." }
+    },
+    "shadows": [
+      { "name": "floating", "value": "0 20px 25px -5px rgb(0 0 0 / 0.18), 0 8px 10px -6px rgb(0 0 0 / 0.14)", "purpose": "Dialogs, menus, and popovers only." },
+      { "name": "control-lift", "value": "0 1px 2px rgb(0 0 0 / 0.08)", "purpose": "Primary buttons and focused floating controls." }
+    ],
+    "motion": [
+      { "name": "state", "value": "160ms cubic-bezier(0.25, 1, 0.5, 1)", "purpose": "Hover, focus, selection, and disclosure feedback." },
+      { "name": "convergence", "value": "900ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "The rare two-arcs-to-one-point signature moment." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [],
+  "narrative": {
+    "northStar": "The Convergence Plane",
+    "overview": "Convenio is built from two opposing planes that arrive at one decision. Ink and paper represent the parties without assigning either one dominance. Brand expression comes from hierarchy, contrast, rhythm, and state rather than decoration.",
+    "keyCharacteristics": ["Strict monochrome brand surfaces", "True light/dark mirror parity", "Geometric display type with quiet product text", "One convergence gesture at meaningful moments"],
+    "rules": [
+      { "name": "Mirror Rule", "body": "A dark theme is not a dimmed light theme. Every foreground/background relationship inverts deliberately.", "section": "colors" },
+      { "name": "Earned Lift Rule", "body": "If an element does not overlap another plane, it does not receive a floating shadow.", "section": "elevation" }
+    ],
+    "dos": ["Show the two parties through paired planes, terms versus choices, or before versus confirmed states.", "Give every dialog a clear title zone, content zone, and action zone."],
+    "donts": ["Ship Cal.diy naming, copy, illustrations, or residual links as Convenio.", "Use literal yin-yang symbols, handshakes, treaties, or repeated agreement metaphors as decoration.", "Use identical card grids, nested cards, or shadows to manufacture hierarchy."]
+  }
+}

@@ -1,0 +1,3 @@
+Warning: scan-project: apps/web/app/page.tsx — stat failed (ENOENT: no such file or directory, stat '/mnt/games-and-things/cal.diy/apps/web/app/page.tsx') — file skipped from output
+Warning: scan-project: packages/prisma/.env — stat failed (ENOENT: no such file or directory, stat '/mnt/games-and-things/cal.diy/packages/prisma/.env') — file skipped from output
+scan-project: filesScanned=6794 filteredByIgnore=0 complexity=very-large

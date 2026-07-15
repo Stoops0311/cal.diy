@@ -58,17 +58,13 @@ export const AppListCard = (props: AppListCardProps & { highlight?: boolean }) =
   } = props;
 
   return (
-    <div
-      className={classNames(
-        highlight && "dark:bg-cal-muted bg-yellow-100",
-        className || classNameObject?.container
-      )}>
+    <div className={classNames(highlight && "bg-subtle", className || classNameObject?.container)}>
       <div className="flex items-start gap-x-3 px-4 py-4 sm:px-6">
         {logo ? (
           <img
             className={classNames(logo.includes("-dark") && "dark:invert", "h-10 w-10 shrink-0")}
             src={logo}
-            alt={`${title} logo`}
+            alt={t("app_logo", { appName: title })}
           />
         ) : null}
         <div className="flex min-w-0 grow flex-col gap-y-1">
@@ -79,7 +75,7 @@ export const AppListCard = (props: AppListCardProps & { highlight?: boolean }) =
             </h3>
             <div className="flex shrink-0 items-center gap-x-2">
               {isDefault && <Badge variant="green">{t("default")}</Badge>}
-              {isTemplate && <Badge variant="red">Template</Badge>}
+              {isTemplate && <Badge variant="red">{t("template")}</Badge>}
             </div>
           </div>
           <ListItemText
@@ -89,8 +85,8 @@ export const AppListCard = (props: AppListCardProps & { highlight?: boolean }) =
           </ListItemText>
           {invalidCredential && (
             <div className="flex gap-x-2 pt-2">
-              <CircleAlertIcon className="h-8 w-8 shrink-0 text-red-500 sm:h-4 sm:w-4" />
-              <ListItemText component="p" className="whitespace-pre-wrap wrap-break-word text-red-500">
+              <CircleAlertIcon className="text-error h-8 w-8 shrink-0 sm:h-4 sm:w-4" />
+              <ListItemText component="p" className="text-error whitespace-pre-wrap wrap-break-word">
                 {t("invalid_credential", { appName: title })}
               </ListItemText>
             </div>
@@ -102,7 +98,7 @@ export const AppListCard = (props: AppListCardProps & { highlight?: boolean }) =
               <div className="flex items-center">
                 <Avatar
                   className="mr-2"
-                  alt={credentialOwner.name || "Nameless"}
+                  alt={credentialOwner.name || t("user")}
                   size="xs"
                   imageSrc={getPlaceholderAvatar(credentialOwner.avatar, credentialOwner?.name as string)}
                 />

@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@calcom/lib/hooks/useLocale";
 import classNames from "@calcom/ui/classNames";
 import * as Popover from "@radix-ui/react-popover";
 import { format, isBefore, isSameDay } from "date-fns";
@@ -38,6 +39,7 @@ export function DatePickerWithRange({
   strictlyBottom,
   allowPastDates = false,
 }: HTMLAttributes<HTMLDivElement> & DatePickerWithRangeProps) {
+  const { t } = useLocale();
   const [hoveredDate, setHoveredDate] = useState<Date | undefined>(undefined);
 
   function handleDayClick(date: Date) {
@@ -114,16 +116,18 @@ export function DatePickerWithRange({
                   {format(dates.startDate, "LLL dd, y")} - {format(dates.endDate, "LLL dd, y")}
                 </>
               ) : (
-                <>{format(dates.startDate, "LLL dd, y")} - End</>
+                <>
+                  {format(dates.startDate, "LLL dd, y")} - {t("end")}
+                </>
               )
             ) : (
-              <span>Pick a date</span>
+              <span>{t("pick_a_date")}</span>
             )}
           </Button>
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content
-            className="bg-default text-emphasis z-50 w-auto rounded-md border p-0 outline-none"
+            className="border-subtle bg-subtle text-emphasis z-50 w-auto rounded-xl border p-0 shadow-xl outline-none"
             align="start"
             sideOffset={4}
             side={strictlyBottom ? "bottom" : undefined}

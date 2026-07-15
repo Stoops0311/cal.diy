@@ -67,14 +67,15 @@ export const AppList = ({
   handleBulkEditDialogToggle,
   AppListCardComponent,
 }: AppListProps) => {
+  const { t } = useLocale();
   const [bulkUpdateModal, setBulkUpdateModal] = useState(false);
   const [locationType, setLocationType] = useState<(EventLocationType & { slug: string }) | undefined>(
     undefined
   );
   const onSuccessCallback = useCallback(() => {
     setBulkUpdateModal(true);
-    showToast("Default app updated successfully", "success");
-  }, []);
+    showToast(t("default_app_updated_successfully"), "success");
+  }, [t]);
 
   const ChildAppCard = ({ item }: { item: AppCardApp }) => {
     const appSlug = item?.slug;
@@ -176,7 +177,6 @@ export const AppList = ({
     return appCards;
   });
 
-  const { t } = useLocale();
   return (
     <>
       <List className={listClassName}>

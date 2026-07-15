@@ -9,6 +9,7 @@ import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
 import { ConfirmationDialogContent, Dialog } from "@calcom/ui/components/dialog";
 import { TextField } from "@calcom/ui/components/form";
+import { SkeletonText } from "@calcom/ui/components/skeleton";
 import { DropdownActions, Table } from "@calcom/ui/components/table";
 import { showToast } from "@calcom/ui/components/toast";
 import { keepPreviousData } from "@tanstack/react-query";
@@ -111,18 +112,19 @@ export function UsersTable() {
   return (
     <div className="flex flex-col gap-3">
       <TextField
-        placeholder="username or email"
+        placeholder={t("enter_email_or_username")}
         label={t("search")}
+        value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
-      <p className="text-subtle text-sm">
+      <p className="font-mono text-[11px] text-subtle uppercase tracking-[0.18em]">
         {isFetching && totalFetched === 0
           ? t("loading")
           : `${t("showing_x_of_y", { x: totalFetched, y: totalRowCount })}`}
       </p>
 
       <div
-        className="border-subtle rounded-md border"
+        className="overflow-hidden rounded-2xl border border-subtle bg-default"
         ref={tableContainerRef}
         onScroll={() => fetchMoreOnBottomReached(tableContainerRef.current)}
         style={{
@@ -140,13 +142,41 @@ export function UsersTable() {
           </Header>
 
           <tbody className="divide-subtle divide-y rounded-md">
+            {flatData.length === 0 &&
+              isFetching &&
+              [0, 1, 2, 3, 4].map((i) => (
+                <tr key={`skeleton-${i}`}>
+                  <td colSpan={4} className="px-4 py-4">
+                    <div className="flex items-center gap-4">
+                      <SkeletonText className="h-10 w-10 rounded-full" />
+                      <SkeletonText className="h-4 w-64" />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            {flatData.length === 0 && !isFetching && (
+              <tr>
+                <td colSpan={4} className="px-4 py-12 text-center">
+                  <p className="text-subtle text-sm">
+                    {debouncedSearchTerm
+                      ? t("no_result_found_for", { searchTerm: debouncedSearchTerm })
+                      : t("no_results")}
+                  </p>
+                  {debouncedSearchTerm && (
+                    <Button color="minimal" className="mt-2" onClick={() => setSearchTerm("")}>
+                      {t("clear")}
+                    </Button>
+                  )}
+                </td>
+              </tr>
+            )}
             {flatData.map((user) => (
               <Row key={user.email}>
                 <Cell widthClassNames="w-auto">
                   <div className="min-h-10 flex">
                     <Avatar
                       size="md"
-                      alt={`Avatar of ${user.username || "Nameless"}`}
+                      alt={t("avatar_of_name", { name: user.username || t("nameless_user") })}
                       imageSrc={`${WEBAPP_URL}/${user.username}/avatar.png`}
                     />
                     <div className="text-subtle ml-4 font-medium">
@@ -155,14 +185,16 @@ export function UsersTable() {
                         <span>/{user.username}</span>
                         {user.locked && <Badge variant="red">{t("locked")}</Badge>}
                       </div>
-                      <span className="break-all">{user.email}</span>
+                      <span className="break-all font-mono text-xs">{user.email}</span>
                     </div>
                   </div>
                 </Cell>
-                <Cell>{user.timeZone}</Cell>
                 <Cell>
-                  <Badge className="capitalize" variant={user.role === "ADMIN" ? "red" : "gray"}>
-                    {user.role.toLowerCase()}
+                  <span className="font-mono text-xs">{user.timeZone}</span>
+                </Cell>
+                <Cell>
+                  <Badge className="capitalize" variant="gray">
+                    {t(user.role.toLowerCase())}
                   </Badge>
                 </Cell>
                 <Cell widthClassNames="w-auto">

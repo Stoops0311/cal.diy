@@ -1,20 +1,16 @@
-import * as RadioGroup from "@radix-ui/react-radio-group";
-import { useState, useEffect } from "react";
-
 import type { EventTypeAppSettingsComponent } from "@calcom/app-store/types";
 import {
-  convertToSmallestCurrencyUnit,
   convertFromSmallestToPresentableCurrencyUnit,
+  convertToSmallestCurrencyUnit,
 } from "@calcom/lib/currencyConversions";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { RefundPolicy } from "@calcom/lib/payment/types";
 import classNames from "@calcom/ui/classNames";
 import { Alert } from "@calcom/ui/components/alert";
-import { Select } from "@calcom/ui/components/form";
-import { CheckboxField } from "@calcom/ui/components/form";
-import { TextField } from "@calcom/ui/components/form";
+import { CheckboxField, Select, TextField } from "@calcom/ui/components/form";
 import { RadioField } from "@calcom/ui/components/radio";
-
+import * as RadioGroup from "@radix-ui/react-radio-group";
+import { useEffect, useState } from "react";
 import { paymentOptions } from "../lib/constants";
 import { currencyOptions } from "../lib/currencyOptions";
 import { autoChargeNoShowFeeTimeUnitEnum } from "../zod";
@@ -103,7 +99,7 @@ const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
               min="0.5"
               type="number"
               required
-              placeholder="Price"
+              placeholder={t("price")}
               disabled={disabled}
               onChange={(e) => {
                 setAppData("price", convertToSmallestCurrencyUnit(Number(e.target.value), currency));
@@ -123,7 +119,6 @@ const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
                 input: "stripe-currency-input",
               }}
               value={selectedCurrency}
-              className="text-black"
               defaultValue={selectedCurrency}
               onChange={(e) => {
                 if (e) {
@@ -166,8 +161,11 @@ const EventTypeAppSettingsInterface: EventTypeAppSettingsComponent = ({
           )}
           {paymentOption !== "HOLD" && (
             <div className="mt-4 w-full">
-              <label className="text-default mb-1 block text-sm font-medium">{t("refund_policy")}</label>
+              <p id="refund-policy-label" className="text-default mb-1 block text-sm font-medium">
+                {t("refund_policy")}
+              </p>
               <RadioGroup.Root
+                aria-labelledby="refund-policy-label"
                 disabled={disabled || paymentOption === "HOLD"}
                 defaultValue="never"
                 className="flex flex-col stack-y-2"
