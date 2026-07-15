@@ -41,4 +41,10 @@ export enum ErrorCode {
   BookerEmailRequiresLogin = "booker_email_requires_login",
   InvalidVerificationCode = "invalid_verification_code",
   UnableToValidateVerificationCode = "unable_to_validate_verification_code",
+  ClerkEmailUnverified = "clerk_email_unverified",
+  ClerkIdentityAmbiguous = "clerk_identity_ambiguous",
+  ClerkExternalIdInvalid = "clerk_external_id_invalid",
+  ClerkExternalIdUpdateFailed = "clerk_external_id_update_failed",
+  LocalAccountLocked = "local_account_locked",
+  UsernameUnavailable = "username_unavailable",
 }
