@@ -1,6 +1,6 @@
 import process from "node:process";
 import { Polar } from "@polar-sh/sdk";
-import type { BillingInterval as BillingIntervalType, PaidPlanKey } from "../lib/plans";
+import type { BillingIntervalType, PaidPlanKey } from "../lib/plans";
 
 type PolarEnvironment = Record<string, string | undefined>;
 type PolarServer = "production" | "sandbox";
@@ -12,8 +12,14 @@ type ConfiguredPolarProduct = {
   plan: PaidPlanKey;
 };
 
+type ConfiguredPolarBenefit = {
+  id: string;
+  marker: "convenio-pro" | "convenio-team";
+};
+
 type PolarConfiguration = {
   accessToken: string;
+  benefits: Record<PaidPlanKey, ConfiguredPolarBenefit>;
   products: Record<PolarProductKey, ConfiguredPolarProduct>;
   server: PolarServer;
   webhookSecret: string;
@@ -45,6 +51,10 @@ function getPolarServer(env: PolarEnvironment): PolarServer {
 function getPolarConfiguration(env: PolarEnvironment = process.env): PolarConfiguration {
   const accessToken = requireEnvironmentValue(env, "POLAR_ACCESS_TOKEN");
   const webhookSecret = requireEnvironmentValue(env, "POLAR_WEBHOOK_SECRET");
+  const benefits = {
+    PRO: { id: requireEnvironmentValue(env, "POLAR_PRO_BENEFIT_ID"), marker: "convenio-pro" },
+    TEAM: { id: requireEnvironmentValue(env, "POLAR_TEAM_BENEFIT_ID"), marker: "convenio-team" },
+  } as const satisfies Record<PaidPlanKey, ConfiguredPolarBenefit>;
   const products = Object.fromEntries(
     Object.entries(productEnvironmentKeys).map(([key, environmentKey]) => {
       const [plan, interval] = key.split(":") as [PaidPlanKey, BillingIntervalType];
@@ -57,7 +67,12 @@ function getPolarConfiguration(env: PolarEnvironment = process.env): PolarConfig
     throw new Error("Polar product IDs must be unique");
   }
 
-  return { accessToken, products, server: getPolarServer(env), webhookSecret };
+  const benefitIds = Object.values(benefits).map(({ id }) => id);
+  if (new Set(benefitIds).size !== benefitIds.length) {
+    throw new Error("Polar benefit IDs must be unique");
+  }
+
+  return { accessToken, benefits, products, server: getPolarServer(env), webhookSecret };
 }
 
 function getPolarClient(env: PolarEnvironment = process.env): Polar {
@@ -88,8 +103,23 @@ function resolveConfiguredPolarProduct(
   return product;
 }
 
-export { getPolarClient, getPolarConfiguration, getPolarProduct, resolveConfiguredPolarProduct };
+function resolveConfiguredPolarBenefits(
+  benefitIds: string[],
+  env: PolarEnvironment = process.env
+): ConfiguredPolarBenefit["marker"][] {
+  const configuredBenefits = Object.values(getPolarConfiguration(env).benefits);
+  return configuredBenefits.filter(({ id }) => benefitIds.includes(id)).map(({ marker }) => marker);
+}
+
+export {
+  getPolarClient,
+  getPolarConfiguration,
+  getPolarProduct,
+  resolveConfiguredPolarBenefits,
+  resolveConfiguredPolarProduct,
+};
 export type {
+  ConfiguredPolarBenefit,
   ConfiguredPolarProduct,
   PolarConfiguration,
   PolarEnvironment,

@@ -46,9 +46,4 @@ const PAID_PLAN_CATALOG = {
 } as const satisfies Record<PaidPlanKey, PaidPlanDefinition>;
 
 export { BillingInterval, BillingStatus, PAID_PLAN_CATALOG, PlanKey };
-export type {
-  BillingIntervalType as BillingInterval,
-  BillingStatusType as BillingStatus,
-  PaidPlanKey,
-  PlanKeyType as PlanKey,
-};
+export type { BillingIntervalType, BillingStatusType, PaidPlanKey, PlanKeyType };

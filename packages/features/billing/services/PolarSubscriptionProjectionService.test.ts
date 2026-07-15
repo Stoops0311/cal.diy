@@ -10,10 +10,12 @@ const createdOrganizationIds: number[] = [];
 
 const polarEnvironment = {
   POLAR_ACCESS_TOKEN: "polar_test_token",
+  POLAR_PRO_BENEFIT_ID: "benefit_pro",
   POLAR_PRO_ANNUAL_PRODUCT_ID: "product_pro_year",
   POLAR_PRO_MONTHLY_PRODUCT_ID: "product_pro_month",
   POLAR_SERVER: "sandbox",
   POLAR_TEAM_ANNUAL_PRODUCT_ID: "product_team_year",
+  POLAR_TEAM_BENEFIT_ID: "benefit_team",
   POLAR_TEAM_MONTHLY_PRODUCT_ID: "product_team_month",
   POLAR_WEBHOOK_SECRET: "polar_test_webhook_secret",
 };

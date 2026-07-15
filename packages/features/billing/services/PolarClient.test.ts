@@ -14,15 +14,18 @@ import {
   getPolarClient,
   getPolarConfiguration,
   getPolarProduct,
+  resolveConfiguredPolarBenefits,
   resolveConfiguredPolarProduct,
 } from "./PolarClient";
 
 const completeEnvironment = {
   POLAR_ACCESS_TOKEN: "polar_test_token",
+  POLAR_PRO_BENEFIT_ID: "benefit_pro",
   POLAR_PRO_ANNUAL_PRODUCT_ID: "product_pro_year",
   POLAR_PRO_MONTHLY_PRODUCT_ID: "product_pro_month",
   POLAR_SERVER: "sandbox",
   POLAR_TEAM_ANNUAL_PRODUCT_ID: "product_team_year",
+  POLAR_TEAM_BENEFIT_ID: "benefit_team",
   POLAR_TEAM_MONTHLY_PRODUCT_ID: "product_team_month",
   POLAR_WEBHOOK_SECRET: "polar_test_webhook_secret",
 } as const;
@@ -67,6 +70,21 @@ describe("Polar configuration", () => {
         POLAR_TEAM_ANNUAL_PRODUCT_ID: completeEnvironment.POLAR_PRO_ANNUAL_PRODUCT_ID,
       })
     ).toThrow("Polar product IDs must be unique");
+  });
+
+  it("requires unique plan-marker benefits", () => {
+    expect(() => getPolarConfiguration({ ...completeEnvironment, POLAR_PRO_BENEFIT_ID: undefined })).toThrow(
+      "POLAR_PRO_BENEFIT_ID is required"
+    );
+    expect(() =>
+      getPolarConfiguration({ ...completeEnvironment, POLAR_TEAM_BENEFIT_ID: "benefit_pro" })
+    ).toThrow("Polar benefit IDs must be unique");
+  });
+
+  it("maps granted benefit IDs to stable plan markers", () => {
+    expect(resolveConfiguredPolarBenefits(["other-benefit", "benefit_team"], completeEnvironment)).toEqual([
+      "convenio-team",
+    ]);
   });
 
   it("rejects an unknown server", () => {
