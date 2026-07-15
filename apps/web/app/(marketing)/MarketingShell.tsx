@@ -60,7 +60,7 @@ export function MarketingHeader({
   current,
 }: {
   copy: MarketingShellCopy;
-  current?: "products" | "manifesto";
+  current?: "products" | "manifesto" | "pricing";
 }) {
   return (
     <header className="cv-header">
