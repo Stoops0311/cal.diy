@@ -1,21 +1,28 @@
 import { captureException } from "@sentry/nextjs";
+import type { AnyRouter } from "@trpc/server";
+import { TRPCError } from "@trpc/server";
 import type { NextApiRequest } from "next";
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ZodIssue } from "zod";
 import { ZodError } from "zod";
-
-import { TRPCError } from "@trpc/server";
-import type { AnyRouter } from "@trpc/server";
-
 import { createNextApiHandler } from "./createNextApiHandler";
 import { errorFormatter } from "./errorFormatter";
 import { onErrorHandler } from "./onErrorHandler";
 
+const { createAdapterHandler, getCurrentSessionFromRequest, mockedCreateContext } = vi.hoisted(() => ({
+  createAdapterHandler: vi.fn((options) => options),
+  getCurrentSessionFromRequest: vi.fn(),
+  mockedCreateContext: vi.fn(),
+}));
+
 vi.mock("./createContext", () => {
   return {
-    createContext: vi.fn(),
+    createContext: mockedCreateContext,
   };
 });
+
+vi.mock("@calcom/features/auth/lib/currentSession", () => ({ getCurrentSessionFromRequest }));
+vi.mock("@trpc/server/adapters/next", () => ({ createNextApiHandler: createAdapterHandler }));
 
 vi.mock("@sentry/nextjs", () => ({
   captureException: vi.fn(),
@@ -128,6 +135,18 @@ describe("createNextApiHandler", () => {
 
       expect(result).toEqual(shape);
     });
+  });
+
+  it("builds tRPC context from the provider-neutral request session", async () => {
+    const handler = createNextApiHandler(mockRouter) as unknown as {
+      createContext: (options: { req: NextApiRequest; res: object }) => Promise<unknown>;
+    };
+    const res = {};
+    mockedCreateContext.mockImplementation(async (_options, getSession) => getSession({ req: mockReq, res }));
+
+    await handler.createContext({ req: mockReq, res });
+
+    expect(getCurrentSessionFromRequest).toHaveBeenCalledWith(mockReq, res);
   });
 
   describe("error handling", () => {

@@ -1,4 +1,5 @@
 import { prisma } from "@calcom/prisma";
+import type { GetServerSidePropsContext, NextApiResponse } from "next";
 import type { Session } from "next-auth";
 import { getAuthProvider, getClerkBackendClient } from "./clerkClient";
 import { authenticateClerkRequest } from "./clerkRequestAuth";
@@ -122,7 +123,15 @@ async function getCurrentSession(
   });
 }
 
-export { getCurrentSession, projectClerkSession };
+async function getCurrentSessionFromRequest(
+  req: LegacySessionOptions["req"],
+  _res?: GetServerSidePropsContext["res"] | NextApiResponse,
+  dependencies: CurrentSessionDependencies = defaultDependencies
+): Promise<ConvenioSession | null> {
+  return getCurrentSession({ req }, dependencies);
+}
+
+export { getCurrentSession, getCurrentSessionFromRequest, projectClerkSession };
 export type {
   ClerkSessionProjectionDependencies,
   ConvenioSession,

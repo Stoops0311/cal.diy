@@ -1,6 +1,7 @@
+import process from "node:process";
+import { getCurrentSessionFromRequest } from "@calcom/features/auth/lib/currentSession";
 import type { AnyRouter } from "@trpc/server";
 import { createNextApiHandler as _createNextApiHandler } from "@trpc/server/adapters/next";
-
 import { createContext as createTrpcContext } from "./createContext";
 import { onErrorHandler } from "./onErrorHandler";
 
@@ -14,7 +15,7 @@ export function createNextApiHandler(router: AnyRouter, isPublic = false, namesp
      * @link https://trpc.io/docs/context
      */
     createContext: (opts) => {
-      return createTrpcContext(opts);
+      return createTrpcContext(opts, ({ req, res }) => getCurrentSessionFromRequest(req, res));
     },
     /**
      * @link https://trpc.io/docs/error-handling

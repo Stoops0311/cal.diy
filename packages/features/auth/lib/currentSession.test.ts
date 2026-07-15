@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConvenioSession, CurrentSessionDependencies } from "./currentSession";
-import { getCurrentSession } from "./currentSession";
+import { getCurrentSession, getCurrentSessionFromRequest } from "./currentSession";
 
 const session = {
   expires: "2026-07-15T12:00:00.000Z",
@@ -62,5 +62,15 @@ describe("getCurrentSession", () => {
 
     await expect(getCurrentSession({ req: { headers: {} } }, dependencies)).rejects.toBe(failure);
     expect(dependencies.getLegacySession).not.toHaveBeenCalled();
+  });
+});
+
+describe("getCurrentSessionFromRequest", () => {
+  it("authenticates the supplied Pages or API request", async () => {
+    const dependencies = createDependencies();
+    const req = { headers: {} };
+
+    await expect(getCurrentSessionFromRequest(req, undefined, dependencies)).resolves.toBe(session);
+    expect(dependencies.authenticateClerk).toHaveBeenCalledWith(req);
   });
 });
