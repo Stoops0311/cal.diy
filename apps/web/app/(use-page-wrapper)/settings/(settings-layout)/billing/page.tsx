@@ -1,0 +1,37 @@
+import { billingRouter } from "@calcom/trpc/server/routers/viewer/billing/_router";
+import { createRouterCaller, getTRPCContext } from "app/_trpc/context";
+import { _generateMetadata } from "app/_utils";
+import { redirect } from "next/navigation";
+import { BillingSettings } from "~/billing/BillingSettings";
+
+export const generateMetadata = async () =>
+  await _generateMetadata(
+    (t) => t("billing"),
+    (t) => t("billing_settings_description"),
+    undefined,
+    undefined,
+    "/settings/billing"
+  );
+
+export default async function BillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout_id?: string; organizationId?: string }>;
+}) {
+  const [context, params] = await Promise.all([getTRPCContext(), searchParams]);
+  if (!context.user) redirect("/auth/login?callbackUrl=/settings/billing");
+
+  const parsedOrganizationId = Number(params.organizationId);
+  const organizationId =
+    Number.isInteger(parsedOrganizationId) && parsedOrganizationId > 0 ? parsedOrganizationId : undefined;
+  const caller = await createRouterCaller(billingRouter, context);
+  const initialProjection = await caller.get(organizationId === undefined ? {} : { organizationId });
+
+  return (
+    <BillingSettings
+      checkoutId={params.checkout_id}
+      initialProjection={initialProjection}
+      organizationId={organizationId}
+    />
+  );
+}

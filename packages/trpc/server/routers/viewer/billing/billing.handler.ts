@@ -83,10 +83,24 @@ class PrismaBillingReadRepository implements BillingReadRepository {
 }
 
 let defaultDependencies: BillingHandlerDependencies | undefined;
+let defaultCommands: PolarCheckoutService | undefined;
+
+function getDefaultCommands(): PolarCheckoutService {
+  defaultCommands ??= new PolarCheckoutService();
+  return defaultCommands;
+}
+
+const lazyCommands: BillingCommands = {
+  cancelAtPeriodEnd: (...args) => getDefaultCommands().cancelAtPeriodEnd(...args),
+  changePlan: (...args) => getDefaultCommands().changePlan(...args),
+  createCheckout: (...args) => getDefaultCommands().createCheckout(...args),
+  createPortalSession: (...args) => getDefaultCommands().createPortalSession(...args),
+  reconcile: (...args) => getDefaultCommands().reconcile(...args),
+};
 
 function getDefaultDependencies(): BillingHandlerDependencies {
   defaultDependencies ??= {
-    commands: new PolarCheckoutService(),
+    commands: lazyCommands,
     rateLimit: async (identifier) => {
       await checkRateLimitAndThrowError({ identifier, rateLimitingType: "core" });
     },
