@@ -74,15 +74,13 @@ export const OnboardingView = ({ userEmail }: OnboardingViewProps) => {
         plan_type: selectedPlan,
       });
     }
-    startTransition(() => {
-      if (selectedPlan === "organization") {
-        router.push("/onboarding/organization/details");
-      } else if (selectedPlan === "team") {
-        router.push("/onboarding/teams/details");
-      } else if (selectedPlan === "personal") {
-        router.push("/onboarding/personal/settings");
-      }
-    });
+    if (selectedPlan === "organization") {
+      router.push("/onboarding/organization/details");
+    } else if (selectedPlan === "team") {
+      router.push("/onboarding/teams/details");
+    } else if (selectedPlan === "personal") {
+      router.push("/onboarding/personal/settings");
+    }
   };
 
   const planIconByType: Record<PlanType, IconName> = {

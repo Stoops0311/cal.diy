@@ -5,6 +5,7 @@ import {
   type FixtureCleanupAdapter,
   type FixtureManifest,
   isRecoverableInterruptedSignup,
+  isRecoverableUnprovisionedSignup,
 } from "./fixtures";
 
 const runTag = "convenio-e2e-20260715T120000Z-ab12cd";
@@ -117,6 +118,52 @@ describe("Clerk and Polar E2E fixture ownership", () => {
       isRecoverableInterruptedSignup(
         { ...candidate, localMetadata: { convenioE2ERunTag: "another-run" } },
         runTag
+      )
+    ).toBe(false);
+  });
+
+  it("recovers only an exact unprovisioned signup created during the run", () => {
+    const runStartedAt = Date.parse("2026-07-15T12:00:00.000Z");
+    const candidate = {
+      clerkExternalId: null,
+      clerkMetadata: {},
+      createdAt: runStartedAt + 1_000,
+      email: "convenio+clerk_test_ab12cd@example.com",
+    };
+
+    expect(isRecoverableUnprovisionedSignup(candidate, runTag, runStartedAt, runStartedAt + 2_000)).toBe(
+      true
+    );
+    expect(
+      isRecoverableUnprovisionedSignup(
+        { ...candidate, email: "someone@example.com" },
+        runTag,
+        runStartedAt,
+        runStartedAt + 2_000
+      )
+    ).toBe(false);
+    expect(
+      isRecoverableUnprovisionedSignup(
+        { ...candidate, clerkExternalId: "42" },
+        runTag,
+        runStartedAt,
+        runStartedAt + 2_000
+      )
+    ).toBe(false);
+    expect(
+      isRecoverableUnprovisionedSignup(
+        { ...candidate, clerkMetadata: { convenioE2ERunTag: "another-run" } },
+        runTag,
+        runStartedAt,
+        runStartedAt + 2_000
+      )
+    ).toBe(false);
+    expect(
+      isRecoverableUnprovisionedSignup(
+        { ...candidate, createdAt: runStartedAt - 10_000 },
+        runTag,
+        runStartedAt,
+        runStartedAt + 2_000
       )
     ).toBe(false);
   });

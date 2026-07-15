@@ -27,10 +27,6 @@ type RollbackState = {
   lockedLocalUserId: number;
   runTag: string;
 };
-type BrowserClerk = {
-  signOut(): Promise<void>;
-};
-
 const statePath = path.join(process.cwd(), "test-results", "clerk-polar", "rollback-state.json");
 const execFileAsync = promisify(execFile);
 const clerk = createClerkClient({ secretKey: requireEnvironment("CLERK_SECRET_KEY") });
@@ -152,15 +148,6 @@ async function signInWithClerk(page: Page, email: string, password: string): Pro
   await expect(page).toHaveURL(/\/event-types/, { timeout: 45_000 });
 }
 
-async function signOutOfClerk(page: Page): Promise<void> {
-  await page.evaluate(async () => {
-    const browserClerk = (window as Window & { Clerk?: BrowserClerk }).Clerk;
-    if (!browserClerk) throw new Error("Clerk browser client is unavailable");
-    await browserClerk.signOut();
-  });
-  await page.goto("/auth/login");
-}
-
 async function signInWithNextAuth(page: Page, email: string, password: string): Promise<void> {
   await page.goto("/auth/login");
   await page.locator("#email").fill(email);
@@ -179,8 +166,10 @@ async function readState(): Promise<RollbackState> {
 }
 
 test("Clerk enablement rolls back to NextAuth without changing local identity ownership", async ({
+  browser,
   page,
 }) => {
+  test.setTimeout(300_000);
   if (rollbackPhase() === "prepare") {
     if (process.env.AUTH_PROVIDER !== "clerk") throw new Error("prepare requires AUTH_PROVIDER=clerk");
     await setupClerkTestingToken(page);
@@ -225,15 +214,22 @@ test("Clerk enablement rolls back to NextAuth without changing local identity ow
       lockedLocalUserId: locked.localUserId,
       runTag,
     });
-    await signOutOfClerk(page);
-    await page.getByRole("textbox", { name: "Email address" }).fill(values.lockedEmail);
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
-    const lockedPassword = page.locator('input[name="password"]');
-    if (await lockedPassword.isVisible().catch(() => false)) {
-      await lockedPassword.fill(values.lockedPassword);
-      await page.getByRole("button", { name: "Continue", exact: true }).click();
+    const lockedContext = await browser.newContext({ baseURL: requireEnvironment("NEXT_PUBLIC_WEBAPP_URL") });
+    try {
+      const lockedPage = await lockedContext.newPage();
+      await setupClerkTestingToken(lockedPage);
+      await lockedPage.goto("/auth/login");
+      await lockedPage.getByRole("textbox", { name: "Email address" }).fill(values.lockedEmail);
+      await lockedPage.getByRole("button", { name: "Continue", exact: true }).click();
+      const lockedPassword = lockedPage.locator('input[name="password"]');
+      if (await lockedPassword.isVisible().catch(() => false)) {
+        await lockedPassword.fill(values.lockedPassword);
+        await lockedPage.getByRole("button", { name: "Continue", exact: true }).click();
+      }
+      await expect(lockedPage).not.toHaveURL(/\/event-types/);
+    } finally {
+      await lockedContext.close();
     }
-    await expect(page).not.toHaveURL(/\/event-types/);
     return;
   }
 

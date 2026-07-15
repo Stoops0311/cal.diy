@@ -13,6 +13,7 @@ import {
   createFixtureManifest,
   type FixtureManifest,
   isRecoverableInterruptedSignup,
+  isRecoverableUnprovisionedSignup,
   ownsRunTag,
   registerFixture,
   taggedMetadata,
@@ -101,7 +102,33 @@ async function setupClerkTestingToken(page: Page): Promise<void> {
   });
 }
 
-async function completeSignUp(page: Page): Promise<void> {
+async function removeRecoverableUnprovisionedSignup(): Promise<boolean> {
+  const users = await clerk.users.getUserList({ emailAddress: [primaryEmail], limit: 2 });
+  if (users.data.length === 0) return false;
+  if (users.data.length !== 1 || !users.data[0]) {
+    throw new Error(`Refusing to remove ambiguous unprovisioned signup for ${primaryEmail}`);
+  }
+
+  const clerkUser = users.data[0];
+  const recoverable = isRecoverableUnprovisionedSignup(
+    {
+      clerkExternalId: clerkUser.externalId,
+      clerkMetadata: clerkUser.publicMetadata,
+      createdAt: clerkUser.createdAt,
+      email: primaryEmail,
+    },
+    runTag,
+    Date.parse(manifest.createdAt)
+  );
+  if (!recoverable) {
+    throw new Error(`Refusing to remove an unprovisioned signup without exact ownership`);
+  }
+
+  await clerk.users.deleteUser(clerkUser.id);
+  return true;
+}
+
+async function completeSignUp(page: Page, attempt = 1): Promise<void> {
   await page.goto("/signup");
   await page.getByRole("textbox", { name: "Email address" }).fill(primaryEmail);
   await page.locator('input[name="password"]').fill(primaryPassword);
@@ -128,7 +155,9 @@ async function completeSignUp(page: Page): Promise<void> {
       continue;
     }
     if (page.url().includes("#/verify-email-address") || (await verifyEmail.isVisible().catch(() => false))) {
-      await page.keyboard.type("424242");
+      const codeInput = page.getByRole("textbox", { name: "Enter verification code" });
+      if (await codeInput.isVisible().catch(() => false)) await codeInput.fill("424242");
+      else await page.keyboard.type("424242");
       await page
         .waitForURL((url) => !url.href.includes("#/verify-email-address"), { timeout: 10_000 })
         .catch(() => null);
@@ -138,6 +167,19 @@ async function completeSignUp(page: Page): Promise<void> {
         await continueButton.click();
       }
     }
+  }
+
+  const missingAttempt = page.getByText("No sign up attempt was found", { exact: false });
+  if (attempt < 2 && (await missingAttempt.isVisible().catch(() => false))) {
+    await removeRecoverableUnprovisionedSignup();
+    await page.evaluate(() => {
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+    });
+    await page.context().clearCookies();
+    await page.goto("about:blank");
+    await completeSignUp(page, attempt + 1);
+    return;
   }
   await expect(page).toHaveURL(/\/(getting-started|event-types)/, { timeout: 15_000 });
 }
@@ -255,7 +297,8 @@ async function selectPolarCombobox(page: Page, value: string): Promise<void> {
 async function completePolarCardCheckout(page: Page, externalCustomerId: string): Promise<void> {
   const checkoutReturn = /http:\/\/localhost:3000\/(?:settings\/billing\?checkout_id=|auth\/login)/;
   const mutations: Array<{ host: string; method: string; path: string; status: number }> = [];
-  const failedMutations: Array<{ body: string; path: string; status: number }> = [];
+  const failedMutations: Array<{ body: string; path: string; retryAfter: number | null; status: number }> =
+    [];
   const browserErrors: string[] = [];
   page.on("response", async (response) => {
     const method = response.request().method();
@@ -267,6 +310,7 @@ async function completePolarCardCheckout(page: Page, externalCustomerId: string)
       failedMutations.push({
         body: (await response.text().catch(() => "unavailable")).slice(0, 500),
         path: url.pathname,
+        retryAfter: Number.parseInt(response.headers()["retry-after"] ?? "", 10) || null,
         status: response.status(),
       });
     }
@@ -281,12 +325,11 @@ async function completePolarCardCheckout(page: Page, externalCustomerId: string)
   const cardholderName = page.getByRole("textbox", { name: "Cardholder name" });
   if (await cardholderName.isVisible().catch(() => false)) await cardholderName.fill("Convenio E2E User");
   const streetAddress = page.getByRole("textbox", { name: "Street address" });
-  if (await streetAddress.isVisible({ timeout: 5_000 }).catch(() => false)) {
-    await streetAddress.fill("510 Townsend St");
-    await page.getByRole("textbox", { name: "Postal code" }).fill("94103");
-    await page.getByRole("textbox", { name: "City" }).fill("San Francisco");
-    await selectPolarCombobox(page, "California");
-  }
+  await expect(streetAddress).toBeVisible({ timeout: 15_000 });
+  await streetAddress.fill("510 Townsend St");
+  await page.getByRole("textbox", { name: "Postal code" }).fill("94103");
+  await page.getByRole("textbox", { name: "City" }).fill("San Francisco");
+  await selectPolarCombobox(page, "California");
   const businessName = page.getByRole("textbox", { name: "Business name" });
   if (await businessName.isVisible().catch(() => false)) await businessName.fill(organizationName);
 
@@ -325,6 +368,37 @@ async function completePolarCardCheckout(page: Page, externalCustomerId: string)
     await expect(subscribeNow).toBeEnabled({ timeout: 45_000 });
     await page.waitForTimeout(10_000);
     await subscribeNow.click();
+  }
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const confirmation = mutations.filter(({ path }) => path.endsWith("/confirm")).at(-1);
+    const failure = failedMutations.filter(({ path }) => path.endsWith("/confirm")).at(-1);
+    const checkoutLocked = confirmation?.status === 409 && failure?.body.includes('"error":"CheckoutLocked"');
+    const throttledAfterLock =
+      confirmation?.status === 429 &&
+      failedMutations.some(
+        ({ body, path, status }) =>
+          path.endsWith("/confirm") && status === 409 && body.includes('"error":"CheckoutLocked"')
+      );
+    if (!checkoutLocked && !throttledAfterLock) break;
+    const retryAfter = failure?.retryAfter ?? 0;
+    let minimumDelay = 10_000;
+    if (throttledAfterLock) minimumDelay = 15_000;
+    const retryDelay = Math.max(retryAfter * 1_000, minimumDelay);
+    if (retryDelay > 45_000) break;
+    await page.waitForTimeout(retryDelay);
+    const retrySubmit = page.getByRole("button", { name: /^(Start trial|Subscribe now)$/ }).last();
+    await expect(retrySubmit).toBeEnabled({ timeout: 30_000 });
+    const confirmationCount = mutations.filter(({ path }) => path.endsWith("/confirm")).length;
+    await retrySubmit.click();
+    await expect
+      .poll(
+        () =>
+          mutations.filter(({ path }) => path.endsWith("/confirm")).length > confirmationCount ||
+          checkoutReturn.test(page.url()),
+        { timeout: 20_000 }
+      )
+      .toBe(true);
+    if (checkoutReturn.test(page.url())) break;
   }
   await page.waitForURL(checkoutReturn, { timeout: 60_000 }).catch(() => null);
   const confirmationSucceeded = mutations.some(
@@ -490,7 +564,26 @@ async function recoverInterruptedPrimarySignup(): Promise<void> {
     where: { email: primaryEmail },
     select: { clerkUserId: true, email: true, id: true, metadata: true },
   });
-  if (!localUser) throw new Error(`Refusing to recover interrupted signup without a local mapping`);
+  if (!localUser) {
+    const recoverable = isRecoverableUnprovisionedSignup(
+      {
+        clerkExternalId: clerkUser.externalId,
+        clerkMetadata: clerkUser.publicMetadata,
+        createdAt: clerkUser.createdAt,
+        email: primaryEmail,
+      },
+      runTag,
+      Date.parse(manifest.createdAt)
+    );
+    if (!recoverable) {
+      throw new Error(`Refusing to recover an unprovisioned signup without exact ownership`);
+    }
+    if (!ownsRunTag(clerkUser.publicMetadata, runTag)) {
+      await clerk.users.updateUserMetadata(clerkUser.id, { publicMetadata: taggedMetadata(runTag) });
+    }
+    await registerFixture(manifest, { id: clerkUser.id, kind: "clerk_user" });
+    return;
+  }
 
   const recoverable = isRecoverableInterruptedSignup(
     {
@@ -676,6 +769,47 @@ async function verifyTeamMembershipLifecycle(
       return `${membership?.accepted}:${projection?.seatCount}`;
     })
     .toBe("false:1");
+}
+
+async function verifyOrganizationArchiveAndOwnerBoundary(
+  page: Page,
+  organizationId: number,
+  ownerUserId: number
+): Promise<void> {
+  const removeLastOwner = await callTRPC(
+    page,
+    "organizations/removeMember",
+    { memberUserId: ownerUserId, organizationId },
+    "POST"
+  );
+  expect(removeLastOwner.status).toBe(409);
+  await expect(
+    prisma.membership.findUnique({
+      where: { userId_teamId: { teamId: organizationId, userId: ownerUserId } },
+      select: { accepted: true, role: true },
+    })
+  ).resolves.toEqual({ accepted: true, role: "OWNER" });
+
+  const archived = await callTRPC(page, "organizations/archive", { organizationId }, "POST");
+  expect(archived.status).toBe(200);
+  await expect
+    .poll(() =>
+      prisma.team
+        .findUnique({ where: { id: organizationId }, select: { archivedAt: true } })
+        .then((organization) => organization?.archivedAt?.toISOString() ?? null)
+    )
+    .not.toBeNull();
+
+  const readable = await callTRPC(page, "organizations/get", { organizationId }, "GET");
+  expect(readable.status).toBe(200);
+  expect(readTRPCData<{ archivedAt: string }>(readable.body).archivedAt).toMatch(/^20\d{2}-/);
+  const readOnly = await callTRPC(
+    page,
+    "organizations/invite",
+    { email: `archived+${suffix}@example.com`, organizationId, role: "MEMBER" },
+    "POST"
+  );
+  expect(readOnly.status).toBe(409);
 }
 
 async function verifyPolarCustomerPortal(page: Page, organizationId: number): Promise<void> {
@@ -948,6 +1082,9 @@ test("Polar Pro monthly checkout activates a paid projection", async ({ page }) 
     await page.context().clearCookies();
     await signInWithPassword(page, migratedEmail, migratedPassword);
   }
+
+  const reconciled = await callTRPC(page, "billing/reconcile", {}, "POST");
+  expect(reconciled.status).toBe(200);
   await expect
     .poll(
       async () => {
@@ -1059,6 +1196,7 @@ test("Polar Team monthly checkout bills accepted Clerk members as seats", async 
     fullPage: true,
     path: `test-results/clerk-polar/screenshots/${runTag}-polar-team-active.png`,
   });
+  await verifyOrganizationArchiveAndOwnerBoundary(page, organizationId, migrated.localUserId);
   await page.unrouteAll({ behavior: "ignoreErrors" });
 });
 

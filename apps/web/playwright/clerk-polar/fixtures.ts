@@ -32,6 +32,12 @@ type InterruptedSignupCandidate = {
   localUserId: number;
   mappedClerkUserId: string | null;
 };
+type UnprovisionedSignupCandidate = {
+  clerkExternalId: string | null;
+  clerkMetadata: unknown;
+  createdAt: number;
+  email: string;
+};
 type FixtureCleanupAdapter = {
   close?(): Promise<void>;
   load(reference: FixtureReference): Promise<OwnedFixture | null>;
@@ -103,6 +109,21 @@ function isRecoverableInterruptedSignup(candidate: InterruptedSignupCandidate, r
   return [candidate.clerkMetadata, candidate.localMetadata].every(
     (metadata) => isEmptyMetadata(metadata) || ownsRunTag(metadata, runTag)
   );
+}
+
+function isRecoverableUnprovisionedSignup(
+  candidate: UnprovisionedSignupCandidate,
+  runTag: string,
+  runStartedAt: number,
+  now = Date.now()
+): boolean {
+  assertE2ERunTag(runTag);
+  const suffix = runTag.split("-").at(-1);
+  if (!suffix || candidate.email !== `convenio+clerk_test_${suffix}@example.com`) return false;
+  if (candidate.clerkExternalId !== null) return false;
+  if (!Number.isSafeInteger(candidate.createdAt)) return false;
+  if (candidate.createdAt < runStartedAt - 5_000 || candidate.createdAt > now + 5_000) return false;
+  return isEmptyMetadata(candidate.clerkMetadata) || ownsRunTag(candidate.clerkMetadata, runTag);
 }
 
 const cleanupPriority: Record<FixtureKind, number> = {
@@ -203,6 +224,7 @@ export {
   createE2ERunTag,
   createFixtureManifest,
   isRecoverableInterruptedSignup,
+  isRecoverableUnprovisionedSignup,
   manifestPath,
   ownsRunTag,
   readFixtureManifest,
@@ -217,4 +239,5 @@ export type {
   FixtureReference,
   InterruptedSignupCandidate,
   OwnedFixture,
+  UnprovisionedSignupCandidate,
 };
