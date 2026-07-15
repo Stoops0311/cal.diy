@@ -1,3 +1,5 @@
+import { assertEntitled } from "@calcom/features/billing/lib/entitlements";
+import { EntitlementService } from "@calcom/features/billing/services/EntitlementService";
 import type { BookingRepository } from "@calcom/features/bookings/repositories/BookingRepository";
 import type { MembershipRepository } from "@calcom/features/membership/repositories/MembershipRepository";
 
@@ -18,26 +20,28 @@ export class BookingAuditPermissionError extends Error {
 
 interface BookingAuditAccessServiceDeps {
   bookingRepository: BookingRepository;
+  entitlements?: Pick<EntitlementService, "forUser">;
   membershipRepository: MembershipRepository;
 }
 
 /**
- * BookingAuditAccessService - Service for checking access permissions to booking audit logs
- * Audit logs are admin-only for compliance and security purposes.
- * Regular users (including booking organizers and hosts) cannot view audit logs.
+ * BookingAuditAccessService - Service for checking access permissions to booking audit logs.
+ * Access requires both a Team entitlement and ownership of the booking.
  */
 export class BookingAuditAccessService {
   private readonly bookingRepository: BookingRepository;
+  private readonly entitlements: Pick<EntitlementService, "forUser">;
   private readonly membershipRepository: MembershipRepository;
 
   constructor(deps: BookingAuditAccessServiceDeps) {
     this.bookingRepository = deps.bookingRepository;
+    this.entitlements = deps.entitlements ?? new EntitlementService();
     this.membershipRepository = deps.membershipRepository;
   }
 
   /**
    * Check if user has permission to view audit logs for a booking.
-   * In cal.diy (no orgs/teams/PBAC), the booking owner always has access.
+   * The booking owner can view audit logs when their account has the Team capability.
    */
   async assertPermissions({
     bookingUid,
@@ -47,6 +51,8 @@ export class BookingAuditAccessService {
     userId: number;
     organizationId: number | null;
   }): Promise<void> {
+    assertEntitled(await this.entitlements.forUser(userId), "canReadBookingAudit");
+
     const booking = await this.bookingRepository.findByUidIncludeEventType({ bookingUid });
     if (!booking) {
       throw new BookingAuditPermissionError(BookingAuditErrorCode.BOOKING_NOT_FOUND_OR_PERMISSION_DENIED);
@@ -58,7 +64,7 @@ export class BookingAuditAccessService {
       throw new BookingAuditPermissionError(BookingAuditErrorCode.BOOKING_HAS_NO_OWNER);
     }
 
-    // In cal.diy, the booking owner can always view their own audit logs
+    // Ownership remains mandatory after the plan capability check.
     if (bookingOwnerId === userId) {
       return;
     }

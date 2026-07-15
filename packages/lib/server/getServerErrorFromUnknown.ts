@@ -132,6 +132,7 @@ export function getHttpStatusCode(cause: Error | ErrorWithCode): number {
     case ErrorCode.Unauthorized:
       return 401;
     case ErrorCode.Forbidden:
+    case ErrorCode.EntitlementRequired:
     case ErrorCode.EntitlementLimitExceeded:
       return 403;
     case ErrorCode.NotFound:

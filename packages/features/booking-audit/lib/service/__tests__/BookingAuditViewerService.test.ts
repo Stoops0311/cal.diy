@@ -1,3 +1,6 @@
+import { getEntitlements } from "@calcom/features/billing/lib/entitlements";
+import { BillingStatus, PlanKey } from "@calcom/features/billing/lib/plans";
+import { EntitlementService } from "@calcom/features/billing/services/EntitlementService";
 import { BookingRepository } from "@calcom/features/bookings/repositories/BookingRepository";
 import type { IAttendeeRepository } from "@calcom/features/bookings/repositories/IAttendeeRepository";
 import { CredentialRepository } from "@calcom/features/credentials/repositories/CredentialRepository";
@@ -20,6 +23,7 @@ vi.mock("@calcom/features/users/repositories/UserRepository");
 vi.mock("@calcom/features/bookings/repositories/BookingRepository");
 vi.mock("@calcom/features/membership/repositories/MembershipRepository");
 vi.mock("@calcom/features/credentials/repositories/CredentialRepository");
+vi.mock("@calcom/features/billing/services/EntitlementService");
 
 vi.mock("@calcom/prisma", () => ({
   default: {},
@@ -306,6 +310,23 @@ describe("BookingAuditViewerService - Integration Tests", () => {
     });
     vi.mocked(CredentialRepository).mockImplementation(function () {
       return mockCredentialRepository as unknown as CredentialRepository;
+    });
+    vi.mocked(EntitlementService).mockImplementation(function () {
+      return {
+        forUser: vi.fn().mockResolvedValue({
+          ...getEntitlements({
+            cancelAtPeriodEnd: false,
+            currentPeriodEnd: new Date("2026-08-15T12:00:00.000Z"),
+            plan: PlanKey.TEAM,
+            status: BillingStatus.ACTIVE,
+          }),
+          usage: {
+            acceptedOrganizationMembers: 0,
+            activePersonalEventTypes: 0,
+            connectedCalendars: 0,
+          },
+        }),
+      } as unknown as EntitlementService;
     });
 
     service = new BookingAuditViewerService({

@@ -1,4 +1,5 @@
 import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import { EntitlementService } from "@calcom/features/billing/services/EntitlementService";
 import { FeaturesRepository } from "@calcom/features/flags/features.repository";
 import { prisma } from "@calcom/prisma";
 import { buildLegacyRequest } from "@lib/buildLegacyCtx";
@@ -37,15 +38,18 @@ const Page = async ({ params }: PageProps) => {
   }
 
   const userId = session.user.id;
+  const entitlementService = new EntitlementService();
   const featuresRepository = new FeaturesRepository(prisma);
 
-  // No teams in cal.diy, so canReadOthersBookings is always false.
+  // Cross-user booking access remains disabled independently of organization administration.
   const canReadOthersBookings = false;
 
-  const [bookingAuditEnabled, bookingsV3Enabled] = await Promise.all([
+  const [bookingAuditFeatureEnabled, bookingsV3Enabled, entitlements] = await Promise.all([
     featuresRepository.checkIfUserHasFeature(userId, "booking-audit"),
     featuresRepository.checkIfUserHasFeature(userId, "bookings-v3"),
+    entitlementService.forUser(userId),
   ]);
+  const bookingAuditEnabled = bookingAuditFeatureEnabled && entitlements.canReadBookingAudit;
 
   return (
     <ShellMainAppDir

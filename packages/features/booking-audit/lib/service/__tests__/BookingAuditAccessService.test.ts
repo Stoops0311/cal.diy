@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach, vi, type Mock } from "vitest";
-
+import { getEntitlements } from "@calcom/features/billing/lib/entitlements";
+import { BillingStatus, PlanKey, type PlanKeyType } from "@calcom/features/billing/lib/plans";
+import type { EntitlementService } from "@calcom/features/billing/services/EntitlementService";
 import { BookingRepository } from "@calcom/features/bookings/repositories/BookingRepository";
 import { MembershipRepository } from "@calcom/features/membership/repositories/MembershipRepository";
-
+import { ErrorCode } from "@calcom/lib/errorCodes";
+import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import {
   BookingAuditAccessService,
   BookingAuditErrorCode,
@@ -65,8 +67,25 @@ const mockMembershipRepository: {
   hasMembership: vi.fn().mockResolvedValue(false),
 };
 
+function evaluated(plan: PlanKeyType) {
+  const subscription =
+    plan === PlanKey.FREE
+      ? null
+      : {
+          cancelAtPeriodEnd: false,
+          currentPeriodEnd: new Date("2026-08-15T12:00:00.000Z"),
+          plan,
+          status: BillingStatus.ACTIVE,
+        };
+  return {
+    ...getEntitlements(subscription),
+    usage: { acceptedOrganizationMembers: 0, activePersonalEventTypes: 0, connectedCalendars: 0 },
+  };
+}
+
 describe("BookingAuditAccessService", () => {
   let service: BookingAuditAccessService;
+  let mockEntitlements: { forUser: Mock<EntitlementService["forUser"]> };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -79,13 +98,30 @@ describe("BookingAuditAccessService", () => {
       return mockMembershipRepository as unknown as MembershipRepository;
     });
 
+    mockEntitlements = {
+      forUser: vi.fn().mockResolvedValue(evaluated(PlanKey.TEAM)),
+    };
+
     service = new BookingAuditAccessService({
       bookingRepository: mockBookingRepository as unknown as BookingRepository,
+      entitlements: mockEntitlements,
       membershipRepository: mockMembershipRepository as unknown as MembershipRepository,
     });
   });
 
   describe("assertPermissions", () => {
+    it.each([
+      PlanKey.FREE,
+      PlanKey.PRO,
+    ])("should reject %s users before reading booking data", async (plan) => {
+      mockEntitlements.forUser.mockResolvedValue(evaluated(plan));
+
+      await expect(
+        service.assertPermissions({ bookingUid: "test-booking-uid", userId: 123, organizationId: null })
+      ).rejects.toMatchObject({ code: ErrorCode.EntitlementRequired });
+      expect(mockBookingRepository.findByUidIncludeEventType).not.toHaveBeenCalled();
+    });
+
     it("should grant access when the user is the booking owner", async () => {
       const bookingUid = "test-booking-uid";
       const userId = 123;

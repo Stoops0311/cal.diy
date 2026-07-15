@@ -51,6 +51,15 @@ describe("getServerErrorFromUnknown", () => {
     expect(result.message).toBe("This plan's resource limit was reached");
   });
 
+  test("maps a missing entitlement to forbidden", () => {
+    const error = new ErrorWithCode(ErrorCode.EntitlementRequired, "This capability requires a paid plan");
+
+    const result = getServerErrorFromUnknown(error);
+
+    expect(result.statusCode).toBe(403);
+    expect(result.message).toBe("This capability requires a paid plan");
+  });
+
   test("should handle a StripeInvalidRequestError", () => {
     const stripeError = {
       name: "StripeInvalidRequestError",
