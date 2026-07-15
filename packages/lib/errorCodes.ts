@@ -47,4 +47,6 @@ export enum ErrorCode {
   ClerkExternalIdUpdateFailed = "clerk_external_id_update_failed",
   LocalAccountLocked = "local_account_locked",
   UsernameUnavailable = "username_unavailable",
+  EntitlementRequired = "entitlement_required",
+  EntitlementLimitExceeded = "entitlement_limit_exceeded",
 }
