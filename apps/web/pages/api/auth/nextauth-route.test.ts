@@ -7,7 +7,7 @@ const { getAuthProvider, nextAuth } = vi.hoisted(() => ({
   nextAuth: vi.fn(),
 }));
 
-vi.mock("@calcom/features/auth/lib/clerkClient", () => ({ getAuthProvider }));
+vi.mock("@calcom/features/auth/lib/authProvider", () => ({ getAuthProvider }));
 vi.mock("next-auth", () => ({ default: nextAuth }));
 
 import handler from "./[...nextauth]";

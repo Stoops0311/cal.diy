@@ -1,7 +1,9 @@
 import process from "node:process";
+import { getAuthProvider } from "@calcom/features/auth/lib/authProvider";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import { getCspHeader, getCspNonce } from "@lib/csp";
 import { get } from "@vercel/edge-config";
-import type { NextRequest } from "next/server";
+import type { NextFetchEvent, NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 const safeGet = async <T = any>(key: string): Promise<T | undefined> => {
@@ -65,7 +67,7 @@ const shouldEnforceCsp = (url: URL) => {
   return url.pathname.startsWith("/auth/login") || url.pathname.startsWith("/login");
 };
 
-const proxy = async (req: NextRequest): Promise<NextResponse<unknown>> => {
+const baseProxy = async (req: NextRequest): Promise<NextResponse<unknown>> => {
   const url = req.nextUrl;
   const reqWithEnrichedHeaders = enrichRequestWithHeaders({ req });
   const requestHeaders = new Headers(reqWithEnrichedHeaders.headers);
@@ -102,6 +104,48 @@ const proxy = async (req: NextRequest): Promise<NextResponse<unknown>> => {
   }
 
   return responseWithHeaders({ url, res, req: reqWithEnrichedHeaders });
+};
+
+const protectedPagePrefixes = [
+  "/apps/installed",
+  "/availability",
+  "/bookings",
+  "/event-types",
+  "/getting-started",
+  "/organizations",
+  "/settings",
+  "/teams",
+];
+
+const protectedApiPrefixes = [
+  "/api/trpc/admin",
+  "/api/trpc/apiKeys",
+  "/api/trpc/apps",
+  "/api/trpc/calendars",
+  "/api/trpc/credentials",
+  "/api/trpc/eventTypes",
+  "/api/trpc/loggedInViewerRouter",
+  "/api/trpc/me",
+  "/api/trpc/users",
+  "/api/trpc/viewer",
+  "/api/trpc/webhook",
+];
+
+function isClerkProtectedRequest(req: NextRequest): boolean {
+  const path = req.nextUrl.pathname;
+  return [...protectedPagePrefixes, ...protectedApiPrefixes].some(
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`)
+  );
+}
+
+const clerkProxy = clerkMiddleware(async (auth, req) => {
+  if (isClerkProtectedRequest(req)) await auth.protect();
+  return baseProxy(req);
+});
+
+const proxy = (req: NextRequest, event: NextFetchEvent) => {
+  if (getAuthProvider() === "nextauth") return baseProxy(req);
+  return clerkProxy(req, event);
 };
 
 const embeds = {
@@ -163,7 +207,7 @@ function enrichRequestWithHeaders({ req }: { req: NextRequest }) {
 }
 
 export const config = {
-  matcher: ["/auth/login", "/login", "/apps/installed", "/auth/logout", "/:path*/embed", "/availability", "/api/auth/signup"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };
 
 export default proxy;

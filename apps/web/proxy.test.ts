@@ -6,12 +6,22 @@ import { NextRequest, NextResponse } from "next/server";
 import type { Mock } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // We'll test the wrapped proxy as it would be used in production
-import proxy from "./proxy";
-import { config } from "./proxy";
+import proxy, { config } from "./proxy";
+
+const { clerkProtect } = vi.hoisted(() => ({ clerkProtect: vi.fn() }));
 
 // Mock dependencies at module level
 vi.mock("@vercel/edge-config", () => ({
   get: vi.fn(),
+}));
+
+vi.mock("@clerk/nextjs/server", () => ({
+  clerkMiddleware:
+    (handler: (...args: unknown[]) => unknown) =>
+    (...args: unknown[]) => {
+      const auth = Object.assign(vi.fn(), { protect: clerkProtect });
+      return handler(auth, ...args);
+    },
 }));
 
 // Mock NextResponse.json since it's not available in test environment
@@ -155,6 +165,37 @@ describe("Middleware Integration Tests", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  describe("Clerk route protection", () => {
+    it("protects private application routes in Clerk mode", async () => {
+      vi.stubEnv("AUTH_PROVIDER", "clerk");
+
+      await callProxy(createTestRequest({ url: `${WEBAPP_URL}/event-types` }));
+
+      expect(clerkProtect).toHaveBeenCalledOnce();
+    });
+
+    it.each([
+      "/person/30min",
+      "/api/webhooks/clerk",
+      "/api/webhooks/polar",
+    ])("keeps public route %s accessible", async (path) => {
+      vi.stubEnv("AUTH_PROVIDER", "clerk");
+
+      const response = await callProxy(createTestRequest({ url: `${WEBAPP_URL}${path}` }));
+
+      expectStatus(response, 200);
+      expect(clerkProtect).not.toHaveBeenCalled();
+    });
+
+    it("does not invoke Clerk during rollback", async () => {
+      vi.stubEnv("AUTH_PROVIDER", "nextauth");
+
+      await callProxy(createTestRequest({ url: `${WEBAPP_URL}/event-types` }));
+
+      expect(clerkProtect).not.toHaveBeenCalled();
+    });
   });
 
   describe("Static File Handling", () => {
@@ -444,35 +485,12 @@ describe("Middleware Integration Tests", () => {
 describe("Middleware Matcher Configuration", () => {
   const matcher: string[] = config.matcher;
 
-  it("should include all core middleware routes", () => {
-    expect(matcher).toContain("/auth/login");
-    expect(matcher).toContain("/auth/logout");
-    expect(matcher).toContain("/api/auth/signup");
-    expect(matcher).toContain("/apps/installed");
-    expect(matcher).toContain("/availability");
-    expect(matcher).toContain("/login");
-    expect(matcher).toContain("/:path*/embed");
-  });
-
   it("should have no duplicate entries", () => {
     const uniqueEntries = new Set(matcher);
     expect(uniqueEntries.size).toBe(matcher.length);
   });
 
-  it("should not contain any /api/ routes except /api/auth/signup", () => {
-    const apiRoutes = matcher.filter((entry) => entry.startsWith("/api/") && entry !== "/api/auth/signup");
-    expect(apiRoutes).toEqual([]);
-  });
-
-  it("should only contain the expected reduced route set", () => {
-    expect(matcher).toEqual([
-      "/auth/login",
-      "/login",
-      "/apps/installed",
-      "/auth/logout",
-      "/:path*/embed",
-      "/availability",
-      "/api/auth/signup",
-    ]);
+  it("runs Clerk and the response transformations across dynamic application routes", () => {
+    expect(matcher).toEqual(["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"]);
   });
 });

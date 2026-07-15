@@ -1,29 +1,31 @@
 import type { IncomingMessage } from "node:http";
+import { getClientAuthProvider } from "@calcom/features/auth/lib/authProvider";
+import { trpc } from "@calcom/trpc/react";
+import { WebPushProvider } from "@calcom/web/modules/notifications/components/WebPushContext";
+import { ClerkProvider } from "@clerk/nextjs";
+import type { AppProps } from "@lib/app-providers";
 import type { NextPageContext } from "next";
 import { SessionProvider } from "next-auth/react";
-import React from "react";
+import type { ComponentType, ReactNode } from "react";
 import CacheProvider from "react-inlinesvg/provider";
-
-import { WebPushProvider } from "@calcom/web/modules/notifications/components/WebPushContext";
-import { trpc } from "@calcom/trpc/react";
-
-import type { AppProps } from "@lib/app-providers";
 
 import "../styles/globals.css";
 
+const ClerkProviderCompat = ClerkProvider as unknown as ComponentType<{ children: ReactNode }>;
+
 function MyApp(props: AppProps) {
   const { Component, pageProps } = props;
-
-  return (
-    <SessionProvider session={pageProps.session ?? undefined}>
-      <WebPushProvider>
-        {/* @ts-expect-error FIXME remove this comment when upgrading typescript to v5 */}
-        <CacheProvider>
-          {Component.PageWrapper ? <Component.PageWrapper {...props} /> : <Component {...pageProps} />}
-        </CacheProvider>
-      </WebPushProvider>
-    </SessionProvider>
+  const content = (
+    <WebPushProvider>
+      {/* @ts-expect-error FIXME remove this comment when upgrading typescript to v5 */}
+      <CacheProvider>
+        {Component.PageWrapper ? <Component.PageWrapper {...props} /> : <Component {...pageProps} />}
+      </CacheProvider>
+    </WebPushProvider>
   );
+
+  if (getClientAuthProvider() === "clerk") return <ClerkProviderCompat>{content}</ClerkProviderCompat>;
+  return <SessionProvider session={pageProps.session ?? undefined}>{content}</SessionProvider>;
 }
 
 declare global {

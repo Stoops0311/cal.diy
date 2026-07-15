@@ -1,7 +1,7 @@
 import { useAuth } from "@clerk/nextjs";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
-import { getClientAuthProvider } from "./clerkClient";
+import { getClientAuthProvider } from "./authProvider";
 import type { ConvenioSession } from "./currentSession";
 
 type CurrentSessionStatus = "authenticated" | "loading" | "unauthenticated";

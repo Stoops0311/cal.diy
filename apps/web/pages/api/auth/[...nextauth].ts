@@ -1,4 +1,4 @@
-import { getAuthProvider } from "@calcom/features/auth/lib/clerkClient";
+import { getAuthProvider } from "@calcom/features/auth/lib/authProvider";
 import { getOptions } from "@calcom/features/auth/lib/next-auth-options";
 import { getTrackingFromCookies } from "@calcom/lib/tracking";
 import type { NextApiRequest, NextApiResponse } from "next";

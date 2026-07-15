@@ -1,6 +1,8 @@
+import { getAuthProvider } from "@calcom/features/auth/lib/authProvider";
 import { getLocale } from "@calcom/features/auth/lib/getLocale";
 import { loadTranslations } from "@calcom/i18n/server";
 import { IconSprites } from "@calcom/ui/components/icon";
+import { ClerkProvider } from "@clerk/nextjs";
 import { buildLegacyRequest } from "@lib/buildLegacyCtx";
 import { dir } from "i18next";
 import { Inter } from "next/font/google";
@@ -10,9 +12,14 @@ import Script from "next/script";
 import type React from "react";
 
 import "../styles/globals.css";
+import process from "node:process";
 import { AppRouterI18nProvider } from "./AppRouterI18nProvider";
 import { Providers } from "./providers";
 import { SpeculationRules } from "./SpeculationRules";
+
+const ClerkProviderCompat = ClerkProvider as unknown as React.ComponentType<{
+  children: React.ReactNode;
+}>;
 
 const interFont = Inter({ subsets: ["latin"], variable: "--font-sans", preload: true, display: "swap" });
 const calFont = localFont({
@@ -93,6 +100,11 @@ const getInitialProps = async () => {
   };
 };
 
+function AuthRoot({ children }: { children: React.ReactNode }): React.ReactElement {
+  if (getAuthProvider() === "clerk") return <ClerkProviderCompat>{children}</ClerkProviderCompat>;
+  return <>{children}</>;
+}
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const h = await headers();
   const nonce = h.get("x-csp-nonce") ?? "";
@@ -105,67 +117,63 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const translations = await loadTranslations(locale, ns);
 
   return (
-    <html
-      className="notranslate"
-      translate="no"
-      lang={locale}
-      dir={direction}
-      style={embedColorScheme ? { colorScheme: embedColorScheme as string } : undefined}
-      suppressHydrationWarning
-      data-nextjs-router="app">
-      <head nonce={nonce}>
-        <style>{`
+    <AuthRoot>
+      <html
+        className="notranslate"
+        translate="no"
+        lang={locale}
+        dir={direction}
+        style={embedColorScheme ? { colorScheme: embedColorScheme as string } : undefined}
+        suppressHydrationWarning
+        data-nextjs-router="app">
+        <head nonce={nonce}>
+          <style>{`
           :root {
-            --font-sans: ${interFont.style.fontFamily.replace(/\'/g, "")}, system-ui;
-            --font-cal: ${calFont.style.fontFamily.replace(/\'/g, "")};
+            --font-sans: ${interFont.style.fontFamily.replace(/'/g, "")}, system-ui;
+            --font-cal: ${calFont.style.fontFamily.replace(/'/g, "")};
           }
         `}</style>
-        {process.env.NODE_ENV === "development" && (
-          <Script
-            src="//unpkg.com/react-grab/dist/index.global.js"
-            crossOrigin="anonymous"
-            strategy="beforeInteractive"
-            data-options='{"activationKey":"Meta+c"}'
+          {process.env.NODE_ENV === "development" && (
+            <Script
+              src="//unpkg.com/react-grab/dist/index.global.js"
+              crossOrigin="anonymous"
+              strategy="beforeInteractive"
+              data-options='{"activationKey":"Meta+c"}'
+            />
+          )}
+        </head>
+        <body
+          className="dark:bg-default bg-subtle antialiased"
+          style={
+            isEmbed
+              ? {
+                  background: "transparent",
+                  // Keep the embed hidden till parent initializes and
+                  // - gives it the appropriate styles if UI instruction is there.
+                  // - gives iframe the appropriate height(equal to document height) which can only be known after loading the page once in browser.
+                  // - Tells iframe which mode it should be in (dark/light) - if there is a a UI instruction for that
+                  visibility: "hidden",
+                  // This in addition to visibility: hidden is to ensure that elements with specific opacity set are not visible
+                  opacity: 0,
+                }
+              : {
+                  visibility: "visible",
+                  opacity: 1,
+                }
+          }>
+          <IconSprites />
+          <SpeculationRules
+            // URLs In Navigation
+            prerenderPathsOnHover={["/event-types", "/availability", "/bookings/upcoming", "/teams", "/apps"]}
           />
-        )}
-      </head>
-      <body
-        className="dark:bg-default bg-subtle antialiased"
-        style={
-          isEmbed
-            ? {
-                background: "transparent",
-                // Keep the embed hidden till parent initializes and
-                // - gives it the appropriate styles if UI instruction is there.
-                // - gives iframe the appropriate height(equal to document height) which can only be known after loading the page once in browser.
-                // - Tells iframe which mode it should be in (dark/light) - if there is a a UI instruction for that
-                visibility: "hidden",
-                // This in addition to visibility: hidden is to ensure that elements with specific opacity set are not visible
-                opacity: 0,
-              }
-            : {
-                visibility: "visible",
-                opacity: 1,
-              }
-        }>
-        <IconSprites />
-        <SpeculationRules
-          // URLs In Navigation
-          prerenderPathsOnHover={[
-            "/event-types",
-            "/availability",
-            "/bookings/upcoming",
-            "/teams",
-            "/apps",
-          ]}
-        />
 
-        <Providers isEmbed={isEmbed} nonce={nonce} country={country}>
-          <AppRouterI18nProvider translations={translations} locale={locale} ns={ns}>
-            {children}
-          </AppRouterI18nProvider>
-        </Providers>
-      </body>
-    </html>
+          <Providers isEmbed={isEmbed} nonce={nonce} country={country}>
+            <AppRouterI18nProvider translations={translations} locale={locale} ns={ns}>
+              {children}
+            </AppRouterI18nProvider>
+          </Providers>
+        </body>
+      </html>
+    </AuthRoot>
   );
 }
