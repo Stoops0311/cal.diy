@@ -30,6 +30,7 @@ function setup() {
     getActorClerkUserId: vi.fn().mockResolvedValue("user_owner"),
     getOrganizationAccess: vi.fn().mockResolvedValue({
       actorRole: "OWNER" as const,
+      archivedAt: null,
       clerkOrganizationId: "org_clerk",
     }),
     getTargetMember: vi.fn().mockResolvedValue({
@@ -92,6 +93,7 @@ describe("ClerkOrganizationCommandService", () => {
     const ctx = setup();
     ctx.repository.getOrganizationAccess.mockResolvedValue({
       actorRole: "MEMBER",
+      archivedAt: null,
       clerkOrganizationId: "org_clerk",
     });
     const service = new ClerkOrganizationCommandService(ctx.dependencies);
@@ -105,6 +107,21 @@ describe("ClerkOrganizationCommandService", () => {
       })
     ).rejects.toMatchObject({ code: ErrorCode.Forbidden });
     expect(ctx.clerk.inviteMember).not.toHaveBeenCalled();
+  });
+
+  it("keeps archived organizations read-only", async () => {
+    const ctx = setup();
+    ctx.repository.getOrganizationAccess.mockResolvedValue({
+      actorRole: "OWNER",
+      archivedAt: new Date("2026-07-15T12:00:00.000Z"),
+      clerkOrganizationId: "org_clerk",
+    });
+    const service = new ClerkOrganizationCommandService(ctx.dependencies);
+
+    await expect(service.archiveOrganization({ actorUserId: 7, organizationId: 41 })).rejects.toMatchObject({
+      code: ErrorCode.ClerkOrganizationConflict,
+    });
+    expect(ctx.clerk.archiveOrganization).not.toHaveBeenCalled();
   });
 
   it("does not activate a member when seat synchronization fails", async () => {

@@ -12,7 +12,11 @@ import { ClerkBackendOrganizationSource, type ClerkOrganizationSource } from "./
 import type { OrganizationSeatBillingPort } from "./OrganizationSeatBillingPort";
 
 type ClerkRole = "org:admin" | "org:member";
-type OrganizationAccess = { actorRole: MembershipRole; clerkOrganizationId: string };
+type OrganizationAccess = {
+  actorRole: MembershipRole;
+  archivedAt: Date | null;
+  clerkOrganizationId: string;
+};
 type TargetMember = { accepted: boolean; clerkUserId: string; role: MembershipRole };
 
 type ClerkOrganizationCommandGateway = {
@@ -116,6 +120,7 @@ class PrismaOrganizationCommandRepository implements OrganizationCommandReposito
     const organization = await prisma.team.findUnique({
       where: { id: input.organizationId },
       select: {
+        archivedAt: true,
         clerkOrganizationId: true,
         members: {
           where: { accepted: true, userId: input.actorUserId },
@@ -127,7 +132,11 @@ class PrismaOrganizationCommandRepository implements OrganizationCommandReposito
     if (!organization?.clerkOrganizationId || !actorRole) {
       throw new ErrorWithCode(ErrorCode.Forbidden, "Organization access denied");
     }
-    return { actorRole, clerkOrganizationId: organization.clerkOrganizationId };
+    return {
+      actorRole,
+      archivedAt: organization.archivedAt,
+      clerkOrganizationId: organization.clerkOrganizationId,
+    };
   }
 
   async getTargetMember(input: { memberUserId: number; organizationId: number }): Promise<TargetMember> {
@@ -301,6 +310,9 @@ class ClerkOrganizationCommandService {
 
   private async authorize(actorUserId: number, organizationId: number): Promise<OrganizationAccess> {
     const access = await this.dependencies.repository.getOrganizationAccess({ actorUserId, organizationId });
+    if (access.archivedAt) {
+      throw new ErrorWithCode(ErrorCode.ClerkOrganizationConflict, "Archived organizations are read-only");
+    }
     requireAdmin(access);
     return access;
   }
