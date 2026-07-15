@@ -1,24 +1,14 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
-
 import dayjs from "@calcom/dayjs";
 import { useFlagMap } from "@calcom/features/flags/context/provider";
 import type { User } from "@calcom/prisma/client";
 import useMeQuery from "@calcom/trpc/react/hooks/useMeQuery";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-const shouldShowOnboarding = (
-  user: Pick<User, "createdDate" | "completedOnboarding"> & {
-    organizationId: number | null;
-  }
-) => {
-  return (
-    !user.completedOnboarding &&
-    !user.organizationId &&
-    dayjs(user.createdDate).isAfter(ONBOARDING_INTRODUCED_AT)
-  );
-};
+export const shouldShowOnboarding = (user: Pick<User, "createdDate" | "completedOnboarding">) =>
+  !user.completedOnboarding && dayjs(user.createdDate).isAfter(ONBOARDING_INTRODUCED_AT);
 
 export const ONBOARDING_INTRODUCED_AT = dayjs("September 1 2021").toISOString();
 

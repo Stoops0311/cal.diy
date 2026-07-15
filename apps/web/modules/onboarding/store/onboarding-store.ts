@@ -1,7 +1,6 @@
-import type { PersistOptions } from "zustand/middleware";
 import { create } from "zustand";
+import type { PersistOptions } from "zustand/middleware";
 import { persist } from "zustand/middleware";
-
 import { onboardingIndexedDBStorage } from "./onboarding-storage";
 
 // Thresholds for detecting oversized images (in characters of base64 string)
@@ -20,6 +19,13 @@ function isOversizedImage(imageData: string | null, threshold: number): boolean 
 
 export type PlanType = "personal" | "team" | "organization";
 export type InviteRole = "MEMBER" | "ADMIN";
+export type OnboardingIntent = "solo" | "join-team" | "bring-team";
+
+export type CreatedOrganizationContext = {
+  id: number;
+  name: string;
+  slug: string;
+};
 
 export interface OrganizationDetails {
   name: string;
@@ -67,6 +73,8 @@ export interface PersonalDetails {
 
 export interface OnboardingState {
   selectedPlan: PlanType | null;
+  intent: OnboardingIntent | null;
+  createdOrganization: CreatedOrganizationContext | null;
 
   organizationDetails: OrganizationDetails;
 
@@ -91,6 +99,8 @@ export interface OnboardingState {
 
   // Actions
   setSelectedPlan: (plan: PlanType) => void;
+  setIntent: (intent: OnboardingIntent) => void;
+  setCreatedOrganization: (organization: CreatedOrganizationContext | null) => void;
   setOrganizationDetails: (details: Partial<OrganizationDetails>) => void;
   setOrganizationBrand: (brand: Partial<OrganizationBrand>) => void;
   setTeams: (teams: Team[]) => void;
@@ -118,6 +128,8 @@ export interface OnboardingState {
 
 const initialState = {
   selectedPlan: "personal" as PlanType,
+  intent: null as OnboardingIntent | null,
+  createdOrganization: null as CreatedOrganizationContext | null,
   organizationDetails: {
     name: "",
     link: "",
@@ -152,12 +164,39 @@ const initialState = {
   },
 };
 
+export function migrateOnboardingState(persistedState: unknown, version: number): Partial<OnboardingState> {
+  const state = persistedState as Partial<OnboardingState>;
+
+  if (version < 1) {
+    if (state.organizationBrand && isOversizedImage(state.organizationBrand.logo, LOGO_SIZE_THRESHOLD)) {
+      state.organizationBrand.logo = null;
+    }
+    if (state.organizationBrand && isOversizedImage(state.organizationBrand.banner, BANNER_SIZE_THRESHOLD)) {
+      state.organizationBrand.banner = null;
+    }
+    if (state.teamBrand && isOversizedImage(state.teamBrand.logo, LOGO_SIZE_THRESHOLD)) {
+      state.teamBrand.logo = null;
+    }
+    if (state.personalDetails && isOversizedImage(state.personalDetails.avatar, LOGO_SIZE_THRESHOLD)) {
+      state.personalDetails.avatar = null;
+    }
+  }
+
+  if (version < 2) {
+    return { ...state, createdOrganization: null, intent: null };
+  }
+
+  return state;
+}
+
 export const useOnboardingStore = create<OnboardingState>()(
   persist(
     (set) => ({
       ...initialState,
 
       setSelectedPlan: (plan) => set({ selectedPlan: plan }),
+      setIntent: (intent) => set({ intent }),
+      setCreatedOrganization: (createdOrganization) => set({ createdOrganization }),
 
       setOrganizationDetails: (details) =>
         set((state) => ({
@@ -208,42 +247,14 @@ export const useOnboardingStore = create<OnboardingState>()(
       storage: onboardingIndexedDBStorage, // Use IndexedDB instead of localStorage for larger capacity
       // Version 0: Had issue with Image sizes being too large.
       // Version 1: We fixed that and also migrated to version-1 to facilitate one-time cleanup of all oversized images.
-      version: 1,
-      migrate: (persistedState, version) => {
-        if (version >= 1) {
-          return persistedState as OnboardingState;
-        }
-        const state = persistedState as OnboardingState;
-
-        // Migration from version 0 (no version) to version 1:
-        // Clear oversized images that were uploaded before the cropping fix (PR #27285)
-        // These large images cause 429 errors when sent to the server
-        if (state.organizationBrand) {
-          if (isOversizedImage(state.organizationBrand.logo, LOGO_SIZE_THRESHOLD)) {
-            state.organizationBrand.logo = null;
-          }
-          if (isOversizedImage(state.organizationBrand.banner, BANNER_SIZE_THRESHOLD)) {
-            state.organizationBrand.banner = null;
-          }
-        }
-
-        if (state.teamBrand) {
-          if (isOversizedImage(state.teamBrand.logo, LOGO_SIZE_THRESHOLD)) {
-            state.teamBrand.logo = null;
-          }
-        }
-
-        if (state.personalDetails) {
-          if (isOversizedImage(state.personalDetails.avatar, LOGO_SIZE_THRESHOLD)) {
-            state.personalDetails.avatar = null;
-          }
-        }
-
-        return state;
-      },
+      // Version 2: Added setup intent and created organization context without inferring either from billing state.
+      version: 2,
+      migrate: migrateOnboardingState,
       // Only persist certain fields
       partialize: (state) => ({
         selectedPlan: state.selectedPlan,
+        intent: state.intent,
+        createdOrganization: state.createdOrganization,
         organizationDetails: state.organizationDetails,
         organizationBrand: state.organizationBrand,
         teams: state.teams,

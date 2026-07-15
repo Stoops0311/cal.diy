@@ -1,12 +1,11 @@
 import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
-import { MembershipRepository } from "@calcom/features/membership/repositories/MembershipRepository";
 import { APP_NAME } from "@calcom/lib/constants";
 import { buildLegacyRequest } from "@lib/buildLegacyCtx";
 import { _generateMetadata } from "app/_utils";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-
 import { OnboardingView } from "~/onboarding/getting-started/onboarding-view";
+import { getAcceptedOrganizationContexts } from "~/onboarding/lib/getAcceptedOrganizationContexts";
 
 export const generateMetadata = async () => {
   return await _generateMetadata(
@@ -25,18 +24,16 @@ const ServerPage = async () => {
     return redirect("/auth/login");
   }
 
-  // If user has any team membership (pending or accepted), redirect them directly to personal onboarding
-  // This handles the case where users sign up with an invite token (membership is auto-accepted)
-  const hasTeamMembership = await MembershipRepository.hasAnyTeamMembershipByUserId({
+  const acceptedOrganizations = await getAcceptedOrganizationContexts({
+    preferredOrganizationId: session.user.org?.id,
     userId: session.user.id,
   });
-  if (hasTeamMembership) {
-    return redirect("/onboarding/personal/settings");
-  }
+  const onboardingProps = {
+    acceptedOrganization: acceptedOrganizations[0] ?? null,
+    userEmail: session.user.email ?? "",
+  };
 
-  const userEmail = session.user.email || "";
-
-  return <OnboardingView userEmail={userEmail} />;
+  return <OnboardingView {...onboardingProps} />;
 };
 
 export default ServerPage;
