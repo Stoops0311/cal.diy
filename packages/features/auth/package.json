@@ -7,7 +7,7 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "clerk:import-users": "tsx scripts/runClerkUserImport.ts"
+    "clerk:import-users": "../../../node_modules/.bin/jiti scripts/runClerkUserImport.ts"
   },
   "dependencies": {
     "@calcom/dayjs": "workspace:*",
