@@ -5,6 +5,7 @@ import { Button } from "@calcom/ui/components/button";
 import { SkeletonText } from "@calcom/ui/components/skeleton";
 import { type ReactElement, type ReactNode, useCallback, useEffect, useState } from "react";
 import { type PaidSelection, PlanSelector } from "../../billing/PlanSelector";
+import { UpgradePromptProvider } from "../../billing/UpgradePromptProvider";
 import { saveUpgradeIntent } from "../../billing/upgradeIntent";
 import { type CheckoutContext, usePaidPlanCheckout } from "../../billing/usePaidPlanCheckout";
 import { OrganizationMembersPanel } from "../../organizations/OrganizationMembersPanel";
@@ -13,6 +14,18 @@ import { OnboardingLayout } from "../components/OnboardingLayout";
 import { useSubmitPersonalOnboarding } from "../hooks/useSubmitPersonalOnboarding";
 import type { AcceptedOrganizationContext } from "../lib/getAcceptedOrganizationContexts";
 import { type CreatedOrganizationContext, useOnboardingStore } from "../store/onboarding-store";
+
+export function OnboardingOrganizationMembersPanel({
+  organizationId,
+}: {
+  organizationId: number;
+}): ReactElement {
+  return (
+    <UpgradePromptProvider>
+      <OrganizationMembersPanel organizationId={organizationId} />
+    </UpgradePromptProvider>
+  );
+}
 
 export function CompletionView({
   acceptedOrganizations,
@@ -141,7 +154,7 @@ export function CompletionView({
             {t("billing_keep_working_free")}
           </Button>
           {canManageTeam && checkoutOrganization ? (
-            <OrganizationMembersPanel organizationId={checkoutOrganization.id} />
+            <OnboardingOrganizationMembersPanel organizationId={checkoutOrganization.id} />
           ) : null}
         </div>
       </OnboardingCard>

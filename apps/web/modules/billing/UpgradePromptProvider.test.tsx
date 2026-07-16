@@ -12,12 +12,21 @@ type CheckoutOptions = {
 };
 
 const mocks = vi.hoisted(() => ({
+  billingGet: vi.fn(),
   checkoutOptions: undefined as CheckoutOptions | undefined,
   saveUpgradeIntent: vi.fn(),
   session: {
     user: { org: { id: 41, role: "OWNER" } },
   } as { user: { org?: { id: number; role: "OWNER" | "ADMIN" | "MEMBER" } } },
   startCheckout: vi.fn(),
+}));
+
+vi.mock("@calcom/trpc/react", () => ({
+  trpc: {
+    useUtils: () => ({
+      client: { viewer: { billing: { get: { query: mocks.billingGet } } } },
+    }),
+  },
 }));
 
 vi.mock("@calcom/features/auth/lib/useCurrentSession", () => ({
@@ -99,9 +108,59 @@ function openPrompt(input: OpenUpgradePromptInput = prompt) {
 
 describe("UpgradePromptProvider", () => {
   beforeEach(() => {
+    mocks.billingGet.mockReset();
     mocks.session = { user: { org: { id: 41, role: "OWNER" } } };
     mocks.saveUpgradeIntent.mockClear();
     mocks.startCheckout.mockClear();
+  });
+
+  it("opens a Clerk-shaped organization prompt only after authoritative billing access", async () => {
+    mocks.session = { user: {} };
+    mocks.billingGet.mockResolvedValue({ subject: { id: 77, type: "ORGANIZATION" } });
+    const input: OpenUpgradePromptInput = {
+      capability: "organizationInvitations",
+      featureName: "Team invitations",
+      organizationId: 77,
+      requiredPlan: "TEAM",
+      resume: { kind: "openOrganizationInvitations", organizationId: 77 },
+      returnTo: "/settings/organizations/members?organizationId=77",
+    };
+
+    const view = openPrompt(input);
+
+    expect(view.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(mocks.billingGet).toHaveBeenCalledWith({ organizationId: 77 });
+    expect(await view.findByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("keeps a Clerk-shaped organization prompt closed when billing access is denied", async () => {
+    mocks.session = { user: {} };
+    mocks.billingGet.mockRejectedValue(new Error("Forbidden"));
+    const view = openPrompt({
+      capability: "organizationInvitations",
+      featureName: "Team invitations",
+      organizationId: 77,
+      requiredPlan: "TEAM",
+      resume: { kind: "openOrganizationInvitations", organizationId: 77 },
+      returnTo: "/settings/organizations/members?organizationId=77",
+    });
+
+    await waitFor(() => expect(mocks.billingGet).toHaveBeenCalledWith({ organizationId: 77 }));
+    expect(view.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("rejects an explicit session-organization mismatch without querying", () => {
+    const view = openPrompt({
+      capability: "organizationInvitations",
+      featureName: "Team invitations",
+      organizationId: 77,
+      requiredPlan: "TEAM",
+      resume: { kind: "openOrganizationInvitations", organizationId: 77 },
+      returnTo: "/settings/organizations/members?organizationId=77",
+    });
+
+    expect(view.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(mocks.billingGet).not.toHaveBeenCalled();
   });
 
   it("presents only the required plan with exact Convenio copy and dismisses without upgrading", () => {
@@ -218,6 +277,7 @@ describe("UpgradePromptProvider", () => {
         subject: { kind: "organization", organizationId: 77 },
       }
     );
+    expect(mocks.billingGet).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -237,6 +297,7 @@ describe("UpgradePromptProvider", () => {
     expect(view.queryByRole("dialog")).not.toBeInTheDocument();
     expect(mocks.startCheckout).not.toHaveBeenCalled();
     expect(mocks.saveUpgradeIntent).not.toHaveBeenCalled();
+    expect(mocks.billingGet).not.toHaveBeenCalled();
   });
 
   it("preserves the exact organization invitation intent before Team checkout", () => {

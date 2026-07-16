@@ -2,6 +2,7 @@
 
 import { useCurrentSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
+import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
 import {
   Sheet,
@@ -52,8 +53,10 @@ export function useUpgradePrompt(): UpgradePromptContextValue {
 export function UpgradePromptProvider({ children }: { children: React.ReactNode }): React.ReactElement {
   const { t } = useLocale();
   const { data: session } = useCurrentSession();
+  const utils = trpc.useUtils();
   const [prompt, setPrompt] = useState<OpenUpgradePromptInput | null>(null);
   const promptTriggerRef = useRef<HTMLElement | null>(null);
+  const authorizationRequestRef = useRef(0);
   const organization = session?.user.org;
   const manageableOrganizationId =
     organization?.role === "OWNER" || organization?.role === "ADMIN" ? organization.id : undefined;
@@ -85,20 +88,31 @@ export function UpgradePromptProvider({ children }: { children: React.ReactNode 
   });
   const openUpgradePrompt = useCallback(
     (input: OpenUpgradePromptInput) => {
+      const requestId = ++authorizationRequestRef.current;
       const requestedOrganizationId = getRequestedOrganizationId(input);
-      if (
-        input.requiredPlan === "TEAM" &&
-        input.capability !== "bookingAudit" &&
-        (requestedOrganizationId === undefined ||
-          manageableOrganizationId === undefined ||
-          requestedOrganizationId !== manageableOrganizationId)
-      ) {
+      const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const showPrompt = (): void => {
+        if (requestId !== authorizationRequestRef.current) return;
+        promptTriggerRef.current = trigger;
+        setPrompt(input);
+      };
+      if (input.requiredPlan !== "TEAM" || input.capability === "bookingAudit") {
+        showPrompt();
         return;
       }
-      if (document.activeElement instanceof HTMLElement) promptTriggerRef.current = document.activeElement;
-      setPrompt(input);
+      if (requestedOrganizationId === undefined) return;
+      if (session?.user.org) {
+        if (requestedOrganizationId === manageableOrganizationId) showPrompt();
+        return;
+      }
+      void utils.client.viewer.billing.get
+        .query({ organizationId: requestedOrganizationId })
+        .then(({ subject }) => {
+          if (subject.type === "ORGANIZATION" && subject.id === requestedOrganizationId) showPrompt();
+        })
+        .catch(() => undefined);
     },
-    [manageableOrganizationId]
+    [manageableOrganizationId, session?.user.org, utils.client.viewer.billing.get]
   );
   const planName = prompt ? t(prompt.requiredPlan === "TEAM" ? "billing_plan_team" : "billing_plan_pro") : "";
 

@@ -42,9 +42,15 @@ vi.mock("@calcom/lib/hooks/useLocale", () => ({
       (copy[key] ?? key).replace("{{teamName}}", values?.teamName ?? ""),
   }),
 }));
+vi.mock("@calcom/features/auth/lib/useCurrentSession", () => ({
+  useCurrentSession: () => ({ data: { user: {} }, status: "authenticated", update: vi.fn() }),
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }));
 vi.mock("@calcom/trpc/react", () => ({
   trpc: {
+    useUtils: () => ({
+      client: { viewer: { billing: { get: { query: vi.fn() } } } },
+    }),
     viewer: { apps: { integrations: { useQuery: () => ({ data: { items: [] }, isPending: false }) } } },
   },
 }));
@@ -69,7 +75,7 @@ vi.mock("../../billing/PlanSelector", () => ({
 }));
 vi.mock("../../billing/usePaidPlanCheckout", () => ({
   usePaidPlanCheckout: (options: CheckoutOptions = {}) => {
-    mocks.checkoutOptions = options;
+    mocks.checkoutOptions ??= options;
     return { pendingPlan: undefined, startCheckout: mocks.startCheckout };
   },
 }));
