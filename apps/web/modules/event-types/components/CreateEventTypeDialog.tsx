@@ -1,5 +1,5 @@
-import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useCurrentSession } from "@calcom/features/auth/lib/useCurrentSession";
+import { Dialog } from "@calcom/features/components/controlled-dialog";
 import CreateEventTypeForm from "@calcom/features/eventtypes/components/CreateEventTypeForm";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { useTypedQuery } from "@calcom/lib/hooks/useTypedQuery";

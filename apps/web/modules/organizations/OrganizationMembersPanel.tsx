@@ -106,9 +106,7 @@ function OrganizationMembersPanel({
     managementState = (
       <div className="space-y-3">
         <Alert message={t("organization_members_team_required")} severity="warning" />
-        <Button onClick={openInvitationUpgrade}>
-          {t("organization_members_send_invitation")}
-        </Button>
+        <Button onClick={openInvitationUpgrade}>{t("organization_members_send_invitation")}</Button>
       </div>
     );
   } else if (!data.canManageInvitations) {

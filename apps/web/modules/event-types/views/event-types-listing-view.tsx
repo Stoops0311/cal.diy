@@ -1,7 +1,7 @@
 "use client";
 
-import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { useCurrentSession } from "@calcom/features/auth/lib/useCurrentSession";
+import { Dialog } from "@calcom/features/components/controlled-dialog";
 import { APP_NAME } from "@calcom/lib/constants";
 import { extractHostTimezone, filterActiveLinks } from "@calcom/lib/hashedLinksUtils";
 import { useCopy } from "@calcom/lib/hooks/useCopy";
@@ -45,9 +45,9 @@ import {
   CreateEventTypeDialog,
   type ProfileOption,
 } from "@calcom/web/modules/event-types/components/CreateEventTypeDialog";
-import { resolveEventTypeBillingOrganizationId } from "@calcom/web/modules/event-types/hooks/useCreateEventType";
 import { DuplicateDialog } from "@calcom/web/modules/event-types/components/DuplicateDialog";
 import { InfiniteSkeletonLoader } from "@calcom/web/modules/event-types/components/SkeletonLoader";
+import { resolveEventTypeBillingOrganizationId } from "@calcom/web/modules/event-types/hooks/useCreateEventType";
 import { SearchIcon } from "@coss/ui/icons";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { TRPCClientError } from "@trpc/client";
