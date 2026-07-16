@@ -19,6 +19,7 @@ vi.mock("@calcom/lib/hooks/useLocale", () => ({
           "Choose the way you schedule now. Convenio keeps the handoff to payment brief, then brings you back to the work.",
         billing_pricing_eyebrow: "PLANS FOR THE WORK",
         billing_pricing_title: "One calendar. Or every calendar in the room.",
+        skip_to_main_content: "Skip to main content",
       })[key] ?? key,
   }),
 }));
@@ -79,6 +80,17 @@ describe("Pricing", () => {
         "Choose the way you schedule now. Convenio keeps the handoff to payment brief, then brings you back to the work."
       )
     ).toBeInTheDocument();
+  });
+
+  it("offers anonymous keyboard users a skip link to the pricing content", () => {
+    const view = render(<Pricing isAuthenticated={false} onSelectPlan={vi.fn()} />);
+    const skipLink = view.getByRole("link", { name: "Skip to main content" });
+    const main = view.getByRole("main");
+
+    expect(skipLink).toHaveAttribute("href", "#pricing-main-content");
+    expect(skipLink).toHaveClass("sr-only", "focus:not-sr-only");
+    expect(main).toHaveAttribute("id", "pricing-main-content");
+    expect(main).toHaveAttribute("tabindex", "-1");
   });
 
   it("renders the native shell for an authenticated visitor", () => {

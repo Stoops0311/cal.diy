@@ -53,8 +53,8 @@ const paidPlans = [
   },
 ] as const;
 
-function formatPrice(amountInCents: number): string {
-  return new Intl.NumberFormat("en-US", {
+function formatPrice(amountInCents: number, locale: string): string {
+  return new Intl.NumberFormat(locale, {
     currency: "USD",
     maximumFractionDigits: amountInCents % 100 === 0 ? 0 : 2,
     style: "currency",
@@ -85,7 +85,8 @@ export function PlanSelector({
   showAllPlans = true,
   visiblePlans = ["PRO", "TEAM"],
 }: PlanSelectorProps): React.ReactElement {
-  const { t } = useLocale();
+  const { i18n, t } = useLocale();
+  const locale = i18n.language || "en-US";
   const [interval, setInterval] = useState<BillingIntervalType>("YEAR");
   const displayedPlans = paidPlans.filter((plan) => visiblePlans.includes(plan.plan));
 
@@ -128,7 +129,7 @@ export function PlanSelector({
 
               <div className="border-subtle mt-6 border-y py-5">
                 <p className="font-mono text-4xl font-semibold tracking-tight">
-                  {formatPrice(price.amountInCents)}
+                  {formatPrice(price.amountInCents, locale)}
                 </p>
                 <p className="text-subtle mt-2 text-xs">{t(cadenceKey)}</p>
                 {price.interval === "YEAR" ? (
@@ -138,7 +139,7 @@ export function PlanSelector({
                         ? "billing_weekly_member_equivalent"
                         : "billing_weekly_equivalent",
                       {
-                        price: formatPrice(Math.round(price.amountInCents / 52)),
+                        price: formatPrice(Math.round(price.amountInCents / 52), locale),
                       }
                     )}
                   </p>
@@ -194,7 +195,9 @@ export function PlanSelector({
                   <h2 className="font-cal text-emphasis text-2xl font-semibold">{t("billing_plan_free")}</h2>
                   <p className="text-emphasis mt-3 text-base font-medium">{t("billing_free_outcome")}</p>
                   <p className="text-subtle mt-2 text-sm leading-6">{t("billing_free_description")}</p>
-                  <p className="font-mono mt-6 text-4xl font-semibold tracking-tight">$0</p>
+                  <p className="font-mono mt-6 text-4xl font-semibold tracking-tight">
+                    {formatPrice(0, locale)}
+                  </p>
                   <ul className="mt-6 space-y-3">
                     {(["billing_free_events", "billing_free_calendar", "billing_free_branding"] as const).map(
                       (feature) => (

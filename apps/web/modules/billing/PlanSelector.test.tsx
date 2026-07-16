@@ -1,9 +1,12 @@
 import { fireEvent, render } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import common from "../../../../packages/i18n/locales/en/common.json";
+
+const mocks = vi.hoisted(() => ({ language: "en-US" }));
 
 vi.mock("@calcom/lib/hooks/useLocale", () => ({
   useLocale: () => ({
+    i18n: { language: mocks.language },
     t: (key: string, values?: Record<string, string>) => {
       const translated =
         {
@@ -31,6 +34,10 @@ vi.mock("@calcom/lib/hooks/useLocale", () => ({
 
 import { PlanSelector } from "./PlanSelector";
 
+beforeEach(() => {
+  mocks.language = "en-US";
+});
+
 it("uses the approved capability and outcome copy", () => {
   expect({
     free: [common.billing_free_events, common.billing_free_calendar, common.billing_free_branding],
@@ -56,6 +63,25 @@ it("uses the approved capability and outcome copy", () => {
 });
 
 describe("PlanSelector", () => {
+  it("formats paid and Free USD amounts with the active locale", () => {
+    mocks.language = "de-DE";
+    const view = render(<PlanSelector freeHref="/event-types" onSelectPlan={vi.fn()} />);
+    const yearlyPro = new Intl.NumberFormat("de-DE", {
+      currency: "USD",
+      maximumFractionDigits: 0,
+      style: "currency",
+    }).format(96);
+    const free = new Intl.NumberFormat("de-DE", {
+      currency: "USD",
+      maximumFractionDigits: 0,
+      style: "currency",
+    }).format(0);
+
+    expect(view.getByText((_content, element) => element?.textContent === yearlyPro)).toBeInTheDocument();
+    fireEvent.click(view.getByRole("button", { name: "billing_view_all_plans" }));
+    expect(view.getByText((_content, element) => element?.textContent === free)).toBeInTheDocument();
+  });
+
   it("starts yearly and shows only the two paid plans", () => {
     const view = render(<PlanSelector freeHref="/event-types" onSelectPlan={vi.fn()} />);
 

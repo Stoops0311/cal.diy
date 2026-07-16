@@ -42,6 +42,7 @@ vi.mock("@calcom/trpc/react", () => ({
   },
 }));
 
+import { ONBOARDING_REDIRECT_KEY } from "../../lib/onboardingRedirect";
 import { useSubmitPersonalOnboarding } from "../useSubmitPersonalOnboarding";
 
 describe("useSubmitPersonalOnboarding", () => {
@@ -52,6 +53,17 @@ describe("useSubmitPersonalOnboarding", () => {
     mocks.createEventType.mockResolvedValue(undefined);
     mocks.refetch.mockResolvedValue(undefined);
     mocks.updateProfile.mockResolvedValue(undefined);
+    localStorage.clear();
+  });
+
+  it("consumes the pricing signup redirect after personal onboarding", async () => {
+    localStorage.setItem(ONBOARDING_REDIRECT_KEY, "/pricing");
+    const { result } = renderHook(() => useSubmitPersonalOnboarding());
+
+    await act(() => result.current.submitPersonalOnboarding());
+
+    expect(mocks.push).toHaveBeenCalledWith("/pricing");
+    expect(localStorage.getItem(ONBOARDING_REDIRECT_KEY)).toBeNull();
   });
 
   it("runs paid continuation after profile, defaults, and refetch", async () => {

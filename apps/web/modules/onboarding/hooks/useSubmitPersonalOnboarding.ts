@@ -4,8 +4,8 @@ import { trpc } from "@calcom/trpc/react";
 import { showToast } from "@calcom/ui/components/toast";
 import { setShowWelcomeToCalcomModalFlag } from "@calcom/web/modules/shell/hooks/useWelcomeToCalcomModal";
 import { useRouter } from "next/navigation";
+import { consumeOnboardingRedirect } from "../lib/onboardingRedirect";
 
-const ONBOARDING_REDIRECT_KEY = "onBoardingRedirect";
 const ORG_MODAL_STORAGE_KEY = "showNewOrgModal";
 
 type DefaultEventType = { hidden?: boolean; length: number; slug: string; title: string };
@@ -66,9 +66,8 @@ export const useSubmitPersonalOnboarding = (): SubmitPersonalOnboardingResult =>
         return;
       }
 
-      const redirectUrl = localStorage.getItem(ONBOARDING_REDIRECT_KEY);
+      const redirectUrl = consumeOnboardingRedirect();
       if (redirectUrl) {
-        localStorage.removeItem(ONBOARDING_REDIRECT_KEY);
         router.push(redirectUrl);
         return;
       }
