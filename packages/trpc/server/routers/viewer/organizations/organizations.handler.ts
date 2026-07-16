@@ -41,6 +41,7 @@ type OrganizationMembersView = {
   actorRole: OrganizationMemberRole;
   canManageInvitations: boolean;
   id: number;
+  isArchived: boolean;
   members: Array<{
     avatarUrl: string | null;
     email: string;
@@ -187,8 +188,9 @@ async function membersOrganizationHandler(options: {
   if (!organization || !actor) throw new ErrorWithCode(ErrorCode.NotFound, "Organization not found");
 
   const entitlements = await dependencies.entitlements.forOrganization(organization.id);
+  const isArchived = organization.archivedAt !== null;
   const isManager = actor.role === "OWNER" || actor.role === "ADMIN";
-  const canManageInvitations = isManager && entitlements.canInviteOrganizationMembers;
+  const canManageInvitations = !isArchived && isManager && entitlements.canInviteOrganizationMembers;
   let pendingInvitations: PendingOrganizationInvitation[] = [];
   if (canManageInvitations) {
     pendingInvitations = await dependencies.commands.listPendingInvitations({
@@ -202,6 +204,7 @@ async function membersOrganizationHandler(options: {
     actorRole: actor.role,
     canManageInvitations,
     id: organization.id,
+    isArchived,
     members: organization.members.map(({ role, user }) => ({ ...user, role })),
     name: organization.name,
     pendingInvitations: pendingInvitations.map(({ createdAt, email, id, role }) => ({

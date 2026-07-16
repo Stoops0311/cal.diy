@@ -208,6 +208,7 @@ describe("organization handlers", () => {
       actorRole: role,
       canManageInvitations: true,
       id: 41,
+      isArchived: false,
       name: "Acme",
       pendingInvitations: [{ email: "pending@example.com", id: "inv_1", role: "MEMBER" }],
       seatLimit: 50,
@@ -225,6 +226,29 @@ describe("organization handlers", () => {
       organizationId: 41,
     });
     expect(test.entitlements.forOrganization).toHaveBeenCalledWith(41);
+  });
+
+  it("returns archived members read-only without a pending provider lookup", async () => {
+    const test = setup();
+    test.read.getForMember.mockResolvedValue({
+      ...organizationFor("OWNER"),
+      archivedAt: new Date("2026-07-15T12:00:00.000Z"),
+    });
+
+    const result = await membersOrganizationHandler({
+      ctx,
+      dependencies: test.dependencies,
+      input: { organizationId: 41 },
+    });
+
+    expect(result).toMatchObject({
+      acceptedSeats: 4,
+      actorRole: "OWNER",
+      canManageInvitations: false,
+      isArchived: true,
+      pendingInvitations: [],
+    });
+    expect(test.commands.listPendingInvitations).not.toHaveBeenCalled();
   });
 
   it("shows accepted seats to an ordinary member without a pending provider call or controls", async () => {

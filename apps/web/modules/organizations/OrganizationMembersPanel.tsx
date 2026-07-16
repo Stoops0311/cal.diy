@@ -8,7 +8,6 @@ import { trpc } from "@calcom/trpc/react";
 import { Alert } from "@calcom/ui/components/alert";
 import { Button } from "@calcom/ui/components/button";
 import { TextField } from "@calcom/ui/components/form";
-import { showToast } from "@calcom/ui/components/toast";
 import { type ReactElement, type ReactNode, useState } from "react";
 
 type MembersData = RouterOutputs["viewer"]["organizations"]["members"];
@@ -46,16 +45,25 @@ function OrganizationMembersPanel({
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"ADMIN" | "MEMBER">("MEMBER");
   const [emailError, setEmailError] = useState<string>();
+  const [mutationErrorKey, setMutationErrorKey] = useState<string>();
   const query = trpc.viewer.organizations.members.useQuery({ organizationId }, { initialData });
   const invalidate = (): Promise<void> => utils.viewer.organizations.members.invalidate({ organizationId });
   const onError = (error: OrganizationMemberError): void => {
-    showToast(t(organizationMemberErrorKey(error)), "error");
+    setMutationErrorKey(organizationMemberErrorKey(error));
   };
-  const mutationOptions = { onError, onSuccess: invalidate };
+  const mutationOptions = {
+    onError,
+    onMutate: () => setMutationErrorKey(undefined),
+    onSuccess: async () => {
+      setMutationErrorKey(undefined);
+      await invalidate();
+    },
+  };
   const invite = trpc.viewer.organizations.invite.useMutation({
     ...mutationOptions,
     onSuccess: async () => {
       setEmail("");
+      setMutationErrorKey(undefined);
       await invalidate();
     },
   });
@@ -65,7 +73,9 @@ function OrganizationMembersPanel({
   const removeMember = trpc.viewer.organizations.removeMember.useMutation(mutationOptions);
 
   if (query.isPending)
-    return <div aria-label={t("loading")} className="bg-subtle h-72 animate-pulse rounded-xl" />;
+    return (
+      <div aria-label={t("loading")} className="bg-subtle h-72 animate-pulse rounded-xl" role="status" />
+    );
   if (!query.data || query.isError)
     return <Alert message={t("organization_members_load_error")} severity="error" />;
 
@@ -75,8 +85,11 @@ function OrganizationMembersPanel({
   const canInvite = data.canManageInvitations && !isFull;
   const ownerCount = data.members.filter(({ role }) => role === "OWNER").length;
   let managementState: ReactNode = null;
-  if (!isManager) managementState = <Alert message={t("organization_members_read_only")} severity="info" />;
-  if (isManager && !data.canManageInvitations) {
+  if (data.isArchived) {
+    managementState = <Alert message={t("organization_members_archived_read_only")} severity="info" />;
+  } else if (!isManager) {
+    managementState = <Alert message={t("organization_members_read_only")} severity="info" />;
+  } else if (!data.canManageInvitations) {
     managementState = <Alert message={t("organization_members_team_required")} severity="warning" />;
   }
 
@@ -94,6 +107,12 @@ function OrganizationMembersPanel({
         </section>
 
         {managementState}
+
+        {mutationErrorKey ? (
+          <div role="alert">
+            <Alert message={t(mutationErrorKey)} severity="error" />
+          </div>
+        ) : null}
 
         {data.canManageInvitations ? (
           <section className="border-subtle rounded-xl border bg-default p-5">
@@ -117,11 +136,13 @@ function OrganizationMembersPanel({
               }}>
               <div className="flex-1">
                 <TextField
+                  autoComplete="email"
                   disabled={!canInvite || invite.isPending}
                   label={t("organization_members_email")}
                   name="email"
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="name@example.com"
+                  spellCheck={false}
                   type="email"
                   value={email}
                 />
@@ -154,51 +175,55 @@ function OrganizationMembersPanel({
           <h2 className="border-subtle border-b px-5 py-4 text-base font-semibold text-emphasis">
             {t("organization_members_accepted")}
           </h2>
-          <ul className="divide-subtle divide-y">
-            {data.members.map((member) => {
-              const label = member.name ?? member.email;
-              const protectsLastOwner = member.role === "OWNER" && ownerCount === 1;
-              return (
-                <li className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center" key={member.id}>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-emphasis">{label}</p>
-                    <p className="truncate text-sm text-subtle">
-                      {member.email} · {t(member.role.toLowerCase())}
-                    </p>
-                  </div>
-                  {data.canManageInvitations ? (
-                    <div className="flex items-center gap-2">
-                      <select
-                        aria-label={t("organization_members_change_role_for", { name: label })}
-                        className="border-subtle bg-default h-8 rounded-md border px-2 text-sm"
-                        disabled={protectsLastOwner || changeRole.isPending}
-                        onChange={(event) =>
-                          changeRole.mutate({
-                            memberUserId: member.id,
-                            organizationId,
-                            role: event.target.value as "ADMIN" | "MEMBER",
-                          })
-                        }
-                        value={member.role}>
-                        {member.role === "OWNER" ? <option value="OWNER">{t("owner")}</option> : null}
-                        <option value="ADMIN">{t("admin")}</option>
-                        <option value="MEMBER">{t("member")}</option>
-                      </select>
-                      <Button
-                        aria-label={t("organization_members_remove_name", { name: label })}
-                        color="destructive"
-                        disabled={protectsLastOwner}
-                        loading={removeMember.isPending}
-                        onClick={() => removeMember.mutate({ memberUserId: member.id, organizationId })}
-                        size="sm">
-                        {t("organization_members_remove")}
-                      </Button>
+          {data.members.length > 0 ? (
+            <ul className="divide-subtle divide-y">
+              {data.members.map((member) => {
+                const label = member.name ?? member.email;
+                const protectsLastOwner = member.role === "OWNER" && ownerCount === 1;
+                return (
+                  <li className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center" key={member.id}>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-emphasis">{label}</p>
+                      <p className="truncate text-sm text-subtle">
+                        {member.email} · {t(member.role.toLowerCase())}
+                      </p>
                     </div>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
+                    {data.canManageInvitations ? (
+                      <div className="flex items-center gap-2">
+                        <select
+                          aria-label={t("organization_members_change_role_for", { name: label })}
+                          className="border-subtle bg-default h-8 rounded-md border px-2 text-sm"
+                          disabled={protectsLastOwner || changeRole.isPending}
+                          onChange={(event) =>
+                            changeRole.mutate({
+                              memberUserId: member.id,
+                              organizationId,
+                              role: event.target.value as "ADMIN" | "MEMBER",
+                            })
+                          }
+                          value={member.role}>
+                          {member.role === "OWNER" ? <option value="OWNER">{t("owner")}</option> : null}
+                          <option value="ADMIN">{t("admin")}</option>
+                          <option value="MEMBER">{t("member")}</option>
+                        </select>
+                        <Button
+                          aria-label={t("organization_members_remove_name", { name: label })}
+                          color="destructive"
+                          disabled={protectsLastOwner}
+                          loading={removeMember.isPending}
+                          onClick={() => removeMember.mutate({ memberUserId: member.id, organizationId })}
+                          size="sm">
+                          {t("organization_members_remove")}
+                        </Button>
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="p-5 text-sm text-subtle">{t("organization_members_accepted_empty")}</p>
+          )}
         </section>
 
         {data.canManageInvitations ? (
@@ -206,34 +231,38 @@ function OrganizationMembersPanel({
             <h2 className="border-subtle border-b px-5 py-4 text-base font-semibold text-emphasis">
               {t("organization_members_pending")}
             </h2>
-            <ul className="divide-subtle divide-y">
-              {data.pendingInvitations.map((invitation) => (
-                <li className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center" key={invitation.id}>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-emphasis">{invitation.email}</p>
-                    <p className="text-sm text-subtle">{t(invitation.role.toLowerCase())}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      aria-label={t("organization_members_resend_email", { email: invitation.email })}
-                      color="secondary"
-                      disabled={resend.isPending}
-                      loading={resend.isPending}
-                      onClick={() => resend.mutate({ invitationId: invitation.id, organizationId })}>
-                      {t("organization_members_resend")}
-                    </Button>
-                    <Button
-                      aria-label={t("organization_members_revoke_email", { email: invitation.email })}
-                      color="destructive"
-                      disabled={revoke.isPending}
-                      loading={revoke.isPending}
-                      onClick={() => revoke.mutate({ invitationId: invitation.id, organizationId })}>
-                      {t("organization_members_revoke")}
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            {data.pendingInvitations.length > 0 ? (
+              <ul className="divide-subtle divide-y">
+                {data.pendingInvitations.map((invitation) => (
+                  <li className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center" key={invitation.id}>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-emphasis">{invitation.email}</p>
+                      <p className="text-sm text-subtle">{t(invitation.role.toLowerCase())}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        aria-label={t("organization_members_resend_email", { email: invitation.email })}
+                        color="secondary"
+                        disabled={resend.isPending}
+                        loading={resend.isPending}
+                        onClick={() => resend.mutate({ invitationId: invitation.id, organizationId })}>
+                        {t("organization_members_resend")}
+                      </Button>
+                      <Button
+                        aria-label={t("organization_members_revoke_email", { email: invitation.email })}
+                        color="destructive"
+                        disabled={revoke.isPending}
+                        loading={revoke.isPending}
+                        onClick={() => revoke.mutate({ invitationId: invitation.id, organizationId })}>
+                        {t("organization_members_revoke")}
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="p-5 text-sm text-subtle">{t("organization_members_pending_empty")}</p>
+            )}
           </section>
         ) : null}
       </div>

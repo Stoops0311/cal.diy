@@ -1,12 +1,16 @@
 import type { RouterOutputs } from "@calcom/trpc/react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import english from "../../../../packages/i18n/locales/en/common.json";
 
 type MembersData = RouterOutputs["viewer"]["organizations"]["members"];
 type MutationName = "changeRole" | "invite" | "removeMember" | "resendInvitation" | "revokeInvitation";
-type MutationOptions = { onSuccess?(): Promise<void> | void };
+type MutationOptions = {
+  onError?(error: { data?: { code?: string } | null; message: string }): void;
+  onMutate?(): void;
+  onSuccess?(): Promise<void> | void;
+};
 
 const mocks = vi.hoisted(() => ({
   invalidate: vi.fn(),
@@ -19,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   },
   options: {} as Partial<Record<MutationName, MutationOptions>>,
   pending: undefined as MutationName | undefined,
+  queryPending: false,
 }));
 
 function translate(key: string, values?: Record<string, string | number>): string {
@@ -56,7 +61,7 @@ vi.mock("@calcom/trpc/react", () => {
             useQuery: (_input: { organizationId: number }, options: { initialData?: MembersData }) => ({
               data: options.initialData,
               isError: false,
-              isPending: false,
+              isPending: mocks.queryPending,
             }),
           },
           removeMember: hook("removeMember"),
@@ -75,6 +80,7 @@ const membersData: MembersData = {
   actorRole: "OWNER",
   canManageInvitations: true,
   id: 41,
+  isArchived: false,
   members: [
     { avatarUrl: null, email: "owner@example.com", id: 7, name: "Owner", role: "OWNER" },
     { avatarUrl: null, email: "admin@example.com", id: 8, name: "Admin", role: "ADMIN" },
@@ -95,6 +101,7 @@ beforeEach(() => {
   mocks.invalidate.mockReset().mockResolvedValue(undefined);
   mocks.options = {};
   mocks.pending = undefined;
+  mocks.queryPending = false;
   for (const mutate of Object.values(mocks.mutate)) mutate.mockReset();
 });
 
@@ -133,6 +140,62 @@ describe("OrganizationMembersPanel", () => {
       organizationId: 41,
       role: "ADMIN",
     });
+  });
+
+  it("announces loading and gives the invitation email field browser hints", () => {
+    mocks.queryPending = true;
+    const loading = renderPanel();
+    expect(screen.getByRole("status", { name: /loading/i })).toBeVisible();
+
+    loading.unmount();
+    mocks.queryPending = false;
+    renderPanel();
+    const email = screen.getByRole("textbox", { name: "Email address" });
+    expect(email).toHaveAttribute("autocomplete", "email");
+    expect(email).toHaveAttribute("spellcheck", "false");
+  });
+
+  it.each([
+    [
+      { message: "An invitation is already pending for this email" },
+      "An invitation is already pending for this email.",
+    ],
+    [
+      { message: "This plan's resource limit was reached" },
+      "This organization has used all 50 accepted seats.",
+    ],
+    [{ data: { code: "BAD_REQUEST" }, message: "invalid" }, "Enter a valid email address."],
+    [
+      { data: { code: "FORBIDDEN" }, message: "denied" },
+      "You do not have permission to manage organization invitations.",
+    ],
+    [
+      { data: { code: "CONFLICT" }, message: "provider" },
+      "Convenio could not update this invitation. Try again.",
+    ],
+  ])("renders a mapped invitation failure inline", (error, message) => {
+    renderPanel();
+    act(() => mocks.options.invite?.onError?.(error));
+    expect(screen.getByRole("alert")).toHaveTextContent(message);
+  });
+
+  it("renders accepted and pending empty states", () => {
+    renderPanel({ ...membersData, acceptedSeats: 0, members: [], pendingInvitations: [] });
+    expect(screen.getByText("No accepted members yet.")).toBeVisible();
+    expect(screen.getByText("No pending invitations.")).toBeVisible();
+  });
+
+  it("explains archived membership as read-only and hides all mutation controls", () => {
+    renderPanel({
+      ...membersData,
+      canManageInvitations: false,
+      isArchived: true,
+      pendingInvitations: [],
+    });
+
+    expect(screen.getByText("This organization is archived. Member details are read-only.")).toBeVisible();
+    expect(screen.queryByRole("textbox", { name: "Email address" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Remove|Resend|Revoke/ })).not.toBeInTheDocument();
   });
 
   it("maps duplicate, full, permission, and provider errors distinctly", () => {
