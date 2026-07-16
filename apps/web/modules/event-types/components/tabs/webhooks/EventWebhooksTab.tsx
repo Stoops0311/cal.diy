@@ -1,3 +1,4 @@
+import { useCurrentSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { Dialog } from "@calcom/features/components/controlled-dialog";
 import type { EventTypeSetupProps, FormValues } from "@calcom/features/eventtypes/lib/types";
 import type { WEBHOOK_TRIGGER_EVENTS } from "@calcom/features/webhooks/lib/constants";
@@ -15,12 +16,41 @@ import { revalidateEventTypeEditPage } from "@calcom/web/app/(use-page-wrapper)/
 import Link from "next/link";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { WebhookForm } from "~/webhooks/components";
-import type { TWebhook, WebhookFormSubmitData } from "~/webhooks/components/WebhookForm";
-import WebhookListItem from "~/webhooks/components/WebhookListItem";
+import type { EntitlementUpgradeContext } from "../../../../billing/useEntitlementUpgrade";
+import { useEntitlementUpgrade } from "../../../../billing/useEntitlementUpgrade";
+import { WebhookForm } from "../../../../webhooks/components";
+import type { TWebhook, WebhookFormSubmitData } from "../../../../webhooks/components/WebhookForm";
+import WebhookListItem from "../../../../webhooks/components/WebhookListItem";
+
+export function getEventWebhookUpgradeContext(
+  eventTypeId: number,
+  teamId: number | null,
+  parentOrganizationId: number | null,
+  sessionOrganizationId: number | undefined
+): EntitlementUpgradeContext {
+  const scopedTeamId = teamId ?? undefined;
+  const billingOrganizationId = parentOrganizationId ?? scopedTeamId;
+  return {
+    organizationId: billingOrganizationId === sessionOrganizationId ? billingOrganizationId : undefined,
+    returnTo: `/event-types/${eventTypeId}?tabName=webhooks`,
+    teamId: scopedTeamId,
+  };
+}
+
+export function handleEventWebhookCreateError(
+  error: { message: string },
+  context: EntitlementUpgradeContext,
+  openFromError: (error: unknown, context: EntitlementUpgradeContext) => boolean,
+  showError: (message: string) => void
+): void {
+  if (openFromError(error, context)) return;
+  showError(error.message);
+}
 
 export const EventWebhooksTab = ({ eventType }: Pick<EventTypeSetupProps, "eventType">) => {
   const { t } = useLocale();
+  const { data: session } = useCurrentSession();
+  const { openFromError } = useEntitlementUpgrade();
 
   const utils = trpc.useUtils();
   const formMethods = useFormContext<FormValues>();
@@ -45,7 +75,17 @@ export const EventWebhooksTab = ({ eventType }: Pick<EventTypeSetupProps, "event
       await utils.viewer.eventTypes.get.invalidate();
     },
     onError(error) {
-      showToast(`${error.message}`, "error");
+      handleEventWebhookCreateError(
+        error,
+        getEventWebhookUpgradeContext(
+          eventType.id,
+          eventType.teamId,
+          eventType.team?.parentId ?? null,
+          session?.user.org?.id
+        ),
+        openFromError,
+        (message) => showToast(message, "error")
+      );
     },
   });
 

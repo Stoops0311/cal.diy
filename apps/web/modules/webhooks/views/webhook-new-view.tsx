@@ -10,6 +10,7 @@ import { trpc } from "@calcom/trpc/react";
 import { revalidateWebhooksList } from "@calcom/web/app/(use-page-wrapper)/settings/(settings-layout)/developer/webhooks/(with-loader)/actions";
 import { toastManager } from "@coss/ui/components/toast";
 import { useRouter } from "next/navigation";
+import { useEntitlementUpgrade } from "../../billing/useEntitlementUpgrade";
 import type { WebhookFormSubmitData } from "../components/WebhookForm";
 import WebhookForm from "../components/WebhookForm";
 import { WebhookVersionCTA } from "../components/WebhookVersionCTA";
@@ -26,9 +27,20 @@ export const NewWebhookView = ({ webhooks, installedApps }: Props) => {
   const utils = trpc.useUtils();
   const router = useRouter();
   const session = useSession();
+  const { openFromError } = useEntitlementUpgrade();
 
-  const teamId = searchParams?.get("teamId") ? Number(searchParams.get("teamId")) : undefined;
+  const parsedTeamId = searchParams?.get("teamId") ? Number(searchParams.get("teamId")) : undefined;
+  const teamId =
+    parsedTeamId !== undefined && Number.isInteger(parsedTeamId) && parsedTeamId > 0
+      ? parsedTeamId
+      : undefined;
   const platform = searchParams?.get("platform") ? Boolean(searchParams.get("platform")) : false;
+  const organizationId = teamId === session.data?.user.org?.id ? teamId : undefined;
+  const returnToParams = new URLSearchParams();
+  if (teamId) returnToParams.set("teamId", String(teamId));
+  if (platform) returnToParams.set("platform", "true");
+  const returnToQuery = returnToParams.toString();
+  const returnTo = `/settings/developer/webhooks/new${returnToQuery ? `?${returnToQuery}` : ""}`;
 
   const createWebhookMutation = trpc.viewer.webhook.create.useMutation({
     async onSuccess() {
@@ -38,6 +50,7 @@ export const NewWebhookView = ({ webhooks, installedApps }: Props) => {
       router.push("/settings/developer/webhooks");
     },
     onError(error) {
+      if (openFromError(error, { organizationId, returnTo, teamId })) return;
       toastManager.add({ title: error.message, type: "error" });
     },
   });
