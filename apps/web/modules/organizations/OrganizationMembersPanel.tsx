@@ -64,12 +64,10 @@ function OrganizationMembersPanel({
   const changeRole = trpc.viewer.organizations.changeRole.useMutation(mutationOptions);
   const removeMember = trpc.viewer.organizations.removeMember.useMutation(mutationOptions);
 
-  if (query.isPending) {
+  if (query.isPending)
     return <div aria-label={t("loading")} className="bg-subtle h-72 animate-pulse rounded-xl" />;
-  }
-  if (!query.data || query.isError) {
+  if (!query.data || query.isError)
     return <Alert message={t("organization_members_load_error")} severity="error" />;
-  }
 
   const data = query.data;
   const isManager = data.actorRole === "OWNER" || data.actorRole === "ADMIN";
@@ -220,6 +218,7 @@ function OrganizationMembersPanel({
                       aria-label={t("organization_members_resend_email", { email: invitation.email })}
                       color="secondary"
                       disabled={resend.isPending}
+                      loading={resend.isPending}
                       onClick={() => resend.mutate({ invitationId: invitation.id, organizationId })}>
                       {t("organization_members_resend")}
                     </Button>
@@ -227,6 +226,7 @@ function OrganizationMembersPanel({
                       aria-label={t("organization_members_revoke_email", { email: invitation.email })}
                       color="destructive"
                       disabled={revoke.isPending}
+                      loading={revoke.isPending}
                       onClick={() => revoke.mutate({ invitationId: invitation.id, organizationId })}>
                       {t("organization_members_revoke")}
                     </Button>

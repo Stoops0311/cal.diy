@@ -82,14 +82,7 @@ const membersData: MembersData = {
     { avatarUrl: null, email: "owner-2@example.com", id: 10, name: "Second owner", role: "OWNER" },
   ],
   name: "Acme",
-  pendingInvitations: [
-    {
-      createdAt: new Date("2026-07-16T12:00:00.000Z"),
-      email: "pending@example.com",
-      id: "inv_1",
-      role: "MEMBER",
-    },
-  ],
+  pendingInvitations: [{ createdAt: new Date(0), email: "pending@example.com", id: "inv_1", role: "MEMBER" }],
   seatLimit: 50,
   slug: "acme",
 };
@@ -170,9 +163,14 @@ describe("OrganizationMembersPanel", () => {
     expect(mocks.invalidate).toHaveBeenNthCalledWith(2, { organizationId: 41 });
 
     view.unmount();
-    mocks.pending = "resendInvitation";
-    renderPanel();
-    expect(screen.getByRole("button", { name: "Resend invitation to pending@example.com" })).toBeDisabled();
+    for (const pending of ["resendInvitation", "revokeInvitation"] as const) {
+      mocks.pending = pending;
+      const pendingView = renderPanel();
+      const button = screen.getByRole("button", { name: new RegExp(pending.replace("Invitation", ""), "i") });
+      expect(button).toBeDisabled();
+      expect(button.querySelector("svg")).toHaveClass("animate-spin");
+      pendingView.unmount();
+    }
   });
 
   it("distinguishes ordinary members from inactive organization managers", () => {
