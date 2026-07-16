@@ -3,6 +3,7 @@
 import { useEventTypeForm } from "@calcom/atoms/event-types/hooks/useEventTypeForm";
 import { useHandleRouteChange } from "@calcom/atoms/event-types/hooks/useHandleRouteChange";
 import { useTabsNavigations } from "@calcom/atoms/event-types/hooks/useTabsNavigations";
+import { useCurrentSession } from "@calcom/features/auth/lib/useCurrentSession";
 import type { ChildrenEventType } from "@calcom/features/eventtypes/components/ChildrenEventTypeSelect";
 import type { EventTypeSetupProps } from "@calcom/features/eventtypes/lib/types";
 import { WEBSITE_URL } from "@calcom/lib/constants";
@@ -17,9 +18,11 @@ import { showToast } from "@calcom/ui/components/toast";
 import { revalidateEventTypeEditPage } from "@calcom/web/app/(use-page-wrapper)/event-types/[type]/actions";
 import { TRPCClientError } from "@trpc/react-query";
 import dynamic from "next/dynamic";
-import { useRouter as useAppRouter, usePathname } from "next/navigation";
+import { useRouter as useAppRouter, usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
+import type { EntitlementUpgradeContext } from "../../billing/useEntitlementUpgrade";
+import { useEntitlementUpgrade } from "../../billing/useEntitlementUpgrade";
 import { EventType as EventTypeComponent } from "./EventType";
 
 type EventPermissions = {
@@ -61,12 +64,41 @@ const EventWebhooksTab = dynamic(() =>
   import("./tabs/webhooks/EventWebhooksTab").then((mod) => mod.EventWebhooksTab)
 );
 
-
 export type EventTypeWebWrapperProps = {
   id: number;
   data: RouterOutputs["viewer"]["eventTypes"]["get"];
   permissions?: EventPermissions;
 };
+
+export function getEventTypeUpdateUpgradeContext(
+  team: { id: number; parentId: number | null } | null,
+  pathname: string,
+  searchParams: string,
+  manageableOrganizationId?: number
+): EntitlementUpgradeContext {
+  const returnTo = searchParams ? `${pathname}?${searchParams}` : pathname;
+  if (!team) return { returnTo };
+
+  const context: EntitlementUpgradeContext = { returnTo, teamId: team.id };
+  if (team.parentId) context.organizationId = team.parentId;
+  if (!team.parentId && team.id === manageableOrganizationId) context.organizationId = team.id;
+  return context;
+}
+
+export function handleEventTypeUpdateError({
+  context,
+  error,
+  openFromError,
+  showExistingError,
+}: {
+  context: EntitlementUpgradeContext;
+  error: unknown;
+  openFromError: (error: unknown, context: EntitlementUpgradeContext) => boolean;
+  showExistingError: () => void;
+}): void {
+  if (openFromError(error, context)) return;
+  showExistingError();
+}
 
 export const EventTypeWebWrapper = ({
   id,
@@ -111,13 +143,25 @@ const EventTypeWeb = ({
   const { t } = useLocale();
   const utils = trpc.useUtils();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const appRouter = useAppRouter();
+  const { data: session } = useCurrentSession();
+  const { openFromError } = useEntitlementUpgrade();
   const { data: user, isPending: isLoggedInUserPending } = useMeQuery();
   const isTeamEventTypeDeleted = useRef(false);
   const leaveWithoutAssigningHosts = useRef(false);
   const [isOpenAssignmentWarnDialog, setIsOpenAssignmentWarnDialog] = useState<boolean>(false);
   const [pendingRoute, setPendingRoute] = useState("");
   const { eventType, locationOptions, team, teamMembers, destinationCalendar } = rest;
+  const organization = session?.user.org;
+  const manageableOrganizationId =
+    organization?.role === "OWNER" || organization?.role === "ADMIN" ? organization.id : undefined;
+  const updateUpgradeContext = getEventTypeUpdateUpgradeContext(
+    eventType.team,
+    pathname || `/event-types/${id}`,
+    searchParams?.toString() ?? "",
+    manageableOrganizationId
+  );
   const [slugExistsChildrenDialogOpen, setSlugExistsChildrenDialogOpen] = useState<ChildrenEventType[]>([]);
   const { data: eventTypeApps, isPending: isPendingApps } = trpc.viewer.apps.integrations.useQuery({
     extendsFeature: "EventType",
@@ -148,25 +192,32 @@ const EventTypeWeb = ({
       await utils.viewer.eventTypes.getByViewer.invalidate();
     },
     onError: (err) => {
-      let message = "";
-      if (err instanceof HttpError) {
-        const message = `${err.statusCode}: ${err.message}`;
-        showToast(message, "error");
-      }
+      handleEventTypeUpdateError({
+        context: updateUpgradeContext,
+        error: err,
+        openFromError,
+        showExistingError: () => {
+          let message = "";
+          if (err instanceof HttpError) {
+            const message = `${err.statusCode}: ${err.message}`;
+            showToast(message, "error");
+          }
 
-      if (err.data?.code === "UNAUTHORIZED") {
-        message = `${err.data.code}: ${t("error_event_type_unauthorized_update")}`;
-      }
+          if (err.data?.code === "UNAUTHORIZED") {
+            message = `${err.data.code}: ${t("error_event_type_unauthorized_update")}`;
+          }
 
-      if (err.data?.code === "PARSE_ERROR" || err.data?.code === "BAD_REQUEST") {
-        message = `${err.data.code}: ${t(err.message)}`;
-      }
+          if (err.data?.code === "PARSE_ERROR" || err.data?.code === "BAD_REQUEST") {
+            message = `${err.data.code}: ${t(err.message)}`;
+          }
 
-      if (err.data?.code === "INTERNAL_SERVER_ERROR") {
-        message = t("unexpected_error_try_again");
-      }
+          if (err.data?.code === "INTERNAL_SERVER_ERROR") {
+            message = t("unexpected_error_try_again");
+          }
 
-      showToast(message ? t(message) : t(err.message), "error");
+          showToast(message ? t(message) : t(err.message), "error");
+        },
+      });
     },
   });
 
@@ -278,16 +329,7 @@ const EventTypeWeb = ({
 
   const querySchema = z.object({
     tabName: z
-      .enum([
-        "setup",
-        "availability",
-        "team",
-        "limits",
-        "advanced",
-        "recurring",
-        "apps",
-        "webhooks",
-      ])
+      .enum(["setup", "availability", "team", "limits", "advanced", "recurring", "apps", "webhooks"])
       .optional()
       .default("setup"),
   });
