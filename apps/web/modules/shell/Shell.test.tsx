@@ -35,6 +35,11 @@ vi.mock("@calcom/web/modules/billing/UpgradePromptProvider", () => ({
     <div data-testid="upgrade-prompt-provider">{children}</div>
   ),
 }));
+vi.mock("@calcom/web/modules/apps/CalendarEntitlementUpgradeBridge", () => ({
+  CalendarEntitlementUpgradeBridge: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="calendar-entitlement-bridge">{children}</div>
+  ),
+}));
 vi.mock("@calcom/web/modules/formbricks/hooks/useFormbricks", () => ({ useFormbricks: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ back: vi.fn(), push: vi.fn() }) }));
 vi.mock("sonner", () => ({ Toaster: () => null }));
@@ -70,6 +75,12 @@ describe("Shell billing status", () => {
     expect(pageBoundary.compareDocumentPosition(billingStatus)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(view.getAllByTestId("billing-status-widget")).toHaveLength(1);
     expect(view.getByTestId("upgrade-prompt-provider")).toContainElement(billingStatus);
+    expect(view.getByTestId("upgrade-prompt-provider")).toContainElement(
+      view.getByTestId("calendar-entitlement-bridge")
+    );
+    expect(view.getByTestId("calendar-entitlement-bridge")).toContainElement(
+      view.getByTestId("page-content")
+    );
     expect(view.getByTestId("dock")).toBeInTheDocument();
   });
 
@@ -95,6 +106,7 @@ describe("Shell billing status", () => {
     expect(view.getByTestId("public-content")).toBeInTheDocument();
     expect(view.queryByTestId("billing-status-widget")).not.toBeInTheDocument();
     expect(view.queryByTestId("upgrade-prompt-provider")).not.toBeInTheDocument();
+    expect(view.queryByTestId("calendar-entitlement-bridge")).not.toBeInTheDocument();
     expect(view.getByTestId("dock")).toBeInTheDocument();
   });
 });

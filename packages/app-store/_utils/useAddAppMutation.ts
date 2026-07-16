@@ -8,6 +8,7 @@ import type { App } from "@calcom/types/App";
 import type { UseMutationOptions } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
+import { useEntitlementDeniedHandler } from "./EntitlementUpgradeBridge";
 
 function gotoUrl(url: string, newTab?: boolean) {
   if (newTab) {
@@ -31,8 +32,10 @@ export type UseAddAppMutationOptions = CustomUseMutationOptions & {
 
 function useAddAppMutation(_type: App["type"] | null, options?: UseAddAppMutationOptions) {
   const pathname = usePathname();
+  const bridgeEntitlementDenied = useEntitlementDeniedHandler();
   const onErrorReturnTo = `${WEBAPP_URL}${pathname}`;
-  const { onEntitlementDenied, ...mutationOptions } = options ?? {};
+  const { onEntitlementDenied: optionEntitlementDenied, ...mutationOptions } = options ?? {};
+  const onEntitlementDenied = optionEntitlementDenied ?? bridgeEntitlementDenied;
 
   const mutation = useMutation<
     AddAppMutationData,

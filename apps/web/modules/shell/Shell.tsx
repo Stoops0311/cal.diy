@@ -6,6 +6,7 @@ import classNames from "@calcom/ui/classNames";
 import { Button } from "@calcom/ui/components/button";
 import { ErrorBoundary } from "@calcom/ui/components/errorBoundary";
 import { SkeletonText } from "@calcom/ui/components/skeleton";
+import { CalendarEntitlementUpgradeBridge } from "@calcom/web/modules/apps/CalendarEntitlementUpgradeBridge";
 import { useRedirectToLoginIfUnauthenticated } from "@calcom/web/modules/auth/hooks/useRedirectToLoginIfUnauthenticated";
 import { useRedirectToOnboardingIfNeeded } from "@calcom/web/modules/auth/hooks/useRedirectToOnboardingIfNeeded";
 import { BillingStatusWidget } from "@calcom/web/modules/billing/BillingStatusWidget";
@@ -112,9 +113,11 @@ export default function Shell(props: LayoutProps) {
 
   return !props.isPublic ? (
     <UpgradePromptProvider>
-      <KBarWrapper withKBar>
-        <Layout {...props} billingStatus={<BillingStatusWidget />} />
-      </KBarWrapper>
+      <CalendarEntitlementUpgradeBridge>
+        <KBarWrapper withKBar>
+          <Layout {...props} billingStatus={<BillingStatusWidget />} />
+        </KBarWrapper>
+      </CalendarEntitlementUpgradeBridge>
     </UpgradePromptProvider>
   ) : (
     <PublicShell {...props} />
