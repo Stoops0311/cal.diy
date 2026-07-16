@@ -19,6 +19,12 @@ import { ClerkBackendOrganizationSource, type ClerkOrganizationSource } from "./
 import type { OrganizationSeatBillingPort } from "./OrganizationSeatBillingPort";
 
 type ClerkRole = "org:admin" | "org:member";
+type PendingOrganizationInvitation = {
+  createdAt: Date;
+  email: string;
+  id: string;
+  role: ClerkRole;
+};
 type OrganizationAccess = {
   actorRole: MembershipRole;
   archivedAt: Date | null;
@@ -40,7 +46,13 @@ type ClerkOrganizationCommandGateway = {
     inviterClerkUserId: string;
     role: ClerkRole;
   }): Promise<void>;
+  listPendingInvitations(clerkOrganizationId: string): Promise<PendingOrganizationInvitation[]>;
   removeMember(input: { clerkOrganizationId: string; clerkUserId: string }): Promise<void>;
+  revokeInvitation(input: {
+    clerkOrganizationId: string;
+    invitationId: string;
+    requestingClerkUserId: string;
+  }): Promise<void>;
 };
 
 type OrganizationCommandRepository = {
@@ -88,6 +100,34 @@ class ClerkCommandGateway implements ClerkOrganizationCommandGateway {
       inviterUserId: input.inviterClerkUserId,
       organizationId: input.clerkOrganizationId,
       role: input.role,
+    });
+  }
+
+  async listPendingInvitations(clerkOrganizationId: string): Promise<PendingOrganizationInvitation[]> {
+    const response = await getClerkBackendClient().organizations.getOrganizationInvitationList({
+      organizationId: clerkOrganizationId,
+      status: ["pending"],
+    });
+    return response.data.map((invitation) => {
+      if (invitation.role !== "org:admin" && invitation.role !== "org:member") throw providerFailure();
+      return {
+        createdAt: new Date(invitation.createdAt),
+        email: invitation.emailAddress,
+        id: invitation.id,
+        role: invitation.role,
+      };
+    });
+  }
+
+  async revokeInvitation(input: {
+    clerkOrganizationId: string;
+    invitationId: string;
+    requestingClerkUserId: string;
+  }): Promise<void> {
+    await getClerkBackendClient().organizations.revokeOrganizationInvitation({
+      invitationId: input.invitationId,
+      organizationId: input.clerkOrganizationId,
+      requestingUserId: input.requestingClerkUserId,
     });
   }
 
@@ -241,16 +281,21 @@ class ClerkOrganizationCommandService {
     organizationId: number;
     role: ClerkRole;
   }): Promise<void> {
-    const access = await this.authorize(
-      input.actorUserId,
-      input.organizationId,
-      "canInviteOrganizationMembers"
-    );
+    const access = await this.authorize(input.actorUserId, input.organizationId);
+    await this.assertInvitationCapacity(input.organizationId);
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const pendingInvitations = await this.loadPendingInvitations(access.clerkOrganizationId);
+    if (pendingInvitations.some(({ email }) => email.trim().toLowerCase() === normalizedEmail)) {
+      throw new ErrorWithCode(
+        ErrorCode.ClerkOrganizationInvitationDuplicate,
+        "An invitation is already pending for this email"
+      );
+    }
     const inviterClerkUserId = await this.dependencies.repository.getActorClerkUserId(input.actorUserId);
     try {
       await this.dependencies.clerk.inviteMember({
         clerkOrganizationId: access.clerkOrganizationId,
-        email: input.email,
+        email: input.email.trim(),
         inviterClerkUserId,
         role: input.role,
       });
@@ -258,6 +303,71 @@ class ClerkOrganizationCommandService {
       throw providerFailure();
     }
     await this.reconcile(access.clerkOrganizationId);
+  }
+
+  async listPendingInvitations(input: {
+    actorUserId: number;
+    organizationId: number;
+  }): Promise<PendingOrganizationInvitation[]> {
+    const access = await this.authorize(
+      input.actorUserId,
+      input.organizationId,
+      "canInviteOrganizationMembers"
+    );
+    return this.loadPendingInvitations(access.clerkOrganizationId);
+  }
+
+  async revokeInvitation(input: {
+    actorUserId: number;
+    invitationId: string;
+    organizationId: number;
+  }): Promise<void> {
+    return this.serialize(input.organizationId, async () => {
+      const access = await this.authorize(
+        input.actorUserId,
+        input.organizationId,
+        "canInviteOrganizationMembers"
+      );
+      await this.getPendingInvitation(access.clerkOrganizationId, input.invitationId);
+      const requestingClerkUserId = await this.dependencies.repository.getActorClerkUserId(input.actorUserId);
+      try {
+        await this.dependencies.clerk.revokeInvitation({
+          clerkOrganizationId: access.clerkOrganizationId,
+          invitationId: input.invitationId,
+          requestingClerkUserId,
+        });
+      } catch {
+        throw providerFailure();
+      }
+    });
+  }
+
+  async resendInvitation(input: {
+    actorUserId: number;
+    invitationId: string;
+    organizationId: number;
+  }): Promise<void> {
+    return this.serialize(input.organizationId, async () => {
+      const access = await this.authorize(input.actorUserId, input.organizationId);
+      await this.assertInvitationCapacity(input.organizationId);
+      const invitation = await this.getPendingInvitation(access.clerkOrganizationId, input.invitationId);
+      const requestingClerkUserId = await this.dependencies.repository.getActorClerkUserId(input.actorUserId);
+      try {
+        await this.dependencies.clerk.revokeInvitation({
+          clerkOrganizationId: access.clerkOrganizationId,
+          invitationId: invitation.id,
+          requestingClerkUserId,
+        });
+        await this.dependencies.clerk.inviteMember({
+          clerkOrganizationId: access.clerkOrganizationId,
+          email: invitation.email,
+          inviterClerkUserId: requestingClerkUserId,
+          role: invitation.role,
+        });
+      } catch {
+        throw providerFailure();
+      }
+    });
   }
 
   async changeMemberRole(input: {
@@ -374,6 +484,36 @@ class ClerkOrganizationCommandService {
     );
   }
 
+  private async assertInvitationCapacity(organizationId: number): Promise<void> {
+    const entitlements = await this.dependencies.entitlements.forOrganization(organizationId);
+    assertEntitled(entitlements, "canInviteOrganizationMembers");
+    assertWithinLimit(
+      entitlements,
+      "acceptedOrganizationMembers",
+      entitlements.usage.acceptedOrganizationMembers
+    );
+  }
+
+  private async getPendingInvitation(
+    clerkOrganizationId: string,
+    invitationId: string
+  ): Promise<PendingOrganizationInvitation> {
+    const invitations = await this.loadPendingInvitations(clerkOrganizationId);
+    const invitation = invitations.find(({ id }) => id === invitationId);
+    if (invitation) return invitation;
+    throw new ErrorWithCode(ErrorCode.NotFound, "Pending organization invitation not found");
+  }
+
+  private async loadPendingInvitations(
+    clerkOrganizationId: string
+  ): Promise<PendingOrganizationInvitation[]> {
+    try {
+      return await this.dependencies.clerk.listPendingInvitations(clerkOrganizationId);
+    } catch {
+      throw providerFailure();
+    }
+  }
+
   private async reconcile(clerkOrganizationId: string): Promise<void> {
     const snapshot = await this.dependencies.organizationSource.getSnapshot(clerkOrganizationId);
     await this.dependencies.reconciler.reconcileOrganization(snapshot);
@@ -402,4 +542,4 @@ class ClerkOrganizationCommandService {
 }
 
 export { ClerkOrganizationCommandService };
-export type { ClerkOrganizationCommandDependencies };
+export type { ClerkOrganizationCommandDependencies, PendingOrganizationInvitation };

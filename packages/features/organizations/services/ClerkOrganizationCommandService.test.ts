@@ -47,6 +47,12 @@ function teamEntitlements() {
 
 function setup() {
   const order: string[] = [];
+  const pendingInvitation = {
+    createdAt: new Date("2026-07-16T12:00:00.000Z"),
+    email: "pending@example.com",
+    id: "invitation_1",
+    role: "org:member" as const,
+  };
   const snapshot = {
     creatorClerkUserId: "user_owner",
     deleted: false,
@@ -63,7 +69,12 @@ function setup() {
       return "org_clerk";
     }),
     inviteMember: vi.fn(async () => order.push("clerk")),
+    listPendingInvitations: vi.fn(async () => {
+      order.push("list");
+      return [pendingInvitation];
+    }),
     removeMember: vi.fn(async () => order.push("clerk")),
+    revokeInvitation: vi.fn(async () => order.push("revoke")),
   };
   const repository = {
     getActorClerkUserId: vi.fn().mockResolvedValue("user_owner"),
@@ -112,6 +123,7 @@ function setup() {
     entitlements,
     order,
     organizationSource,
+    pendingInvitation,
     reconciler,
     repository,
     seatBilling,
@@ -206,6 +218,117 @@ describe("ClerkOrganizationCommandService", () => {
       })
     ).rejects.toMatchObject({ code: ErrorCode.EntitlementRequired });
     expect(ctx.clerk.inviteMember).not.toHaveBeenCalled();
+  });
+
+  it("lists only the safe pending invitation projection", async () => {
+    const ctx = setup();
+    const service = new ClerkOrganizationCommandService(ctx.dependencies);
+
+    await expect(service.listPendingInvitations({ actorUserId: 7, organizationId: 41 })).resolves.toEqual([
+      ctx.pendingInvitation,
+    ]);
+    expect(ctx.clerk.listPendingInvitations).toHaveBeenCalledWith("org_clerk");
+  });
+
+  it("denies pending invitation access to ordinary members", async () => {
+    const ctx = setup();
+    ctx.repository.getOrganizationAccess.mockResolvedValue({
+      actorRole: "MEMBER",
+      archivedAt: null,
+      clerkOrganizationId: "org_clerk",
+    });
+    const service = new ClerkOrganizationCommandService(ctx.dependencies);
+
+    await expect(
+      service.listPendingInvitations({ actorUserId: 7, organizationId: 41 })
+    ).rejects.toMatchObject({ code: ErrorCode.Forbidden });
+    expect(ctx.clerk.listPendingInvitations).not.toHaveBeenCalled();
+  });
+
+  it("sanitizes pending invitation provider failures", async () => {
+    const ctx = setup();
+    ctx.clerk.listPendingInvitations.mockRejectedValue(new Error("secret Clerk response"));
+    const service = new ClerkOrganizationCommandService(ctx.dependencies);
+
+    const operation = service.listPendingInvitations({ actorUserId: 7, organizationId: 41 });
+    await expect(operation).rejects.toMatchObject({
+      code: ErrorCode.ClerkOrganizationConflict,
+      message: "Clerk organization operation failed",
+    });
+  });
+
+  it("rejects a duplicate pending invitation after normalizing the email", async () => {
+    const ctx = setup();
+    const service = new ClerkOrganizationCommandService(ctx.dependencies);
+
+    await expect(
+      service.inviteMember({
+        actorUserId: 7,
+        email: "  PENDING@EXAMPLE.COM ",
+        organizationId: 41,
+        role: "org:member",
+      })
+    ).rejects.toMatchObject({ code: ErrorCode.ClerkOrganizationInvitationDuplicate });
+    expect(ctx.clerk.inviteMember).not.toHaveBeenCalled();
+  });
+
+  it("blocks a new invitation when all 50 accepted seats are used", async () => {
+    const ctx = setup();
+    ctx.entitlements.forOrganization.mockResolvedValue({
+      ...teamEntitlements(),
+      usage: { acceptedOrganizationMembers: 50, activePersonalEventTypes: 0, connectedCalendars: 0 },
+    });
+    const service = new ClerkOrganizationCommandService(ctx.dependencies);
+
+    await expect(
+      service.inviteMember({
+        actorUserId: 7,
+        email: "new@example.com",
+        organizationId: 41,
+        role: "org:member",
+      })
+    ).rejects.toMatchObject({ code: ErrorCode.EntitlementLimitExceeded });
+    expect(ctx.clerk.inviteMember).not.toHaveBeenCalled();
+  });
+
+  it("revokes a known pending invitation as the Clerk actor", async () => {
+    const ctx = setup();
+    const service = new ClerkOrganizationCommandService(ctx.dependencies);
+
+    await service.revokeInvitation({ actorUserId: 7, invitationId: "invitation_1", organizationId: 41 });
+
+    expect(ctx.clerk.revokeInvitation).toHaveBeenCalledWith({
+      clerkOrganizationId: "org_clerk",
+      invitationId: "invitation_1",
+      requestingClerkUserId: "user_owner",
+    });
+    expect(ctx.order).toEqual(["list", "revoke"]);
+  });
+
+  it("rejects an unknown opaque invitation ID", async () => {
+    const ctx = setup();
+    const service = new ClerkOrganizationCommandService(ctx.dependencies);
+
+    await expect(
+      service.resendInvitation({ actorUserId: 7, invitationId: "unknown", organizationId: 41 })
+    ).rejects.toMatchObject({ code: ErrorCode.NotFound });
+    expect(ctx.clerk.revokeInvitation).not.toHaveBeenCalled();
+    expect(ctx.clerk.inviteMember).not.toHaveBeenCalled();
+  });
+
+  it("revokes before recreating a resend with provider-sourced fields", async () => {
+    const ctx = setup();
+    const service = new ClerkOrganizationCommandService(ctx.dependencies);
+
+    await service.resendInvitation({ actorUserId: 7, invitationId: "invitation_1", organizationId: 41 });
+
+    expect(ctx.clerk.inviteMember).toHaveBeenCalledWith({
+      clerkOrganizationId: "org_clerk",
+      email: "pending@example.com",
+      inviterClerkUserId: "user_owner",
+      role: "org:member",
+    });
+    expect(ctx.order).toEqual(["list", "revoke", "clerk"]);
   });
 
   it("blocks role changes when Team is no longer active", async () => {

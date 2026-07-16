@@ -51,6 +51,7 @@ export enum ErrorCode {
   EntitlementLimitExceeded = "entitlement_limit_exceeded",
   ClerkOrganizationOwnerRequired = "clerk_organization_owner_required",
   ClerkMemberLocalUserMissing = "clerk_member_local_user_missing",
+  ClerkOrganizationInvitationDuplicate = "clerk_organization_invitation_duplicate",
   ClerkOrganizationConflict = "clerk_organization_conflict",
   ClerkWebhookPayloadConflict = "clerk_webhook_payload_conflict",
   PolarProjectionConflict = "polar_projection_conflict",
