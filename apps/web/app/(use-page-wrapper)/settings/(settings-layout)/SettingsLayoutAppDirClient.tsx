@@ -25,12 +25,14 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ComponentProps } from "react";
 import React, { useEffect, useMemo, useState } from "react";
 import Shell from "~/shell/Shell";
+import { getOrganizationMembersTab } from "./organizationMembersTab";
 
 const getTabs = (
   orgBranding: {
     id?: number | null;
   } | null
 ) => {
+  const organizationMembersTab = getOrganizationMembersTab(orgBranding?.id);
   const tabs: VerticalTabItemProps[] = [
     {
       name: "my_account",
@@ -146,15 +148,7 @@ const getTabs = (
           name: "guest_notifications",
           href: "/settings/organizations/guest-notifications",
         },
-        ...(orgBranding?.id && orgBranding.id > 0
-          ? [
-              {
-                name: "members",
-                href: `/settings/organizations/members?organizationId=${orgBranding.id}`,
-                trackingMetadata: { section: "organization", page: "members" },
-              },
-            ]
-          : []),
+        ...(organizationMembersTab ? [organizationMembersTab] : []),
         {
           name: "privacy_and_security",
           href: "/settings/organizations/privacy",
