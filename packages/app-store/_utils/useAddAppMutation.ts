@@ -1,10 +1,13 @@
+import type { IntegrationOAuthCallbackState } from "@calcom/app-store/types";
+import {
+  type EntitlementDenial,
+  parseEntitlementDenial,
+} from "@calcom/features/billing/lib/entitlementDenial";
+import { WEBAPP_URL } from "@calcom/lib/constants";
+import type { App } from "@calcom/types/App";
 import type { UseMutationOptions } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
-
-import type { IntegrationOAuthCallbackState } from "@calcom/app-store/types";
-import { WEBAPP_URL } from "@calcom/lib/constants";
-import type { App } from "@calcom/types/App";
 
 function gotoUrl(url: string, newTab?: boolean) {
   if (newTab) {
@@ -20,6 +23,7 @@ type CustomUseMutationOptions =
 
 type AddAppMutationData = { setupPending: boolean; message?: string } | void;
 export type UseAddAppMutationOptions = CustomUseMutationOptions & {
+  onEntitlementDenied?: (denial: EntitlementDenial) => void;
   onSuccess?: (data: AddAppMutationData) => void;
   installGoogleVideo?: boolean;
   returnTo?: string;
@@ -28,6 +32,7 @@ export type UseAddAppMutationOptions = CustomUseMutationOptions & {
 function useAddAppMutation(_type: App["type"] | null, options?: UseAddAppMutationOptions) {
   const pathname = usePathname();
   const onErrorReturnTo = `${WEBAPP_URL}${pathname}`;
+  const { onEntitlementDenied, ...mutationOptions } = options ?? {};
 
   const mutation = useMutation<
     AddAppMutationData,
@@ -42,7 +47,7 @@ function useAddAppMutation(_type: App["type"] | null, options?: UseAddAppMutatio
       }
     | ""
   >({
-    ...options,
+    ...mutationOptions,
     mutationFn: async (variables) => {
       let type: string | null | undefined;
       const teamId = variables && variables.teamId ? variables.teamId : undefined;
@@ -50,8 +55,8 @@ function useAddAppMutation(_type: App["type"] | null, options?: UseAddAppMutatio
       const returnTo = options?.returnTo
         ? options.returnTo
         : variables && variables.returnTo
-        ? variables.returnTo
-        : undefined;
+          ? variables.returnTo
+          : undefined;
       if (variables === "") {
         type = _type;
       } else {
@@ -83,8 +88,16 @@ function useAddAppMutation(_type: App["type"] | null, options?: UseAddAppMutatio
       const res = await fetch(`/api/integrations/${type}/add${searchParams}`);
 
       if (!res.ok) {
-        const errorBody = await res.json();
-        throw new Error(errorBody.message || "Something went wrong");
+        const errorBody: unknown = await res.json();
+        if (typeof errorBody !== "object" || errorBody === null || Array.isArray(errorBody)) {
+          throw new Error("Something went wrong");
+        }
+        const denial = parseEntitlementDenial("entitlement" in errorBody ? errorBody.entitlement : undefined);
+        if (denial?.kind === "limit" && denial.resource === "connectedCalendars") {
+          onEntitlementDenied?.(denial);
+        }
+        const message = "message" in errorBody ? errorBody.message : undefined;
+        throw new Error(typeof message === "string" && message ? message : "Something went wrong");
       }
 
       const json = await res.json();

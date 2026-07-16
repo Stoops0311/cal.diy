@@ -1,6 +1,10 @@
 import { throwIfNotHaveAdminAccessToTeam } from "@calcom/app-store/_utils/throwIfNotHaveAdminAccessToTeam";
 import { appStoreMetadata } from "@calcom/app-store/apps.metadata.generated";
 import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
+import {
+  type EntitlementDenial,
+  getEntitlementDenialFromError,
+} from "@calcom/features/billing/lib/entitlementDenial";
 import { CalendarConnectionEntitlementService } from "@calcom/features/calendars/services/CalendarConnectionEntitlementService";
 import { deriveAppDictKeyFromType } from "@calcom/lib/deriveAppDictKeyFromType";
 import { HttpError } from "@calcom/lib/http-error";
@@ -11,6 +15,11 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import type { Session } from "next-auth";
 
 const calendarConnectionEntitlements = new CalendarConnectionEntitlementService();
+
+type IntegrationErrorResponse = {
+  message: string;
+  entitlement?: EntitlementDenial;
+};
 
 function getAppCategories(metadata: unknown): string[] {
   if (!metadata || typeof metadata !== "object") return [];
@@ -101,7 +110,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   } catch (error) {
     console.error(error);
     const httpError = getServerErrorFromUnknown(error);
-    return res.status(httpError.statusCode).json({ message: httpError.message });
+    const entitlement = getEntitlementDenialFromError(error);
+    const body: IntegrationErrorResponse = {
+      message: httpError.message,
+      ...(entitlement ? { entitlement } : {}),
+    };
+    return res.status(httpError.statusCode).json(body);
   }
 };
 
