@@ -75,17 +75,7 @@ export const EventWebhooksTab = ({ eventType }: Pick<EventTypeSetupProps, "event
       await utils.viewer.eventTypes.get.invalidate();
     },
     onError(error) {
-      handleEventWebhookCreateError(
-        error,
-        getEventWebhookUpgradeContext(
-          eventType.id,
-          eventType.teamId,
-          eventType.team?.parentId ?? null,
-          session?.user.org?.id
-        ),
-        openFromError,
-        (message) => showToast(message, "error")
-      );
+      showToast(`${error.message}`, "error");
     },
   });
 
@@ -98,7 +88,17 @@ export const EventWebhooksTab = ({ eventType }: Pick<EventTypeSetupProps, "event
       await utils.viewer.eventTypes.get.invalidate();
     },
     onError(error) {
-      showToast(`${error.message}`, "error");
+      handleEventWebhookCreateError(
+        error,
+        getEventWebhookUpgradeContext(
+          eventType.id,
+          eventType.teamId,
+          eventType.team?.parentId ?? null,
+          session?.user.org?.id
+        ),
+        openFromError,
+        (message) => showToast(message, "error")
+      );
     },
   });
 
