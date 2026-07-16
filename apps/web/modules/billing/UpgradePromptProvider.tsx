@@ -85,10 +85,13 @@ export function UpgradePromptProvider({ children }: { children: React.ReactNode 
   });
   const openUpgradePrompt = useCallback(
     (input: OpenUpgradePromptInput) => {
+      const requestedOrganizationId = getRequestedOrganizationId(input);
       if (
         input.requiredPlan === "TEAM" &&
         input.capability !== "bookingAudit" &&
-        getRequestedOrganizationId(input) !== manageableOrganizationId
+        (requestedOrganizationId === undefined ||
+          manageableOrganizationId === undefined ||
+          requestedOrganizationId !== manageableOrganizationId)
       ) {
         return;
       }

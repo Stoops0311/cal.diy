@@ -26,6 +26,7 @@ vi.mock("@calcom/features/auth/lib/useCurrentSession", () => ({
 
 vi.mock("@calcom/lib/hooks/useLocale", () => ({
   useLocale: () => ({
+    i18n: { language: "en-US" },
     t: (key: string, values?: { feature?: string; plan?: string }) =>
       key === "billing_upgrade_title"
         ? `${values?.feature} belongs in ${values?.plan}.`
@@ -217,6 +218,25 @@ describe("UpgradePromptProvider", () => {
         subject: { kind: "organization", organizationId: 77 },
       }
     );
+  });
+
+  it.each([
+    { user: { org: { id: 41, role: "OWNER" as const } } },
+    { user: {} },
+    { user: { org: { id: 41, role: "MEMBER" as const } } },
+  ])("rejects a direct contextual Team prompt without a requested organization %#", (session) => {
+    mocks.session = session;
+    const view = openPrompt({
+      capability: "canCreateWebhooks",
+      featureName: "Webhooks",
+      requiredPlan: "TEAM",
+      resume: { kind: "returnToFeature" },
+      returnTo: "/settings/developer/webhooks",
+    });
+
+    expect(view.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(mocks.startCheckout).not.toHaveBeenCalled();
+    expect(mocks.saveUpgradeIntent).not.toHaveBeenCalled();
   });
 
   it("preserves the exact organization invitation intent before Team checkout", () => {

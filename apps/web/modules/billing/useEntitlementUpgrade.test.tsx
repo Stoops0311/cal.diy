@@ -99,6 +99,24 @@ describe("useEntitlementUpgrade", () => {
     );
   });
 
+  it.each([
+    ["OWNER", 99],
+    ["MEMBER", 41],
+  ] as const)("rejects a %s session for organization %i", (role, organizationId) => {
+    mocks.session = { user: { org: { id: 41, role } } };
+    const { result } = renderHook(() => useEntitlementUpgrade());
+    const denial: EntitlementDenial = {
+      capability: "canCreateApiKeys",
+      effectivePlan: "FREE",
+      kind: "capability",
+    };
+
+    expect(result.current.openFromDenial(denial, { organizationId, returnTo: "/settings/api-keys" })).toBe(
+      false
+    );
+    expect(mocks.openUpgradePrompt).not.toHaveBeenCalled();
+  });
+
   it("opens only from an exact structured error denial", () => {
     const { result } = renderHook(() => useEntitlementUpgrade());
     const entitlement = {
