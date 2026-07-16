@@ -207,6 +207,7 @@ describe("organization handlers", () => {
       acceptedSeats: 4,
       actorRole: role,
       canManageInvitations: true,
+      invitationDenial: null,
       id: 41,
       isArchived: false,
       name: "Acme",
@@ -265,6 +266,7 @@ describe("organization handlers", () => {
       acceptedSeats: 4,
       actorRole: "MEMBER",
       canManageInvitations: false,
+      invitationDenial: null,
       pendingInvitations: [],
       seatLimit: 50,
     });
@@ -290,8 +292,53 @@ describe("organization handlers", () => {
 
     await expect(
       membersOrganizationHandler({ ctx, dependencies: test.dependencies, input: { organizationId: 41 } })
-    ).resolves.toMatchObject({ canManageInvitations: false, seatLimit: 50 });
+    ).resolves.toMatchObject({
+      canManageInvitations: false,
+      invitationDenial: { capability: "organizationInvitations", requiredPlan: "TEAM" },
+      seatLimit: 50,
+    });
     expect(test.commands.listPendingInvitations).not.toHaveBeenCalled();
+  });
+
+  it("does not offer an invitation upgrade to an inactive ordinary member or a full organization", async () => {
+    const member = setup();
+    member.read.getForMember.mockResolvedValue(organizationFor("MEMBER"));
+    member.entitlements.forOrganization.mockResolvedValue({
+      ...getEntitlements(null),
+      usage: { acceptedOrganizationMembers: 4, activePersonalEventTypes: 0, connectedCalendars: 0 },
+    });
+
+    await expect(
+      membersOrganizationHandler({ ctx, dependencies: member.dependencies, input: { organizationId: 41 } })
+    ).resolves.toMatchObject({ invitationDenial: null });
+
+    const full = setup();
+    const organization = organizationFor("OWNER");
+    full.read.getForMember.mockResolvedValue({
+      ...organization,
+      members: Array.from({ length: 50 }, (_, index) =>
+        index === 0
+          ? organization.members[0]
+          : {
+              accepted: true,
+              role: "MEMBER" as const,
+              user: {
+                avatarUrl: null,
+                email: `member-${index}@example.com`,
+                id: index + 7,
+                name: `Member ${index}`,
+              },
+            }
+      ),
+    });
+    full.entitlements.forOrganization.mockResolvedValue({
+      ...getEntitlements(null),
+      usage: { acceptedOrganizationMembers: 50, activePersonalEventTypes: 0, connectedCalendars: 0 },
+    });
+
+    await expect(
+      membersOrganizationHandler({ ctx, dependencies: full.dependencies, input: { organizationId: 41 } })
+    ).resolves.toMatchObject({ acceptedSeats: 50, invitationDenial: null });
   });
 
   it("maps provider roles without leaking provider-only keys", async () => {

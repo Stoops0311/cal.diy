@@ -36,11 +36,16 @@ type OrganizationHandlerDependencies = {
   read: OrganizationReadRepository;
 };
 type OrganizationMemberRole = "OWNER" | "ADMIN" | "MEMBER";
+type OrganizationInvitationDenial = {
+  capability: "organizationInvitations";
+  requiredPlan: "TEAM";
+};
 type OrganizationMembersView = {
   acceptedSeats: number;
   actorRole: OrganizationMemberRole;
   canManageInvitations: boolean;
   id: number;
+  invitationDenial: OrganizationInvitationDenial | null;
   isArchived: boolean;
   members: Array<{
     avatarUrl: string | null;
@@ -190,7 +195,17 @@ async function membersOrganizationHandler(options: {
   const entitlements = await dependencies.entitlements.forOrganization(organization.id);
   const isArchived = organization.archivedAt !== null;
   const isManager = actor.role === "OWNER" || actor.role === "ADMIN";
+  const seatLimit = PLAN_ENTITLEMENTS.TEAM.acceptedOrganizationMembers;
   const canManageInvitations = !isArchived && isManager && entitlements.canInviteOrganizationMembers;
+  let invitationDenial: OrganizationInvitationDenial | null = null;
+  if (
+    !isArchived &&
+    isManager &&
+    !entitlements.canInviteOrganizationMembers &&
+    organization.members.length < seatLimit
+  ) {
+    invitationDenial = { capability: "organizationInvitations", requiredPlan: "TEAM" };
+  }
   let pendingInvitations: PendingOrganizationInvitation[] = [];
   if (canManageInvitations) {
     pendingInvitations = await dependencies.commands.listPendingInvitations({
@@ -204,6 +219,7 @@ async function membersOrganizationHandler(options: {
     actorRole: actor.role,
     canManageInvitations,
     id: organization.id,
+    invitationDenial,
     isArchived,
     members: organization.members.map(({ role, user }) => ({ ...user, role })),
     name: organization.name,
@@ -213,7 +229,7 @@ async function membersOrganizationHandler(options: {
       id,
       role: invitationRole(role),
     })),
-    seatLimit: PLAN_ENTITLEMENTS.TEAM.acceptedOrganizationMembers,
+    seatLimit,
     slug: organization.slug,
   };
 }

@@ -9,6 +9,7 @@ import { Alert } from "@calcom/ui/components/alert";
 import { Button } from "@calcom/ui/components/button";
 import { TextField } from "@calcom/ui/components/form";
 import { type ReactElement, type ReactNode, useState } from "react";
+import { useUpgradePrompt } from "../billing/UpgradePromptProvider";
 
 type MembersData = RouterOutputs["viewer"]["organizations"]["members"];
 type OrganizationMemberError = { data?: { code?: string } | null; message: string };
@@ -41,6 +42,7 @@ function OrganizationMembersPanel({
   organizationId: number;
 }): ReactElement {
   const { t } = useLocale();
+  const { openUpgradePrompt } = useUpgradePrompt();
   const utils = trpc.useUtils();
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"ADMIN" | "MEMBER">("MEMBER");
@@ -84,11 +86,31 @@ function OrganizationMembersPanel({
   const isFull = data.acceptedSeats >= data.seatLimit;
   const canInvite = data.canManageInvitations && !isFull;
   const ownerCount = data.members.filter(({ role }) => role === "OWNER").length;
+  const openInvitationUpgrade = (): void => {
+    openUpgradePrompt({
+      capability: "organizationInvitations",
+      description: t("billing_team_description"),
+      featureName: t("billing_invite_team"),
+      organizationId: data.id,
+      requiredPlan: "TEAM",
+      resume: { kind: "openOrganizationInvitations", organizationId: data.id },
+      returnTo: `/settings/organizations/members?organizationId=${data.id}`,
+    });
+  };
   let managementState: ReactNode = null;
   if (data.isArchived) {
     managementState = <Alert message={t("organization_members_archived_read_only")} severity="info" />;
   } else if (!isManager) {
     managementState = <Alert message={t("organization_members_read_only")} severity="info" />;
+  } else if (data.invitationDenial) {
+    managementState = (
+      <div className="space-y-3">
+        <Alert message={t("organization_members_team_required")} severity="warning" />
+        <Button onClick={openInvitationUpgrade}>
+          {t("organization_members_send_invitation")}
+        </Button>
+      </div>
+    );
   } else if (!data.canManageInvitations) {
     managementState = <Alert message={t("organization_members_team_required")} severity="warning" />;
   }

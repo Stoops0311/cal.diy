@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
     revokeInvitation: vi.fn(),
   },
   options: {} as Partial<Record<MutationName, MutationOptions>>,
+  openUpgradePrompt: vi.fn(),
   pending: undefined as MutationName | undefined,
   queryPending: false,
 }));
@@ -40,6 +41,9 @@ vi.mock("@calcom/features/settings/appDir/SettingsHeader", () => ({
 
 vi.mock("@calcom/lib/hooks/useLocale", () => ({ useLocale: () => ({ t: translate }) }));
 vi.mock("@calcom/ui/components/toast", () => ({ showToast: vi.fn() }));
+vi.mock("../billing/UpgradePromptProvider", () => ({
+  useUpgradePrompt: () => ({ openUpgradePrompt: mocks.openUpgradePrompt }),
+}));
 vi.mock("@calcom/trpc/react", () => {
   function useMutation(name: MutationName, options: MutationOptions = {}) {
     mocks.options[name] = options;
@@ -80,6 +84,7 @@ const membersData: MembersData = {
   actorRole: "OWNER",
   canManageInvitations: true,
   id: 41,
+  invitationDenial: null,
   isArchived: false,
   members: [
     { avatarUrl: null, email: "owner@example.com", id: 7, name: "Owner", role: "OWNER" },
@@ -100,6 +105,7 @@ function renderPanel(data: MembersData = membersData) {
 beforeEach(() => {
   mocks.invalidate.mockReset().mockResolvedValue(undefined);
   mocks.options = {};
+  mocks.openUpgradePrompt.mockReset();
   mocks.pending = undefined;
   mocks.queryPending = false;
   for (const mutate of Object.values(mocks.mutate)) mutate.mockReset();
@@ -250,6 +256,39 @@ describe("OrganizationMembersPanel", () => {
     view.unmount();
     renderPanel({ ...membersData, canManageInvitations: false, pendingInvitations: [] });
     expect(screen.getByText("An active Team plan is required to manage organization members.")).toBeVisible();
+  });
+
+  it("opens the exact organization invitation intent for an inactive Team manager", async () => {
+    renderPanel({
+      ...membersData,
+      canManageInvitations: false,
+      invitationDenial: { capability: "organizationInvitations", requiredPlan: "TEAM" },
+      pendingInvitations: [],
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Send invitation" }));
+
+    expect(mocks.mutate.invite).not.toHaveBeenCalled();
+    expect(mocks.openUpgradePrompt).toHaveBeenCalledWith({
+      capability: "organizationInvitations",
+      description: english.billing_team_description,
+      featureName: english.billing_invite_team,
+      organizationId: 41,
+      requiredPlan: "TEAM",
+      resume: { kind: "openOrganizationInvitations", organizationId: 41 },
+      returnTo: "/settings/organizations/members?organizationId=41",
+    });
+  });
+
+  it("keeps a full organization on capacity guidance without opening checkout", async () => {
+    renderPanel({ ...membersData, acceptedSeats: 50, invitationDenial: null });
+
+    const inviteButton = screen.getByRole("button", { name: "Send invitation" });
+    expect(inviteButton).toBeDisabled();
+    await userEvent.click(inviteButton);
+
+    expect(screen.getByText("This organization has used all 50 accepted seats.")).toBeVisible();
+    expect(mocks.openUpgradePrompt).not.toHaveBeenCalled();
   });
 
   it("keeps the single accepted owner's demotion and removal controls disabled", () => {
