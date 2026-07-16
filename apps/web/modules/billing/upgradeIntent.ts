@@ -1,7 +1,9 @@
 import { sessionStorage } from "@calcom/lib/webstorage";
 
-type UpgradeCapability = "bookingAudit";
-type UpgradeResume = { kind: "openBookingAudit"; bookingUid: string };
+type UpgradeCapability = "bookingAudit" | "organizationInvitations";
+type UpgradeResume =
+  | { kind: "openBookingAudit"; bookingUid: string }
+  | { kind: "openOrganizationInvitations"; organizationId: number };
 type UpgradeBillingSubject = { kind: "user" } | { kind: "organization"; organizationId: number };
 type UpgradeIntentRequest = {
   capability: UpgradeCapability;
@@ -50,12 +52,26 @@ function normalizeRelativePath(value: string): string | null {
 }
 
 function parseResume(value: unknown): UpgradeResume | null {
-  if (!isRecord(value) || !hasExactKeys(value, ["kind", "bookingUid"])) return null;
-  if (value.kind !== "openBookingAudit") return null;
-  if (typeof value.bookingUid !== "string" || value.bookingUid.length < 1 || value.bookingUid.length > 128) {
-    return null;
+  if (!isRecord(value)) return null;
+  if (value.kind === "openBookingAudit" && hasExactKeys(value, ["kind", "bookingUid"])) {
+    if (
+      typeof value.bookingUid !== "string" ||
+      value.bookingUid.length < 1 ||
+      value.bookingUid.length > 128
+    ) {
+      return null;
+    }
+    return { kind: "openBookingAudit", bookingUid: value.bookingUid };
   }
-  return { kind: "openBookingAudit", bookingUid: value.bookingUid };
+  if (
+    value.kind === "openOrganizationInvitations" &&
+    hasExactKeys(value, ["kind", "organizationId"]) &&
+    Number.isInteger(value.organizationId) &&
+    Number(value.organizationId) > 0
+  ) {
+    return { kind: "openOrganizationInvitations", organizationId: Number(value.organizationId) };
+  }
+  return null;
 }
 
 function parseSubject(value: unknown): UpgradeBillingSubject | undefined | null {
@@ -73,6 +89,28 @@ function parseSubject(value: unknown): UpgradeBillingSubject | undefined | null 
   return null;
 }
 
+function intentPartsMatch(
+  capability: unknown,
+  requiredPlan: unknown,
+  resume: UpgradeResume,
+  subject: UpgradeBillingSubject | undefined
+): capability is UpgradeCapability {
+  if (capability === "bookingAudit") {
+    return resume.kind === "openBookingAudit" && (requiredPlan === "PRO" || requiredPlan === "TEAM");
+  }
+  return (
+    capability === "organizationInvitations" &&
+    requiredPlan === "TEAM" &&
+    resume.kind === "openOrganizationInvitations" &&
+    subject?.kind === "organization" &&
+    subject.organizationId === resume.organizationId
+  );
+}
+
+function isRequiredPlan(value: unknown): value is "PRO" | "TEAM" {
+  return value === "PRO" || value === "TEAM";
+}
+
 function parseIntent(value: unknown, now: number): UpgradeIntentV1 | null {
   if (!isRecord(value)) return null;
   const expectedKeys = ["capability", "createdAt", "requiredPlan", "resume", "returnTo", "version"];
@@ -84,21 +122,21 @@ function parseIntent(value: unknown, now: number): UpgradeIntentV1 | null {
   const subject = parseSubject(value.subject);
   if (
     value.version !== 1 ||
-    value.capability !== "bookingAudit" ||
-    (value.requiredPlan !== "PRO" && value.requiredPlan !== "TEAM") ||
     typeof value.createdAt !== "number" ||
     !Number.isFinite(value.createdAt) ||
     now - value.createdAt < 0 ||
     now - value.createdAt >= MAX_AGE_MS ||
     !returnTo ||
     !resume ||
-    subject === null
+    subject === null ||
+    !isRequiredPlan(value.requiredPlan) ||
+    !intentPartsMatch(value.capability, value.requiredPlan, resume, subject)
   ) {
     return null;
   }
   const intent: UpgradeIntentV1 = {
     version: 1,
-    capability: "bookingAudit",
+    capability: value.capability,
     requiredPlan: value.requiredPlan,
     returnTo,
     resume,
@@ -119,15 +157,14 @@ function saveUpgradeIntent(
   if (
     !returnTo ||
     !resume ||
-    request.capability !== "bookingAudit" ||
-    (request.requiredPlan !== "PRO" && request.requiredPlan !== "TEAM") ||
     subject === null ||
-    !Number.isFinite(createdAt)
+    !Number.isFinite(createdAt) ||
+    !intentPartsMatch(request.capability, request.requiredPlan, resume, subject)
   ) {
     return false;
   }
   const intent: UpgradeIntentV1 = {
-    capability: "bookingAudit",
+    capability: request.capability,
     requiredPlan: request.requiredPlan,
     returnTo,
     resume,
@@ -161,7 +198,13 @@ function consumeUpgradeIntent(now: number = Date.now()): UpgradeIntentV1 | null 
 
 function bindUpgradeIntentToOrganization(organizationId: number): void {
   const intent = readUpgradeIntent();
-  if (!intent || intent.requiredPlan !== "TEAM" || !Number.isInteger(organizationId) || organizationId < 1) {
+  if (
+    !intent ||
+    intent.capability !== "bookingAudit" ||
+    intent.requiredPlan !== "TEAM" ||
+    !Number.isInteger(organizationId) ||
+    organizationId < 1
+  ) {
     return;
   }
   sessionStorage.setItem(

@@ -2,11 +2,20 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+type CheckoutOptions = {
+  onBeforeNavigate?(context: {
+    organizationId?: number;
+    selection: { interval: "YEAR"; plan: "PRO" | "TEAM" };
+  }): void;
+};
+
 const mocks = vi.hoisted(() => ({
+  checkoutOptions: undefined as CheckoutOptions | undefined,
   createdOrganization: null as { id: number; name: string; slug: string } | null,
   hydrated: true,
   intent: "solo" as "solo" | "join-team" | "bring-team" | null,
   push: vi.fn(),
+  saveUpgradeIntent: vi.fn(),
   startCheckout: vi.fn(),
   submit: vi.fn(),
 }));
@@ -59,7 +68,16 @@ vi.mock("../../billing/PlanSelector", () => ({
   },
 }));
 vi.mock("../../billing/usePaidPlanCheckout", () => ({
-  usePaidPlanCheckout: () => ({ pendingPlan: undefined, startCheckout: mocks.startCheckout }),
+  usePaidPlanCheckout: (options: CheckoutOptions = {}) => {
+    mocks.checkoutOptions = options;
+    return { pendingPlan: undefined, startCheckout: mocks.startCheckout };
+  },
+}));
+vi.mock("../../billing/upgradeIntent", () => ({ saveUpgradeIntent: mocks.saveUpgradeIntent }));
+vi.mock("../../organizations/OrganizationMembersPanel", () => ({
+  OrganizationMembersPanel: ({ organizationId }: { organizationId: number }) => (
+    <section aria-label={`Members for organization ${organizationId}`} />
+  ),
 }));
 vi.mock("../components/OnboardingLayout", () => ({
   OnboardingLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
@@ -116,8 +134,13 @@ describe("CompletionView", () => {
     mocks.createdOrganization = null;
     mocks.hydrated = true;
     mocks.intent = "solo";
+    mocks.checkoutOptions = undefined;
     mocks.push.mockReset();
+    mocks.saveUpgradeIntent.mockReset();
     mocks.startCheckout.mockReset();
+    mocks.startCheckout.mockImplementation((selection, organizationId) =>
+      mocks.checkoutOptions?.onBeforeNavigate?.({ organizationId, selection })
+    );
     mocks.submit.mockReset();
     mocks.submit.mockImplementation(async (options?: { afterComplete?: () => void }) =>
       options?.afterComplete?.()
@@ -129,12 +152,14 @@ describe("CompletionView", () => {
     render(<CompletionView acceptedOrganizations={[]} userEmail="ada@example.com" />);
     expect(screen.getByRole("status")).toHaveAccessibleName("Loading your setup");
     expect(screen.queryByRole("button", { name: "Choose Pro ›" })).not.toBeInTheDocument();
+    expect(mocks.checkoutOptions).toBeDefined();
   });
 
   it("always completes through Keep working free", async () => {
     render(<CompletionView acceptedOrganizations={[]} userEmail="ada@example.com" />);
     await userEvent.click(screen.getByRole("button", { name: "Keep working free" }));
     expect(mocks.submit).toHaveBeenCalledWith();
+    expect(mocks.saveUpgradeIntent).not.toHaveBeenCalled();
   });
 
   it("prevents a second paid submit while completion is pending", async () => {
@@ -171,6 +196,7 @@ describe("CompletionView", () => {
     render(<CompletionView acceptedOrganizations={[...acceptedOrganizations]} userEmail="ada@example.com" />);
     await userEvent.click(screen.getByRole("button", { name: "Choose Pro ›" }));
     expect(mocks.startCheckout).toHaveBeenCalledWith({ interval: "YEAR", plan: "PRO" });
+    expect(mocks.saveUpgradeIntent).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Keep working free" })).toBeVisible();
   });
 
@@ -180,6 +206,16 @@ describe("CompletionView", () => {
     render(<CompletionView acceptedOrganizations={[]} userEmail="owner@example.com" />);
     await userEvent.click(screen.getByRole("button", { name: "Bring in the team ›" }));
     expect(mocks.startCheckout).toHaveBeenCalledWith({ interval: "YEAR", plan: "TEAM" }, 41);
+    expect(mocks.saveUpgradeIntent).toHaveBeenCalledWith(
+      {
+        capability: "organizationInvitations",
+        requiredPlan: "TEAM",
+        resume: { kind: "openOrganizationInvitations", organizationId: 41 },
+        returnTo: "/onboarding/complete",
+      },
+      { subject: { kind: "organization", organizationId: 41 } }
+    );
+    expect(screen.getByRole("region", { name: "Members for organization 41" })).toBeVisible();
   });
 
   it.each(["OWNER", "ADMIN"] as const)("lets an accepted %s manage Team", async (role) => {
@@ -189,6 +225,8 @@ describe("CompletionView", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Bring in the team ›" }));
     expect(mocks.startCheckout).toHaveBeenCalledWith({ interval: "YEAR", plan: "TEAM" }, 41);
+    expect(mocks.saveUpgradeIntent).toHaveBeenCalledOnce();
+    expect(screen.getByRole("region", { name: "Members for organization 41" })).toBeVisible();
   });
 
   it("leaves Team checkout to the accepted team's managers", () => {
@@ -202,6 +240,8 @@ describe("CompletionView", () => {
     expect(screen.getByText("Operations manages the Team plan.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Bring in the team ›" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Keep working free" })).toBeVisible();
+    expect(screen.queryByRole("region", { name: /Members for organization/ })).not.toBeInTheDocument();
+    expect(mocks.saveUpgradeIntent).not.toHaveBeenCalled();
   });
 
   it("recovers when a created team is missing", () => {
@@ -209,5 +249,7 @@ describe("CompletionView", () => {
     render(<CompletionView acceptedOrganizations={[]} userEmail="owner@example.com" />);
     expect(screen.getByRole("link", { name: "Create the team" })).toHaveAttribute("href", "/onboarding/team");
     expect(screen.queryByRole("button", { name: "Bring in the team ›" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /Members for organization/ })).not.toBeInTheDocument();
+    expect(mocks.saveUpgradeIntent).not.toHaveBeenCalled();
   });
 });

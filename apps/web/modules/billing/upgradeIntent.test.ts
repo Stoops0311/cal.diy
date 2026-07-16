@@ -15,6 +15,13 @@ const request = {
   returnTo: "/booking/book_123/logs?from=bookings#history",
   resume: { kind: "openBookingAudit" as const, bookingUid: "book_123" },
 };
+const invitationRequest = {
+  capability: "organizationInvitations" as const,
+  requiredPlan: "TEAM" as const,
+  returnTo: "/onboarding/complete",
+  resume: { kind: "openOrganizationInvitations" as const, organizationId: 41 },
+};
+const organizationSubject = { kind: "organization" as const, organizationId: 41 };
 
 describe("upgrade intent", () => {
   beforeEach(() => sessionStorage.clear());
@@ -50,6 +57,61 @@ describe("upgrade intent", () => {
     saveUpgradeIntent(request, { now: 1_000 });
     expect(readUpgradeIntent(1_000 + 30 * 60 * 1_000 - 1)).not.toBeNull();
     expect(readUpgradeIntent(1_000 + 30 * 60 * 1_000)).toBeNull();
+    expect(sessionStorage.length).toBe(0);
+  });
+
+  it("stores a strict organization invitation intent with a same-origin return", () => {
+    expect(saveUpgradeIntent(invitationRequest, { now: 1_000, subject: organizationSubject })).toBe(true);
+    expect(readUpgradeIntent(1_000)).toEqual({
+      ...invitationRequest,
+      createdAt: 1_000,
+      subject: organizationSubject,
+      version: 1,
+    });
+  });
+
+  it("expires an organization invitation intent at exactly thirty minutes", () => {
+    saveUpgradeIntent(invitationRequest, { now: 1_000, subject: organizationSubject });
+    expect(readUpgradeIntent(1_000 + 30 * 60 * 1_000 - 1)).not.toBeNull();
+    expect(readUpgradeIntent(1_000 + 30 * 60 * 1_000)).toBeNull();
+  });
+
+  it.each([
+    [{ ...invitationRequest, requiredPlan: "PRO" as const }, organizationSubject],
+    [{ ...invitationRequest, capability: "bookingAudit" as const }, organizationSubject],
+    [{ ...request, capability: "organizationInvitations" as const }, organizationSubject],
+    [invitationRequest, undefined],
+    [invitationRequest, { kind: "user" as const }],
+    [invitationRequest, { ...organizationSubject, organizationId: 42 }],
+    [
+      { ...invitationRequest, resume: { ...invitationRequest.resume, organizationId: 0 } },
+      organizationSubject,
+    ],
+    [
+      { ...invitationRequest, resume: { ...invitationRequest.resume, organizationId: -1 } },
+      organizationSubject,
+    ],
+    [
+      { ...invitationRequest, resume: { ...invitationRequest.resume, organizationId: 1.5 } },
+      organizationSubject,
+    ],
+  ])("rejects mismatched invitation request and subject %#", (intent, subject) => {
+    expect(saveUpgradeIntent(intent, { now: 1_000, subject })).toBe(false);
+    expect(sessionStorage.length).toBe(0);
+  });
+
+  it("rejects extra invitation resume keys from storage", () => {
+    sessionStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        ...invitationRequest,
+        createdAt: 1_000,
+        resume: { ...invitationRequest.resume, extra: true },
+        subject: organizationSubject,
+        version: 1,
+      })
+    );
+    expect(readUpgradeIntent(1_000)).toBeNull();
     expect(sessionStorage.length).toBe(0);
   });
 

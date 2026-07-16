@@ -3,9 +3,11 @@
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { Button } from "@calcom/ui/components/button";
 import { SkeletonText } from "@calcom/ui/components/skeleton";
-import { type ReactElement, type ReactNode, useEffect, useState } from "react";
+import { type ReactElement, type ReactNode, useCallback, useEffect, useState } from "react";
 import { type PaidSelection, PlanSelector } from "../../billing/PlanSelector";
-import { usePaidPlanCheckout } from "../../billing/usePaidPlanCheckout";
+import { saveUpgradeIntent } from "../../billing/upgradeIntent";
+import { type CheckoutContext, usePaidPlanCheckout } from "../../billing/usePaidPlanCheckout";
+import { OrganizationMembersPanel } from "../../organizations/OrganizationMembersPanel";
 import { OnboardingCard } from "../components/OnboardingCard";
 import { OnboardingLayout } from "../components/OnboardingLayout";
 import { useSubmitPersonalOnboarding } from "../hooks/useSubmitPersonalOnboarding";
@@ -25,7 +27,32 @@ export function CompletionView({
   const [hydrated, setHydrated] = useState(useOnboardingStore.persist.hasHydrated());
   const [preparingPlan, setPreparingPlan] = useState<PaidSelection["plan"]>();
   const { isSubmitting, submitPersonalOnboarding } = useSubmitPersonalOnboarding();
-  const paidCheckout = usePaidPlanCheckout();
+  const acceptedOrganization = acceptedOrganizations[0] ?? null;
+  let checkoutOrganization: AcceptedOrganizationContext | CreatedOrganizationContext | null = null;
+  if (intent === "bring-team") checkoutOrganization = createdOrganization;
+  if (intent === "join-team") checkoutOrganization = acceptedOrganization;
+  const isMember = intent === "join-team" && acceptedOrganization?.role === "MEMBER";
+  let canManageTeam = false;
+  if (intent === "bring-team") canManageTeam = Boolean(createdOrganization);
+  if (intent === "join-team") {
+    canManageTeam = acceptedOrganization?.role === "OWNER" || acceptedOrganization?.role === "ADMIN";
+  }
+  const saveInvitationIntent = useCallback(
+    ({ organizationId, selection }: CheckoutContext): void => {
+      if (selection.plan !== "TEAM" || !canManageTeam || !organizationId) return;
+      saveUpgradeIntent(
+        {
+          capability: "organizationInvitations",
+          requiredPlan: "TEAM",
+          resume: { kind: "openOrganizationInvitations", organizationId },
+          returnTo: "/onboarding/complete",
+        },
+        { subject: { kind: "organization", organizationId } }
+      );
+    },
+    [canManageTeam]
+  );
+  const paidCheckout = usePaidPlanCheckout({ onBeforeNavigate: saveInvitationIntent });
 
   useEffect(() => useOnboardingStore.persist.onFinishHydration(() => setHydrated(true)), []);
 
@@ -41,16 +68,6 @@ export function CompletionView({
     );
   }
 
-  const acceptedOrganization = acceptedOrganizations[0] ?? null;
-  let checkoutOrganization: AcceptedOrganizationContext | CreatedOrganizationContext | null = null;
-  if (intent === "bring-team") checkoutOrganization = createdOrganization;
-  if (intent === "join-team") checkoutOrganization = acceptedOrganization;
-  const isMember = intent === "join-team" && acceptedOrganization?.role === "MEMBER";
-  let canManageTeam = false;
-  if (intent === "bring-team") canManageTeam = Boolean(createdOrganization);
-  if (intent === "join-team") {
-    canManageTeam = acceptedOrganization?.role === "OWNER" || acceptedOrganization?.role === "ADMIN";
-  }
   const missingCreatedTeam = intent === "bring-team" && !createdOrganization;
   let visiblePlan: PaidSelection["plan"] = "PRO";
   if (intent === "bring-team" || (intent === "join-team" && acceptedOrganization)) visiblePlan = "TEAM";
@@ -123,6 +140,9 @@ export function CompletionView({
             onClick={() => void submitPersonalOnboarding()}>
             {t("billing_keep_working_free")}
           </Button>
+          {canManageTeam && checkoutOrganization ? (
+            <OrganizationMembersPanel organizationId={checkoutOrganization.id} />
+          ) : null}
         </div>
       </OnboardingCard>
     </OnboardingLayout>
