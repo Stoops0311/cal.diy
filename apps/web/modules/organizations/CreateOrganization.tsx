@@ -126,8 +126,8 @@ function CreateOrganization({ checkoutInterval, returnTo }: CreateOrganizationPr
       description={t("organization_bootstrap_description")}
       title={t("organization_bootstrap_title")}>
       <div className="border-subtle rounded-b-lg border border-t-0 bg-default px-4 py-6 sm:px-6 sm:py-8">
-        <div className="mb-7 flex gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-950 dark:border-blue-400/20 dark:bg-blue-400/10 dark:text-blue-100">
-          <Icon className="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-300" name="users" />
+        <div className="border-subtle bg-subtle text-emphasis mb-7 flex gap-3 rounded-xl border p-4">
+          <Icon className="text-subtle mt-0.5 h-5 w-5 shrink-0" name="users" />
           <div>
             <p className="text-sm font-medium">{t("organization_bootstrap_owner_only")}</p>
             <p className="mt-1 text-sm leading-6 opacity-75">{t("organization_bootstrap_team_unlock")}</p>

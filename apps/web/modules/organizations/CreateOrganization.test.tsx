@@ -158,6 +158,15 @@ describe("organization return paths", () => {
 });
 
 describe("CreateOrganization checkout", () => {
+  it("uses semantic tokens for the owner and Team information panel", () => {
+    const view = render(<CreateOrganization returnTo="/settings/organizations" />);
+    const ownerCopy = view.getByText("organization_bootstrap_owner_only");
+    const panel = ownerCopy.closest("div.border");
+
+    expect(panel).toHaveClass("border-subtle", "bg-subtle", "text-emphasis");
+    expect(view.container.innerHTML).not.toMatch(/(?:border|bg|text)-blue-/);
+  });
+
   it("binds the new organization before starting shared Team checkout", () => {
     render(<CreateOrganization checkoutInterval="YEAR" returnTo="/booking/book_123/logs" />);
 
