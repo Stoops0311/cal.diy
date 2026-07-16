@@ -4,6 +4,7 @@ import { Alert } from "@calcom/ui/components/alert";
 import { Button } from "@calcom/ui/components/button";
 import { Form, PasswordField, TextField } from "@calcom/ui/components/form";
 import SetupShell from "@calcom/web/components/apps/SetupShell";
+import { useCalendarIntegrationFetch } from "@calcom/web/components/apps/useCalendarIntegrationFetch";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -11,6 +12,7 @@ import { useForm } from "react-hook-form";
 export default function AppleCalendarSetup() {
   const { t } = useLocale();
   const router = useRouter();
+  const integrationFetch = useCalendarIntegrationFetch();
   const form = useForm({
     defaultValues: {
       username: "",
@@ -45,7 +47,7 @@ export default function AppleCalendarSetup() {
         handleSubmit={async (values) => {
           try {
             setErrorMessage("");
-            const res = await fetch("/api/integrations/applecalendar/add", {
+            const res = await integrationFetch("/api/integrations/applecalendar/add", {
               method: "POST",
               body: JSON.stringify(values),
               headers: {

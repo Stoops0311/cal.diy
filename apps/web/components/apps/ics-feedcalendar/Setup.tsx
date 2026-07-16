@@ -3,6 +3,7 @@ import { Alert } from "@calcom/ui/components/alert";
 import { Button } from "@calcom/ui/components/button";
 import { Form, TextField } from "@calcom/ui/components/form";
 import SetupShell from "@calcom/web/components/apps/SetupShell";
+import { useCalendarIntegrationFetch } from "@calcom/web/components/apps/useCalendarIntegrationFetch";
 import { PlusIcon, TrashIcon } from "@coss/ui/icons";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,6 +12,7 @@ import { useForm } from "react-hook-form";
 export default function ICSFeedSetup() {
   const { t } = useLocale();
   const router = useRouter();
+  const integrationFetch = useCalendarIntegrationFetch();
   const form = useForm({
     defaultValues: {},
   });
@@ -31,7 +33,7 @@ export default function ICSFeedSetup() {
         form={form}
         handleSubmit={async (_) => {
           setErrorMessage("");
-          const res = await fetch("/api/integrations/ics-feedcalendar/add", {
+          const res = await integrationFetch("/api/integrations/ics-feedcalendar/add", {
             method: "POST",
             body: JSON.stringify({ urls }),
             headers: {

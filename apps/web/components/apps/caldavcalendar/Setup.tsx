@@ -3,6 +3,7 @@ import { Alert } from "@calcom/ui/components/alert";
 import { Button } from "@calcom/ui/components/button";
 import { Form, TextField } from "@calcom/ui/components/form";
 import SetupShell from "@calcom/web/components/apps/SetupShell";
+import { useCalendarIntegrationFetch } from "@calcom/web/components/apps/useCalendarIntegrationFetch";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -10,6 +11,7 @@ import { useForm } from "react-hook-form";
 export default function CalDavCalendarSetup() {
   const { t } = useLocale();
   const router = useRouter();
+  const integrationFetch = useCalendarIntegrationFetch();
   const form = useForm({
     defaultValues: {
       url: "",
@@ -33,7 +35,7 @@ export default function CalDavCalendarSetup() {
         form={form}
         handleSubmit={async (values) => {
           setErrorMessage("");
-          const res = await fetch("/api/integrations/caldavcalendar/add", {
+          const res = await integrationFetch("/api/integrations/caldavcalendar/add", {
             method: "POST",
             body: JSON.stringify(values),
             headers: {

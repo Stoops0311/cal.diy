@@ -5,6 +5,7 @@ import { Alert } from "@calcom/ui/components/alert";
 import { Button } from "@calcom/ui/components/button";
 import { EmailField, Form, PasswordField, SelectField, TextField } from "@calcom/ui/components/form";
 import SetupShell from "@calcom/web/components/apps/SetupShell";
+import { useCalendarIntegrationFetch } from "@calcom/web/components/apps/useCalendarIntegrationFetch";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -34,6 +35,7 @@ const schema = z
 export default function ExchangeSetup() {
   const { t } = useLocale();
   const router = useRouter();
+  const integrationFetch = useCalendarIntegrationFetch();
   const [errorMessage, setErrorMessage] = useState("");
   const form = useForm<IFormData>({
     defaultValues: {
@@ -70,7 +72,7 @@ export default function ExchangeSetup() {
         form={form}
         handleSubmit={async (values) => {
           setErrorMessage("");
-          const res = await fetch("/api/integrations/exchangecalendar/add", {
+          const res = await integrationFetch("/api/integrations/exchangecalendar/add", {
             method: "POST",
             body: JSON.stringify(values),
             headers: {
