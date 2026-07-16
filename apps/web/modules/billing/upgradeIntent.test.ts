@@ -22,6 +22,12 @@ const invitationRequest = {
   resume: { kind: "openOrganizationInvitations" as const, organizationId: 41 },
 };
 const organizationSubject = { kind: "organization" as const, organizationId: 41 };
+const contextualRequest = {
+  capability: "canCreateWebhooks" as const,
+  requiredPlan: "PRO" as const,
+  returnTo: "/settings/developer/webhooks",
+  resume: { kind: "returnToFeature" as const },
+};
 
 describe("upgrade intent", () => {
   beforeEach(() => sessionStorage.clear());
@@ -70,6 +76,31 @@ describe("upgrade intent", () => {
     });
   });
 
+  it("round-trips a contextual gate with the no-payload resume", () => {
+    expect(saveUpgradeIntent(contextualRequest, { now: 1_000, subject: { kind: "user" } })).toBe(true);
+    expect(readUpgradeIntent(1_000)).toEqual({
+      ...contextualRequest,
+      createdAt: 1_000,
+      subject: { kind: "user" },
+      version: 1,
+    });
+  });
+
+  it("round-trips a Team contextual gate only with an organization subject", () => {
+    const teamRequest = { ...contextualRequest, requiredPlan: "TEAM" as const };
+    expect(saveUpgradeIntent(teamRequest, { now: 1_000, subject: organizationSubject })).toBe(true);
+    expect(readUpgradeIntent(1_000)).toMatchObject({ ...teamRequest, subject: organizationSubject });
+  });
+
+  it.each([
+    [{ ...contextualRequest }, undefined],
+    [{ ...contextualRequest }, organizationSubject],
+    [{ ...contextualRequest, requiredPlan: "TEAM" as const }, undefined],
+    [{ ...contextualRequest, requiredPlan: "TEAM" as const }, { kind: "user" as const }],
+  ])("rejects a contextual plan without its exact billing subject %#", (intent, subject) => {
+    expect(saveUpgradeIntent(intent, { now: 1_000, subject })).toBe(false);
+  });
+
   it("expires an organization invitation intent at exactly thirty minutes", () => {
     saveUpgradeIntent(invitationRequest, { now: 1_000, subject: organizationSubject });
     expect(readUpgradeIntent(1_000 + 30 * 60 * 1_000 - 1)).not.toBeNull();
@@ -80,6 +111,7 @@ describe("upgrade intent", () => {
     [{ ...invitationRequest, requiredPlan: "PRO" as const }, organizationSubject],
     [{ ...invitationRequest, capability: "bookingAudit" as const }, organizationSubject],
     [{ ...request, capability: "organizationInvitations" as const }, organizationSubject],
+    [{ ...invitationRequest, resume: { kind: "returnToFeature" as const } }, organizationSubject],
     [invitationRequest, undefined],
     [invitationRequest, { kind: "user" as const }],
     [invitationRequest, { ...organizationSubject, organizationId: 42 }],
@@ -137,6 +169,16 @@ describe("upgrade intent", () => {
     saveUpgradeIntent(request, { now });
     bindUpgradeIntentToOrganization(41);
     expect(readUpgradeIntent(now)?.subject).toEqual({ kind: "organization", organizationId: 41 });
+  });
+
+  it("does not bind a generic contextual gate to a newly created organization", () => {
+    const now = Date.now();
+    saveUpgradeIntent(
+      { ...contextualRequest, requiredPlan: "TEAM" },
+      { now, subject: { kind: "organization", organizationId: 42 } }
+    );
+    bindUpgradeIntentToOrganization(41);
+    expect(readUpgradeIntent(now)?.subject).toEqual({ kind: "organization", organizationId: 42 });
   });
 
   it("adds a small success marker without losing query or hash", () => {

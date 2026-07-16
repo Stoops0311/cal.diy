@@ -20,7 +20,9 @@ import { usePaidPlanCheckout } from "./usePaidPlanCheckout";
 
 export type OpenUpgradePromptInput = {
   capability: UpgradeCapability;
+  description?: string;
   featureName: string;
+  organizationId?: number;
   requiredPlan: "PRO" | "TEAM";
   returnTo: string;
   resume: UpgradeResume;
@@ -36,6 +38,13 @@ const UpgradePromptContext = createContext<UpgradePromptContextValue>({
   },
 });
 
+function getRequestedOrganizationId(input: OpenUpgradePromptInput): number | undefined {
+  if (input.capability === "organizationInvitations" && input.resume.kind === "openOrganizationInvitations") {
+    return input.resume.organizationId;
+  }
+  return input.organizationId;
+}
+
 export function useUpgradePrompt(): UpgradePromptContextValue {
   return useContext(UpgradePromptContext);
 }
@@ -46,8 +55,12 @@ export function UpgradePromptProvider({ children }: { children: React.ReactNode 
   const [prompt, setPrompt] = useState<OpenUpgradePromptInput | null>(null);
   const promptTriggerRef = useRef<HTMLElement | null>(null);
   const organization = session?.user.org;
-  const organizationId =
+  const manageableOrganizationId =
     organization?.role === "OWNER" || organization?.role === "ADMIN" ? organization.id : undefined;
+  const organizationId =
+    prompt?.requiredPlan === "TEAM" && prompt.capability !== "bookingAudit"
+      ? getRequestedOrganizationId(prompt)
+      : manageableOrganizationId;
   const paidCheckout = usePaidPlanCheckout({
     organizationId,
     returnTo: prompt?.returnTo ?? "/pricing",
@@ -70,10 +83,21 @@ export function UpgradePromptProvider({ children }: { children: React.ReactNode 
       );
     },
   });
-  const openUpgradePrompt = useCallback((input: OpenUpgradePromptInput) => {
-    if (document.activeElement instanceof HTMLElement) promptTriggerRef.current = document.activeElement;
-    setPrompt(input);
-  }, []);
+  const openUpgradePrompt = useCallback(
+    (input: OpenUpgradePromptInput) => {
+      if (
+        input.requiredPlan === "TEAM" &&
+        input.capability !== "bookingAudit" &&
+        getRequestedOrganizationId(input) !== manageableOrganizationId
+      ) {
+        return;
+      }
+      if (document.activeElement instanceof HTMLElement) promptTriggerRef.current = document.activeElement;
+      setPrompt(input);
+    },
+    [manageableOrganizationId]
+  );
+  const planName = prompt ? t(prompt.requiredPlan === "TEAM" ? "billing_plan_team" : "billing_plan_pro") : "";
 
   return (
     <UpgradePromptContext.Provider value={{ openUpgradePrompt }}>
@@ -91,10 +115,11 @@ export function UpgradePromptProvider({ children }: { children: React.ReactNode 
               {prompt?.requiredPlan === "TEAM" ? t("billing_plan_team") : t("billing_plan_pro")}
             </p>
             <SheetTitle>
-              {prompt?.capability === "bookingAudit" ? t("billing_upgrade_booking_audit_title") : ""}
+              {prompt ? t("billing_upgrade_title", { feature: prompt.featureName, plan: planName }) : ""}
             </SheetTitle>
             <SheetDescription>
-              {prompt?.capability === "bookingAudit" ? t("billing_upgrade_booking_audit_description") : ""}
+              {prompt?.description ??
+                (prompt?.capability === "bookingAudit" ? t("billing_upgrade_booking_audit_description") : "")}
             </SheetDescription>
           </SheetHeader>
           <SheetBody>

@@ -1,9 +1,27 @@
 import { sessionStorage } from "@calcom/lib/webstorage";
 
-type UpgradeCapability = "bookingAudit" | "organizationInvitations";
+const contextualCapabilities = [
+  "activePersonalEventTypes",
+  "canCreateApiKeys",
+  "canCreateTeamEvents",
+  "canCreateWebhooks",
+  "canRemoveBranding",
+  "canUseAdvancedEvents",
+  "canUseBookingPayments",
+  "canUseCollectiveScheduling",
+  "canUseCustomBookingFields",
+  "canUseCustomRedirects",
+  "canUsePrivateLinks",
+  "canUseRecurringEvents",
+  "canUseRoundRobinScheduling",
+  "connectedCalendars",
+] as const;
+type ContextualUpgradeCapability = (typeof contextualCapabilities)[number];
+type UpgradeCapability = "bookingAudit" | "organizationInvitations" | ContextualUpgradeCapability;
 type UpgradeResume =
   | { kind: "openBookingAudit"; bookingUid: string }
-  | { kind: "openOrganizationInvitations"; organizationId: number };
+  | { kind: "openOrganizationInvitations"; organizationId: number }
+  | { kind: "returnToFeature" };
 type UpgradeBillingSubject = { kind: "user" } | { kind: "organization"; organizationId: number };
 type UpgradeIntentRequest = {
   capability: UpgradeCapability;
@@ -53,6 +71,9 @@ function normalizeRelativePath(value: string): string | null {
 
 function parseResume(value: unknown): UpgradeResume | null {
   if (!isRecord(value)) return null;
+  if (value.kind === "returnToFeature" && hasExactKeys(value, ["kind"])) {
+    return { kind: "returnToFeature" };
+  }
   if (value.kind === "openBookingAudit" && hasExactKeys(value, ["kind", "bookingUid"])) {
     if (
       typeof value.bookingUid !== "string" ||
@@ -98,13 +119,19 @@ function intentPartsMatch(
   if (capability === "bookingAudit") {
     return resume.kind === "openBookingAudit" && (requiredPlan === "PRO" || requiredPlan === "TEAM");
   }
-  return (
-    capability === "organizationInvitations" &&
-    requiredPlan === "TEAM" &&
-    resume.kind === "openOrganizationInvitations" &&
-    subject?.kind === "organization" &&
-    subject.organizationId === resume.organizationId
-  );
+  if (capability === "organizationInvitations") {
+    return (
+      requiredPlan === "TEAM" &&
+      resume.kind === "openOrganizationInvitations" &&
+      subject?.kind === "organization" &&
+      subject.organizationId === resume.organizationId
+    );
+  }
+  if (!contextualCapabilities.some((candidate) => candidate === capability)) return false;
+  if (resume.kind !== "returnToFeature") return false;
+  if (requiredPlan === "PRO") return subject?.kind === "user";
+  if (requiredPlan === "TEAM") return subject?.kind === "organization";
+  return false;
 }
 
 function isRequiredPlan(value: unknown): value is "PRO" | "TEAM" {
@@ -221,6 +248,7 @@ function addUpgradeSuccessMarker(returnTo: string): string {
 }
 
 export type {
+  ContextualUpgradeCapability,
   UpgradeBillingSubject,
   UpgradeCapability,
   UpgradeIntentRequest,

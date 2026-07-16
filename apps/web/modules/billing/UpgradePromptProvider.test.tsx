@@ -1,7 +1,8 @@
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { PaidSelection } from "./PlanSelector";
 import type { CheckoutContext } from "./usePaidPlanCheckout";
 
 type CheckoutOptions = {
@@ -25,15 +26,19 @@ vi.mock("@calcom/features/auth/lib/useCurrentSession", () => ({
 
 vi.mock("@calcom/lib/hooks/useLocale", () => ({
   useLocale: () => ({
-    t: (key: string) =>
-      ({
-        billing_plan_team: "TEAM",
-        billing_upgrade_booking_audit_description:
-          "Keep the decisions behind every booking visible to the people responsible for it.",
-        billing_upgrade_booking_audit_title: "Booking history belongs in Team.",
-        billing_upgrade_not_now: "Not now",
-        close: "Close",
-      })[key] ?? key,
+    t: (key: string, values?: { feature?: string; plan?: string }) =>
+      key === "billing_upgrade_title"
+        ? `${values?.feature} belongs in ${values?.plan}.`
+        : ({
+            billing_plan_team: "Team",
+            billing_plan_pro: "Pro",
+            billing_upgrade_booking_audit_description:
+              "Keep the decisions behind every booking visible to the people responsible for it.",
+            billing_upgrade_choose_pro: "Choose Pro",
+            billing_upgrade_choose_team: "Bring in the team",
+            billing_upgrade_not_now: "Not now",
+            close: "Close",
+          }[key] ?? key),
   }),
 }));
 
@@ -44,8 +49,11 @@ vi.mock("./usePaidPlanCheckout", () => ({
     mocks.checkoutOptions = options;
     return {
       pendingPlan: undefined,
-      startCheckout: (selection: { interval: "YEAR"; plan: "TEAM" }) => {
-        const context = { selection, organizationId: options.organizationId };
+      startCheckout: (selection: PaidSelection) => {
+        const context: CheckoutContext = { selection };
+        if (selection.plan === "TEAM" && options.organizationId !== undefined) {
+          context.organizationId = options.organizationId;
+        }
         options.onBeforeNavigate?.(context);
         mocks.startCheckout(selection);
       },
@@ -54,26 +62,47 @@ vi.mock("./usePaidPlanCheckout", () => ({
 }));
 
 import { BookingHistoryUpgradePrompt } from "./BookingHistoryUpgradePrompt";
-import { UpgradePromptProvider, useUpgradePrompt } from "./UpgradePromptProvider";
+import {
+  type OpenUpgradePromptInput,
+  UpgradePromptProvider,
+  useUpgradePrompt,
+} from "./UpgradePromptProvider";
 
 const prompt = {
   capability: "bookingAudit" as const,
+  description: "Keep the decisions behind every booking visible to the people responsible for it.",
   featureName: "Booking history",
   requiredPlan: "TEAM" as const,
   returnTo: "/booking/book_123/logs",
   resume: { kind: "openBookingAudit" as const, bookingUid: "book_123" },
 };
 
-function Harness(): React.ReactElement {
+function Harness({ input = prompt }: { input?: OpenUpgradePromptInput }): React.ReactElement {
   const { openUpgradePrompt } = useUpgradePrompt();
   return (
-    <button onClick={() => openUpgradePrompt(prompt)} type="button">
+    <button onClick={() => openUpgradePrompt(input)} type="button">
       open
     </button>
   );
 }
 
+function openPrompt(input: OpenUpgradePromptInput = prompt) {
+  const view = render(
+    <UpgradePromptProvider>
+      <Harness input={input} />
+    </UpgradePromptProvider>
+  );
+  fireEvent.click(view.getByRole("button", { name: "open" }));
+  return view;
+}
+
 describe("UpgradePromptProvider", () => {
+  beforeEach(() => {
+    mocks.session = { user: { org: { id: 41, role: "OWNER" } } };
+    mocks.saveUpgradeIntent.mockClear();
+    mocks.startCheckout.mockClear();
+  });
+
   it("presents only the required plan with exact Convenio copy and dismisses without upgrading", () => {
     const view = render(
       <UpgradePromptProvider>
@@ -87,10 +116,10 @@ describe("UpgradePromptProvider", () => {
     expect(
       view.getByText("Keep the decisions behind every booking visible to the people responsible for it.")
     ).toBeInTheDocument();
-    expect(view.getByRole("heading", { name: "TEAM" })).toBeInTheDocument();
-    expect(view.queryByRole("heading", { name: "billing_plan_pro" })).not.toBeInTheDocument();
+    expect(view.getByRole("heading", { name: "Team" })).toBeInTheDocument();
+    expect(view.queryByRole("heading", { name: "Pro" })).not.toBeInTheDocument();
     expect(view.queryByRole("button", { name: "billing_view_all_plans" })).not.toBeInTheDocument();
-    expect(view.getByRole("button", { name: "billing_upgrade_choose_team" })).toBeInTheDocument();
+    expect(view.getByRole("button", { name: "Bring in the team" })).toBeInTheDocument();
 
     fireEvent.click(view.getByRole("button", { name: "Not now" }));
     expect(view.queryByText("Booking history belongs in Team.")).not.toBeInTheDocument();
@@ -100,7 +129,6 @@ describe("UpgradePromptProvider", () => {
   it.each(["OWNER", "ADMIN"] as const)("saves the organization intent before checkout for an %s", (role) => {
     mocks.session = { user: { org: { id: 41, role } } };
     mocks.saveUpgradeIntent.mockClear();
-    mocks.startCheckout.mockClear();
     const view = render(
       <UpgradePromptProvider>
         <Harness />
@@ -108,7 +136,7 @@ describe("UpgradePromptProvider", () => {
     );
 
     fireEvent.click(view.getByRole("button", { name: "open" }));
-    fireEvent.click(view.getByRole("button", { name: "billing_upgrade_choose_team" }));
+    fireEvent.click(view.getByRole("button", { name: "Bring in the team" }));
 
     expect(mocks.checkoutOptions?.organizationId).toBe(41);
     expect(mocks.saveUpgradeIntent).toHaveBeenCalledWith(
@@ -127,7 +155,6 @@ describe("UpgradePromptProvider", () => {
 
   it("does not treat an ordinary member's organization as manageable", () => {
     mocks.session = { user: { org: { id: 41, role: "MEMBER" } } };
-    mocks.saveUpgradeIntent.mockClear();
     const view = render(
       <UpgradePromptProvider>
         <Harness />
@@ -135,10 +162,84 @@ describe("UpgradePromptProvider", () => {
     );
 
     fireEvent.click(view.getByRole("button", { name: "open" }));
-    fireEvent.click(view.getByRole("button", { name: "billing_upgrade_choose_team" }));
+    fireEvent.click(view.getByRole("button", { name: "Bring in the team" }));
 
     expect(mocks.checkoutOptions?.organizationId).toBeUndefined();
     expect(mocks.saveUpgradeIntent).toHaveBeenCalledWith(expect.any(Object), { subject: undefined });
+  });
+
+  it("renders approved Pro copy and leaves the chevron to PlanSelector", () => {
+    const input = {
+      capability: "canCreateApiKeys" as const,
+      description: "Let your systems act on the scheduling record.",
+      featureName: "API keys",
+      requiredPlan: "PRO" as const,
+      resume: { kind: "returnToFeature" as const },
+      returnTo: "/settings/developer/api-keys",
+    };
+    const view = openPrompt(input);
+
+    expect(view.getByText("API keys belongs in Pro.")).toBeInTheDocument();
+    expect(view.getByText(input.description)).toBeInTheDocument();
+    const cta = view.getByRole("button", { name: "Choose Pro" });
+    expect(cta).toHaveTextContent("Choose Pro›");
+    expect("Choose Pro").not.toContain("›");
+    expect(mocks.checkoutOptions?.returnTo).toBe(input.returnTo);
+    fireEvent.click(cta);
+    expect(mocks.saveUpgradeIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ capability: "canCreateApiKeys", resume: { kind: "returnToFeature" } }),
+      { subject: { kind: "user" } }
+    );
+  });
+
+  it("accepts only the manageable contextual organization as the Team subject", () => {
+    const input: OpenUpgradePromptInput = {
+      capability: "canCreateWebhooks",
+      description: "Send confirmed bookings into the tools that act on them.",
+      featureName: "Webhooks",
+      organizationId: 77,
+      requiredPlan: "TEAM",
+      resume: { kind: "returnToFeature" },
+      returnTo: "/settings/developer/webhooks",
+    };
+    const mismatched = openPrompt(input);
+    expect(mismatched.queryByRole("dialog")).not.toBeInTheDocument();
+    mismatched.unmount();
+
+    mocks.session = { user: { org: { id: 77, role: "ADMIN" } } };
+    const view = openPrompt(input);
+    fireEvent.click(view.getByRole("button", { name: "Bring in the team" }));
+
+    expect(mocks.checkoutOptions?.organizationId).toBe(77);
+    expect(mocks.saveUpgradeIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ capability: input.capability }),
+      {
+        subject: { kind: "organization", organizationId: 77 },
+      }
+    );
+  });
+
+  it("preserves the exact organization invitation intent before Team checkout", () => {
+    const input = {
+      capability: "organizationInvitations" as const,
+      description: "Bring people, roles, and shared event types into one place.",
+      featureName: "Team invitations",
+      requiredPlan: "TEAM" as const,
+      resume: { kind: "openOrganizationInvitations" as const, organizationId: 41 },
+      returnTo: "/settings/organizations/members?organizationId=41",
+    };
+    const view = openPrompt(input);
+    expect(view.getByText("Team invitations belongs in Team.")).toBeInTheDocument();
+    fireEvent.click(view.getByRole("button", { name: "Bring in the team" }));
+    expect(mocks.saveUpgradeIntent).toHaveBeenCalledWith(
+      {
+        capability: "organizationInvitations",
+        requiredPlan: "TEAM",
+        resume: { kind: "openOrganizationInvitations", organizationId: 41 },
+        returnTo: input.returnTo,
+      },
+      { subject: { kind: "organization", organizationId: 41 } }
+    );
   });
 
   it("closes on Escape and restores focus to the opener", async () => {
@@ -173,7 +274,7 @@ describe("UpgradePromptProvider", () => {
     const controls = [
       view.getByRole("button", { name: "billing_interval_monthly" }),
       view.getByRole("button", { name: "billing_interval_yearly" }),
-      view.getByRole("button", { name: "billing_upgrade_choose_team" }),
+      view.getByRole("button", { name: "Bring in the team" }),
       view.getByRole("button", { name: "Not now" }),
       view.getByRole("button", { name: "Close" }),
     ];
