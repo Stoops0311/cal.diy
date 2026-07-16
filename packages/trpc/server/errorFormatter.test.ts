@@ -1,8 +1,8 @@
+import { ErrorCode } from "@calcom/lib/errorCodes";
+import { ErrorWithCode } from "@calcom/lib/errors";
+import { TRPCError } from "@trpc/server";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-
-import { TRPCError } from "@trpc/server";
-
 import { errorFormatter } from "./errorFormatter";
 
 describe("errorFormatter", () => {
@@ -60,13 +60,6 @@ describe("errorFormatter", () => {
   });
 
   it("should handle nested ZodError", () => {
-    const schema = z.object({
-      user: z.object({
-        name: z.string(),
-        age: z.number().min(18),
-      }),
-    });
-
     const zodError = new z.ZodError([
       {
         path: ["user", "age"],
@@ -230,5 +223,84 @@ describe("errorFormatter", () => {
         },
       },
     });
+  });
+
+  it("should expose an allowlisted capability denial", () => {
+    const error = new TRPCError({
+      code: "FORBIDDEN",
+      cause: new ErrorWithCode(ErrorCode.EntitlementRequired, "Paid plan required", {
+        capability: "canCreateApiKeys",
+        effectivePlan: "FREE",
+      }),
+    });
+
+    const result = errorFormatter({
+      shape: baseShape,
+      error,
+      type: "mutation",
+      path: "viewer.apiKeys.create",
+      input: undefined,
+      ctx: undefined,
+    });
+
+    expect(result.data.entitlement).toEqual({
+      kind: "capability",
+      capability: "canCreateApiKeys",
+      effectivePlan: "FREE",
+    });
+  });
+
+  it("should expose an allowlisted limit denial", () => {
+    const error = new TRPCError({
+      code: "FORBIDDEN",
+      cause: new ErrorWithCode(ErrorCode.EntitlementLimitExceeded, "Limit reached", {
+        currentCount: 1,
+        effectivePlan: "FREE",
+        limit: 1,
+        resource: "connectedCalendars",
+      }),
+    });
+
+    const result = errorFormatter({
+      shape: baseShape,
+      error,
+      type: "mutation",
+      path: "viewer.apps.create",
+      input: undefined,
+      ctx: undefined,
+    });
+
+    expect(result.data.entitlement).toEqual({
+      kind: "limit",
+      currentCount: 1,
+      effectivePlan: "FREE",
+      limit: 1,
+      resource: "connectedCalendars",
+    });
+  });
+
+  it.each([
+    new TRPCError({ code: "FORBIDDEN", message: "Paid plan required" }),
+    new TRPCError({ code: "UNAUTHORIZED", message: "Paid plan required" }),
+    new TRPCError({
+      code: "FORBIDDEN",
+      cause: new ErrorWithCode(ErrorCode.EntitlementRequired, "Paid plan required", {
+        capability: "canCreateApiKeys",
+        effectivePlan: "FREE",
+        provider: "polar",
+      }),
+    }),
+    new TRPCError({ code: "INTERNAL_SERVER_ERROR", cause: new Error("Paid plan required") }),
+  ])("should not expose entitlement data for generic or malformed errors %#", (error) => {
+    const result = errorFormatter({
+      shape: baseShape,
+      error,
+      type: "mutation",
+      path: "test",
+      input: undefined,
+      ctx: undefined,
+    });
+
+    expect(result.data).not.toHaveProperty("entitlement");
   });
 });

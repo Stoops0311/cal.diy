@@ -1,6 +1,6 @@
-import { z } from "zod";
-
+import { getEntitlementDenialFromError } from "@calcom/features/billing/lib/entitlementDenial";
 import type { TRPCError } from "@trpc/server";
+import { z } from "zod";
 
 type ErrorShape = {
   message: string;
@@ -35,5 +35,13 @@ export function errorFormatter({ shape, error }: ErrorFormatterOptions): ErrorSh
       },
     };
   }
-  return shape;
+
+  const entitlement = getEntitlementDenialFromError(error.cause);
+  return {
+    ...shape,
+    data: {
+      ...shape.data,
+      ...(entitlement ? { entitlement } : {}),
+    },
+  };
 }
