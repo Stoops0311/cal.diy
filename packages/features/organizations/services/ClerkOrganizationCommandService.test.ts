@@ -24,7 +24,33 @@ vi.mock("@calcom/features/billing/services/PolarSeatService", () => ({
 import {
   type ClerkOrganizationCommandDependencies,
   ClerkOrganizationCommandService,
+  listAllPendingOrganizationInvitations,
+  mapPendingOrganizationInvitation,
 } from "./ClerkOrganizationCommandService";
+
+function providerInvitations(count = 12) {
+  return Array.from({ length: count }, (_, index) => ({
+    createdAt: Date.UTC(2026, 6, 16, 12, index),
+    emailAddress: `pending-${index + 1}@example.com`,
+    id: `invitation_${index + 1}`,
+    privateMetadata: { providerOnly: true },
+    role: "org:member" as const,
+    status: "pending" as const,
+    url: `https://clerk.test/invitations/${index + 1}`,
+  }));
+}
+
+function pagedProvider(rows = providerInvitations()) {
+  const fetchPage = vi.fn(async ({ limit, offset }: { limit: number; offset: number }) => ({
+    data: rows.slice(offset, offset + Math.min(limit, 10)),
+    totalCount: rows.length,
+  }));
+  return {
+    fetchPage,
+    list: () => listAllPendingOrganizationInvitations("org_clerk", fetchPage),
+    rows,
+  };
+}
 
 function freeEntitlements(acceptedOrganizationMembers = 1) {
   return {
@@ -228,6 +254,90 @@ describe("ClerkOrganizationCommandService", () => {
       ctx.pendingInvitation,
     ]);
     expect(ctx.clerk.listPendingInvitations).toHaveBeenCalledWith("org_clerk");
+  });
+
+  it("maps raw Clerk invitations to exactly the safe projection", () => {
+    const [raw] = providerInvitations(1);
+    if (!raw) throw new Error("Expected a provider invitation");
+
+    const mapped = mapPendingOrganizationInvitation(raw);
+
+    expect(mapped).toEqual({
+      createdAt: new Date("2026-07-16T12:00:00.000Z"),
+      email: "pending-1@example.com",
+      id: "invitation_1",
+      role: "org:member",
+    });
+    expect(Object.keys(mapped).sort()).toEqual(["createdAt", "email", "id", "role"]);
+  });
+
+  it("loads every provider page until totalCount is exhausted", async () => {
+    const ctx = setup();
+    const provider = pagedProvider();
+    ctx.clerk.listPendingInvitations.mockImplementation(provider.list);
+    const service = new ClerkOrganizationCommandService(ctx.dependencies);
+
+    await expect(
+      service.listPendingInvitations({ actorUserId: 7, organizationId: 41 })
+    ).resolves.toHaveLength(12);
+    expect(provider.fetchPage).toHaveBeenNthCalledWith(1, {
+      limit: 500,
+      offset: 0,
+      organizationId: "org_clerk",
+      status: ["pending"],
+    });
+    expect(provider.fetchPage).toHaveBeenNthCalledWith(2, {
+      limit: 500,
+      offset: 10,
+      organizationId: "org_clerk",
+      status: ["pending"],
+    });
+  });
+
+  it("detects a duplicate email on a later provider page", async () => {
+    const ctx = setup();
+    const provider = pagedProvider();
+    ctx.clerk.listPendingInvitations.mockImplementation(provider.list);
+    const service = new ClerkOrganizationCommandService(ctx.dependencies);
+
+    await expect(
+      service.inviteMember({
+        actorUserId: 7,
+        email: "PENDING-12@EXAMPLE.COM",
+        organizationId: 41,
+        role: "org:member",
+      })
+    ).rejects.toMatchObject({ code: ErrorCode.ClerkOrganizationInvitationDuplicate });
+    expect(provider.fetchPage).toHaveBeenCalledTimes(2);
+    expect(ctx.clerk.inviteMember).not.toHaveBeenCalled();
+  });
+
+  it("revokes an invitation found on a later provider page", async () => {
+    const ctx = setup();
+    const provider = pagedProvider();
+    ctx.clerk.listPendingInvitations.mockImplementation(provider.list);
+    const service = new ClerkOrganizationCommandService(ctx.dependencies);
+
+    await service.revokeInvitation({ actorUserId: 7, invitationId: "invitation_12", organizationId: 41 });
+
+    expect(provider.fetchPage).toHaveBeenCalledTimes(2);
+    expect(ctx.clerk.revokeInvitation).toHaveBeenCalledWith(
+      expect.objectContaining({ invitationId: "invitation_12" })
+    );
+  });
+
+  it("resends an invitation found on a later provider page", async () => {
+    const ctx = setup();
+    const provider = pagedProvider();
+    ctx.clerk.listPendingInvitations.mockImplementation(provider.list);
+    const service = new ClerkOrganizationCommandService(ctx.dependencies);
+
+    await service.resendInvitation({ actorUserId: 7, invitationId: "invitation_12", organizationId: 41 });
+
+    expect(provider.fetchPage).toHaveBeenCalledTimes(2);
+    expect(ctx.clerk.inviteMember).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "pending-12@example.com", role: "org:member" })
+    );
   });
 
   it("denies pending invitation access to ordinary members", async () => {

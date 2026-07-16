@@ -25,6 +25,23 @@ type PendingOrganizationInvitation = {
   id: string;
   role: ClerkRole;
 };
+type RawPendingOrganizationInvitation = {
+  createdAt: number;
+  emailAddress: string;
+  id: string;
+  role: string;
+};
+type PendingInvitationPage = {
+  data: RawPendingOrganizationInvitation[];
+  totalCount: number;
+};
+type FetchPendingInvitationPage = (input: {
+  limit: number;
+  offset: number;
+  organizationId: string;
+  status: ["pending"];
+}) => Promise<PendingInvitationPage>;
+const INVITATION_PAGE_LIMIT = 500;
 type OrganizationAccess = {
   actorRole: MembershipRole;
   archivedAt: Date | null;
@@ -74,6 +91,38 @@ type ClerkOrganizationCommandDependencies = {
   seatBilling: OrganizationSeatBillingPort;
 };
 
+function mapPendingOrganizationInvitation(
+  invitation: RawPendingOrganizationInvitation
+): PendingOrganizationInvitation {
+  if (invitation.role !== "org:admin" && invitation.role !== "org:member") throw providerFailure();
+  return {
+    createdAt: new Date(invitation.createdAt),
+    email: invitation.emailAddress,
+    id: invitation.id,
+    role: invitation.role,
+  };
+}
+
+async function listAllPendingOrganizationInvitations(
+  clerkOrganizationId: string,
+  fetchPage: FetchPendingInvitationPage
+): Promise<PendingOrganizationInvitation[]> {
+  const invitations: PendingOrganizationInvitation[] = [];
+  let offset = 0;
+  while (true) {
+    const page = await fetchPage({
+      limit: INVITATION_PAGE_LIMIT,
+      offset,
+      organizationId: clerkOrganizationId,
+      status: ["pending"],
+    });
+    invitations.push(...page.data.map(mapPendingOrganizationInvitation));
+    offset += page.data.length;
+    if (offset >= page.totalCount) return invitations;
+    if (page.data.length === 0) throw providerFailure();
+  }
+}
+
 class ClerkCommandGateway implements ClerkOrganizationCommandGateway {
   async createOrganization(input: {
     creatorClerkUserId: string;
@@ -104,19 +153,10 @@ class ClerkCommandGateway implements ClerkOrganizationCommandGateway {
   }
 
   async listPendingInvitations(clerkOrganizationId: string): Promise<PendingOrganizationInvitation[]> {
-    const response = await getClerkBackendClient().organizations.getOrganizationInvitationList({
-      organizationId: clerkOrganizationId,
-      status: ["pending"],
-    });
-    return response.data.map((invitation) => {
-      if (invitation.role !== "org:admin" && invitation.role !== "org:member") throw providerFailure();
-      return {
-        createdAt: new Date(invitation.createdAt),
-        email: invitation.emailAddress,
-        id: invitation.id,
-        role: invitation.role,
-      };
-    });
+    const organizations = getClerkBackendClient().organizations;
+    return listAllPendingOrganizationInvitations(clerkOrganizationId, (input) =>
+      organizations.getOrganizationInvitationList(input)
+    );
   }
 
   async revokeInvitation(input: {
@@ -542,4 +582,5 @@ class ClerkOrganizationCommandService {
 }
 
 export { ClerkOrganizationCommandService };
+export { listAllPendingOrganizationInvitations, mapPendingOrganizationInvitation };
 export type { ClerkOrganizationCommandDependencies, PendingOrganizationInvitation };
