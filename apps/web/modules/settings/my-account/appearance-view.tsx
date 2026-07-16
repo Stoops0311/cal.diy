@@ -22,7 +22,8 @@ import { revalidateHasTeamPlan } from "app/cache/membership";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import type { z } from "zod";
-import { BookerLayoutSelector } from "~/settings/components/BookerLayoutSelector";
+import { useEntitlementUpgrade } from "../../billing/useEntitlementUpgrade";
+import { BookerLayoutSelector } from "../components/BookerLayoutSelector";
 
 const useBrandColors = (
   currentTheme: string | null,
@@ -54,6 +55,7 @@ const AppearanceView = ({
   const { t } = useLocale();
   const utils = trpc.useUtils();
   const session = useSession();
+  const { openFromError } = useEntitlementUpgrade();
   const isApartOfOrganization = session.data?.user.org?.id;
   const [darkModeError, setDarkModeError] = useState(false);
   const [lightModeError, setLightModeError] = useState(false);
@@ -135,7 +137,11 @@ const AppearanceView = ({
       resetUserThemeReset({ theme: data.theme });
       resetUserAppThemeReset({ appTheme: data.appTheme });
     },
-    onError: (error) => {
+    onError: (error, variables) => {
+      if (typeof variables.hideBranding === "boolean") {
+        setHideBrandingValue(!variables.hideBranding);
+        if (openFromError(error, { returnTo: "/settings/my-account/appearance" })) return;
+      }
       if (error.message) {
         showToast(error.message, "error");
       } else {
@@ -389,7 +395,7 @@ const AppearanceView = ({
           <SettingsToggle
             toggleSwitchAtTheEnd={true}
             title={t("disable_cal_branding", { appName: APP_NAME })}
-            disabled={!hasPaidPlan || mutation?.isPending}
+            disabled={mutation?.isPending}
             description={t("removes_cal_branding", { appName: APP_NAME })}
             checked={hasPaidPlan ? hideBrandingValue : false}
             Badge={undefined}
