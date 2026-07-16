@@ -11,6 +11,7 @@ import { Button } from "@calcom/ui/components/button";
 import { DialogClose, DialogContent, DialogFooter } from "@calcom/ui/components/dialog";
 import { showToast } from "@calcom/ui/components/toast";
 import {
+  buildCreateEventTypeUpgradeReturn,
   resolveEventTypeBillingOrganizationId,
   useCreateEventType,
 } from "@calcom/web/modules/event-types/hooks/useCreateEventType";
@@ -119,14 +120,13 @@ export function CreateEventTypeDialog({ profileOptions }: { profileOptions: Prof
     );
   };
 
-  const query = searchParams?.toString();
   const { form, createMutation, isManagedEventType } = useCreateEventType(
     onSuccessMutation,
     onErrorMutation,
     {
       ...(teamId ? { teamId } : {}),
       ...(organizationId ? { organizationId } : {}),
-      returnTo: query ? `${pathname ?? "/event-types"}?${query}` : (pathname ?? "/event-types"),
+      returnTo: buildCreateEventTypeUpgradeReturn(pathname, searchParams?.toString()),
     }
   );
 

@@ -44,7 +44,11 @@ vi.mock("../../billing/UpgradePromptProvider", () => ({
   useUpgradePrompt: () => ({ openUpgradePrompt: mocks.openUpgradePrompt }),
 }));
 
-import { resolveEventTypeBillingOrganizationId, useCreateEventType } from "./useCreateEventType";
+import {
+  buildCreateEventTypeUpgradeReturn,
+  resolveEventTypeBillingOrganizationId,
+  useCreateEventType,
+} from "./useCreateEventType";
 
 const structuredCases = [
   { capability: "canCreateTeamEvents", effectivePlan: "FREE", kind: "capability" },
@@ -204,5 +208,14 @@ describe("useCreateEventType entitlement failures", () => {
       resolveEventTypeBillingOrganizationId({ manageableOrganizationId: 41, teamId: 7 })
     ).toBeUndefined();
     expect(resolveEventTypeBillingOrganizationId({ teamId: 41 })).toBeUndefined();
+  });
+
+  it("keeps only safe dialog routing in the checkout return", () => {
+    expect(
+      buildCreateEventTypeUpgradeReturn(
+        "/event-types",
+        "dialog=new&eventPage=engineering&teamId=7&type=ROUND_ROBIN&title=Private+planning&slug=private-planning&length=60&description=Internal+notes&locations=%5B%7B%22locationAddress%22%3A%22Home%22%7D%5D&unknown=value"
+      )
+    ).toBe("/event-types?dialog=new&eventPage=engineering&teamId=7&type=ROUND_ROBIN");
   });
 });

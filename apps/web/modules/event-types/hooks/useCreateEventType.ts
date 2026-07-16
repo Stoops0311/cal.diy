@@ -6,6 +6,25 @@ import { trpc } from "@calcom/trpc/react";
 import type { EntitlementUpgradeContext } from "../../billing/useEntitlementUpgrade";
 import { useEntitlementUpgrade } from "../../billing/useEntitlementUpgrade";
 
+const createEventTypeReturnParams = ["dialog", "eventPage", "teamId", "type"] as const;
+
+export function buildCreateEventTypeUpgradeReturn(
+  pathname: string | null,
+  searchParams: string | null | undefined
+): string {
+  const safeSearchParams = new URLSearchParams();
+  const currentSearchParams = new URLSearchParams(searchParams ?? "");
+
+  for (const key of createEventTypeReturnParams) {
+    const value = currentSearchParams.get(key);
+    if (value !== null) safeSearchParams.set(key, value);
+  }
+
+  const query = safeSearchParams.toString();
+  const returnPath = pathname ?? "/event-types";
+  return query ? `${returnPath}?${query}` : returnPath;
+}
+
 export function resolveEventTypeBillingOrganizationId({
   manageableOrganizationId,
   parentOrganizationId,
