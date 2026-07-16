@@ -1320,6 +1320,7 @@
   "billing_status_widget_unavailable": "Plan status is quiet for a moment. Your calendar is still working.",
   "billing_status_widget_retry": "Check again",
   "billing_manage_plan": "Manage plan",
+  "billing_invite_team": "Invite team",
   "billing_free_outcome": "For one clear way to be booked.",
   "billing_free_description": "Two active event types. One connected calendar. Convenio stays on the booking page.",
   "billing_pro_outcome": "For work that starts with your calendar.",

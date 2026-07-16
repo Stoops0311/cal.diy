@@ -55,6 +55,7 @@ function BillingStatusWidget(): ReactElement {
     actionHref = `/pricing${organizationQuery}`;
     actionLabel = "billing_compare_plans";
   }
+  const canInviteTeam = canManageBilling && plan === "TEAM" && subject.type === "ORGANIZATION";
 
   return (
     <aside
@@ -75,13 +76,24 @@ function BillingStatusWidget(): ReactElement {
         )}
       </div>
       {canManageBilling && (
-        <Button
-          className="[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
-          color="secondary"
-          href={actionHref}
-          size="sm">
-          {t(actionLabel)}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {canInviteTeam && (
+            <Button
+              className="[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
+              color="minimal"
+              href={`/settings/organizations/members?organizationId=${subject.id}`}
+              size="sm">
+              {t("billing_invite_team")}
+            </Button>
+          )}
+          <Button
+            className="[@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
+            color="secondary"
+            href={actionHref}
+            size="sm">
+            {t(actionLabel)}
+          </Button>
+        </div>
       )}
     </aside>
   );

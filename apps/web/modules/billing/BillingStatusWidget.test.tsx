@@ -174,6 +174,10 @@ describe("BillingStatusWidget", () => {
       "href",
       "/settings/billing?organizationId=41"
     );
+    expect(view.getByRole("link", { name: "billing_invite_team" })).toHaveAttribute(
+      "href",
+      "/settings/organizations/members?organizationId=41"
+    );
     expect(view.container).not.toHaveTextContent(/49,?873|billed/i);
   });
 
@@ -192,6 +196,7 @@ describe("BillingStatusWidget", () => {
       "href",
       "/pricing?organizationId=41"
     );
+    expect(view.queryByRole("link", { name: "billing_invite_team" })).not.toBeInTheDocument();
   });
 
   it("links a personal paid user to personal billing", () => {
@@ -209,6 +214,7 @@ describe("BillingStatusWidget", () => {
       "href",
       "/settings/billing"
     );
+    expect(view.queryByRole("link", { name: "billing_invite_team" })).not.toBeInTheDocument();
   });
 
   it("keeps the exact Convenio billing status copy in the English locale", () => {
@@ -219,6 +225,7 @@ describe("BillingStatusWidget", () => {
       billing_status_widget_unavailable: "Plan status is quiet for a moment. Your calendar is still working.",
       billing_status_widget_retry: "Check again",
       billing_manage_plan: "Manage plan",
+      billing_invite_team: "Invite team",
     });
   });
 });

@@ -3,7 +3,7 @@
 import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { HAS_ORG_OPT_IN_FEATURES } from "@calcom/features/feature-opt-in/config";
 import type { TeamFeatures } from "@calcom/features/flags/config";
-import { IS_CALCOM, WEBAPP_URL } from "@calcom/lib/constants";
+import { IS_CALCOM } from "@calcom/lib/constants";
 import { getPlaceholderAvatar } from "@calcom/lib/defaultAvatarImage";
 import { getUserAvatarUrl } from "@calcom/lib/getAvatarUrl";
 import { useIsStandalone } from "@calcom/lib/hooks/useIsStandalone";
@@ -28,11 +28,7 @@ import Shell from "~/shell/Shell";
 
 const getTabs = (
   orgBranding: {
-    id?: number;
-    slug?: string;
-    name?: string;
-    logoUrl?: string | null;
-    fullDomain?: string | null;
+    id?: number | null;
   } | null
 ) => {
   const tabs: VerticalTabItemProps[] = [
@@ -150,12 +146,11 @@ const getTabs = (
           name: "guest_notifications",
           href: "/settings/organizations/guest-notifications",
         },
-        ...(orgBranding
+        ...(orgBranding?.id && orgBranding.id > 0
           ? [
               {
                 name: "members",
-                href: `${WEBAPP_URL}/settings/organizations/${orgBranding?.slug}/members`,
-                isExternalLink: true,
+                href: `/settings/organizations/members?organizationId=${orgBranding.id}`,
                 trackingMetadata: { section: "organization", page: "members" },
               },
             ]
@@ -283,7 +278,9 @@ const useTabs = ({
 }) => {
   const session = useSession();
   const { data: user } = trpc.viewer.me.get.useQuery({ includePasswordAdded: true });
-  const orgBranding = null as { id?: number; slug?: string; name?: string; logoUrl?: string | null } | null;
+  const orgBranding = user?.organization ?? null;
+  const orgName = orgBranding && "name" in orgBranding ? orgBranding.name : undefined;
+  const orgLogoUrl = orgBranding && "logoUrl" in orgBranding ? orgBranding.logoUrl : undefined;
   const isAdmin = session.data?.user.role === UserPermissionRole.ADMIN;
 
   const processTabsMemod = useMemo(() => {
@@ -348,8 +345,8 @@ const useTabs = ({
         return {
           ...tab,
           children: newArray,
-          name: orgBranding?.name || "organization",
-          avatar: getPlaceholderAvatar(orgBranding?.logoUrl, orgBranding?.name),
+          name: orgName || "organization",
+          avatar: getPlaceholderAvatar(orgLogoUrl, orgName),
         };
       } else if (
         tab.href === "/settings/security" &&
@@ -378,7 +375,16 @@ const useTabs = ({
       if (isAdmin) return true;
       return !adminRequiredKeys.includes(tab.name);
     });
-  }, [isAdmin, orgBranding, user, isDelegationCredentialEnabled, isPbacEnabled, permissions]);
+  }, [
+    isAdmin,
+    orgBranding,
+    orgLogoUrl,
+    orgName,
+    user,
+    isDelegationCredentialEnabled,
+    isPbacEnabled,
+    permissions,
+  ]);
 
   return processTabsMemod;
 };
@@ -609,5 +615,6 @@ const SidebarContainerElement = ({
   );
 };
 
+export { getTabs };
 export type { SettingsLayoutProps, SettingsPermissions };
 export default SettingsLayoutAppDirClient;
