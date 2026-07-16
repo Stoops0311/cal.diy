@@ -1,6 +1,7 @@
 "use client";
 
 import { Dialog } from "@calcom/features/components/controlled-dialog";
+import { useCurrentSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { APP_NAME } from "@calcom/lib/constants";
 import { extractHostTimezone, filterActiveLinks } from "@calcom/lib/hashedLinksUtils";
 import { useCopy } from "@calcom/lib/hooks/useCopy";
@@ -44,6 +45,7 @@ import {
   CreateEventTypeDialog,
   type ProfileOption,
 } from "@calcom/web/modules/event-types/components/CreateEventTypeDialog";
+import { resolveEventTypeBillingOrganizationId } from "@calcom/web/modules/event-types/hooks/useCreateEventType";
 import { DuplicateDialog } from "@calcom/web/modules/event-types/components/DuplicateDialog";
 import { InfiniteSkeletonLoader } from "@calcom/web/modules/event-types/components/SkeletonLoader";
 import { SearchIcon } from "@coss/ui/icons";
@@ -55,6 +57,8 @@ import type React from "react";
 import type { FC } from "react";
 import { createContext, memo, useContext, useEffect, useState } from "react";
 import { z } from "zod";
+import type { EntitlementUpgradeContext } from "../../billing/useEntitlementUpgrade";
+import { useEntitlementUpgrade } from "../../billing/useEntitlementUpgrade";
 
 type GetUserEventGroupsResponse = RouterOutputs["viewer"]["eventTypes"]["getUserEventGroups"];
 type GetEventTypesFromGroupsResponse = RouterOutputs["viewer"]["eventTypes"]["getEventTypesFromGroup"];
@@ -68,6 +72,59 @@ type EventTypeGroup = EventTypeGroups[number];
 type EventType = EventTypeGroup["eventTypes"][number];
 
 const LIMIT = 10;
+
+type EventTypeGroupScope = { parentId?: number | null; teamId?: number | null };
+
+export function getBillingOrganizationIdForProfile(
+  profileTeamId: number | null | undefined,
+  groups: EventTypeGroupScope[],
+  manageableOrganizationId?: number
+): number | undefined {
+  if (!profileTeamId) return undefined;
+  const group = groups.find((candidate) => candidate.teamId === profileTeamId);
+  if (!group) return undefined;
+  return resolveEventTypeBillingOrganizationId({
+    manageableOrganizationId,
+    parentOrganizationId: group.parentId,
+    teamId: group.teamId,
+  });
+}
+
+export function getEventTypeListingUpgradeContext(
+  group: EventTypeGroupScope,
+  pathname: string,
+  searchParams: string,
+  manageableOrganizationId?: number
+): EntitlementUpgradeContext {
+  const organizationId = resolveEventTypeBillingOrganizationId({
+    manageableOrganizationId,
+    parentOrganizationId: group.parentId,
+    teamId: group.teamId,
+  });
+  return {
+    ...(group.teamId ? { teamId: group.teamId } : {}),
+    ...(organizationId ? { organizationId } : {}),
+    returnTo: searchParams ? `${pathname}?${searchParams}` : pathname,
+  };
+}
+
+export function handleSetHiddenMutationError({
+  context,
+  error,
+  logError,
+  openFromError,
+  restore,
+}: {
+  context: EntitlementUpgradeContext;
+  error: { message: string };
+  logError: (message: string) => void;
+  openFromError: (error: unknown, context: EntitlementUpgradeContext) => boolean;
+  restore: () => void;
+}): void {
+  restore();
+  if (openFromError(error, context)) return;
+  logError(error.message);
+}
 
 interface SearchContextType {
   searchTerm: string;
@@ -270,6 +327,13 @@ export const InfiniteEventTypeList = ({
     null
   );
   const [privateLinkCopyIndices, setPrivateLinkCopyIndices] = useState<Record<string, number>>({});
+  const { openFromError } = useEntitlementUpgrade();
+  const { data: session } = useCurrentSession();
+  const sessionOrganization = session?.user.org;
+  const manageableOrganizationId =
+    sessionOrganization?.role === "OWNER" || sessionOrganization?.role === "ADMIN"
+      ? sessionOrganization.id
+      : undefined;
 
   const utils = trpc.useUtils();
   const mutation = trpc.viewer.loggedInViewerRouter.eventTypeOrder.useMutation({
@@ -318,17 +382,28 @@ export const InfiniteEventTypeList = ({
       return { previousValue };
     },
     onError: async (err, _, context) => {
-      if (context?.previousValue) {
-        utils.viewer.eventTypes.getEventTypesFromGroup.setInfiniteData(
-          {
-            limit: LIMIT,
-            searchQuery: debouncedSearchTerm,
-            group: { teamId: group?.teamId, parentId: group?.parentId },
-          },
-          () => context.previousValue
-        );
-      }
-      console.error(err.message);
+      handleSetHiddenMutationError({
+        context: getEventTypeListingUpgradeContext(
+          group,
+          pathname ?? "/event-types",
+          searchParams?.toString() ?? "",
+          manageableOrganizationId
+        ),
+        error: err,
+        logError: console.error,
+        openFromError,
+        restore: () => {
+          if (!context?.previousValue) return;
+          utils.viewer.eventTypes.getEventTypesFromGroup.setInfiniteData(
+            {
+              limit: LIMIT,
+              searchQuery: debouncedSearchTerm,
+              group: { teamId: group?.teamId, parentId: group?.parentId },
+            },
+            () => context.previousValue
+          );
+        },
+      });
     },
   });
 
@@ -1044,6 +1119,10 @@ export const EventTypesCTA = ({ userEventGroupsData }: Omit<Props, "user">) => {
 
         return {
           teamId: profile.teamId,
+          organizationId: getBillingOrganizationIdForProfile(
+            profile.teamId,
+            userEventGroupsData.eventTypeGroups
+          ),
           label: profile.name || profile.slug,
           image: profile.image,
           membershipRole: profile.membershipRole,

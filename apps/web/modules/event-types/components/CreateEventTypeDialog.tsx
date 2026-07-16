@@ -1,4 +1,5 @@
 import { Dialog } from "@calcom/features/components/controlled-dialog";
+import { useCurrentSession } from "@calcom/features/auth/lib/useCurrentSession";
 import CreateEventTypeForm from "@calcom/features/eventtypes/components/CreateEventTypeForm";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { useTypedQuery } from "@calcom/lib/hooks/useTypedQuery";
@@ -9,10 +10,13 @@ import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
 import { DialogClose, DialogContent, DialogFooter } from "@calcom/ui/components/dialog";
 import { showToast } from "@calcom/ui/components/toast";
+import {
+  resolveEventTypeBillingOrganizationId,
+  useCreateEventType,
+} from "@calcom/web/modules/event-types/hooks/useCreateEventType";
 import { isValidPhoneNumber } from "libphonenumber-js/max";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
-import { useCreateEventType } from "~/event-types/hooks/useCreateEventType";
 
 const WEBSITE_URL = process.env.NEXT_PUBLIC_WEBSITE_URL ?? "";
 
@@ -27,6 +31,7 @@ export interface EventTypeParent {
 
 export interface ProfileOption {
   teamId: number | null | undefined;
+  organizationId?: number;
   label: string | null;
   image: string;
   membershipRole: MembershipRole | null | undefined;
@@ -66,6 +71,9 @@ const querySchema = z.object({
 export function CreateEventTypeDialog({ profileOptions }: { profileOptions: ProfileOption[] }) {
   const { t } = useLocale();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { data: session } = useCurrentSession();
   const orgBranding = null;
 
   const {
@@ -73,6 +81,16 @@ export function CreateEventTypeDialog({ profileOptions }: { profileOptions: Prof
   } = useTypedQuery(querySchema);
 
   const teamProfile = profileOptions.find((profile) => profile.teamId === teamId);
+  const sessionOrganization = session?.user.org;
+  const manageableOrganizationId =
+    sessionOrganization?.role === "OWNER" || sessionOrganization?.role === "ADMIN"
+      ? sessionOrganization.id
+      : undefined;
+  const organizationId = resolveEventTypeBillingOrganizationId({
+    manageableOrganizationId,
+    parentOrganizationId: teamProfile?.organizationId,
+    teamId,
+  });
 
   const permissions = teamProfile?.permissions ?? { canCreateEventType: false };
 
@@ -101,7 +119,16 @@ export function CreateEventTypeDialog({ profileOptions }: { profileOptions: Prof
     );
   };
 
-  const { form, createMutation, isManagedEventType } = useCreateEventType(onSuccessMutation, onErrorMutation);
+  const query = searchParams?.toString();
+  const { form, createMutation, isManagedEventType } = useCreateEventType(
+    onSuccessMutation,
+    onErrorMutation,
+    {
+      ...(teamId ? { teamId } : {}),
+      ...(organizationId ? { organizationId } : {}),
+      returnTo: query ? `${pathname ?? "/event-types"}?${query}` : (pathname ?? "/event-types"),
+    }
+  );
 
   const urlPrefix = WEBSITE_URL;
 

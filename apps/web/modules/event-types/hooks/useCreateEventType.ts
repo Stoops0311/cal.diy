@@ -1,23 +1,33 @@
-import { useState } from "react";
-import type { z } from "zod";
-
-import { createEventTypeInput } from "@calcom/features/eventtypes/lib/types";
-import { useDebounce } from "@calcom/lib/hooks/useDebounce";
+import { useCreateEventTypeForm } from "@calcom/atoms/hooks/event-types/private/useCreateEventTypeForm";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { HttpError } from "@calcom/lib/http-error";
 import type { EventType } from "@calcom/prisma/client";
 import { trpc } from "@calcom/trpc/react";
-import { useCreateEventTypeForm } from "@calcom/atoms/hooks/event-types/private/useCreateEventTypeForm";
+import type { EntitlementUpgradeContext } from "../../billing/useEntitlementUpgrade";
+import { useEntitlementUpgrade } from "../../billing/useEntitlementUpgrade";
+
+export function resolveEventTypeBillingOrganizationId({
+  manageableOrganizationId,
+  parentOrganizationId,
+  teamId,
+}: {
+  manageableOrganizationId?: number;
+  parentOrganizationId?: number | null;
+  teamId?: number | null;
+}): number | undefined {
+  if (parentOrganizationId) return parentOrganizationId;
+  return teamId && teamId === manageableOrganizationId ? teamId : undefined;
+}
 
 export const useCreateEventType = (
   onSuccessMutation: (eventType: EventType) => void,
-  onErrorMutation: (message: string) => void
+  onErrorMutation: (message: string) => void,
+  upgradeContext: EntitlementUpgradeContext
 ) => {
   const utils = trpc.useUtils();
   const { t } = useLocale();
   const { form, isManagedEventType } = useCreateEventTypeForm();
-  const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const { openFromError } = useEntitlementUpgrade();
 
   const createMutation = trpc.viewer.eventTypesHeavy.create.useMutation({
     onSuccess: async ({ eventType }) => {
@@ -25,13 +35,15 @@ export const useCreateEventType = (
 
       await utils.viewer.eventTypes.getEventTypesFromGroup.fetchInfinite({
         group: { teamId: eventType.teamId, parentId: eventType.parentId },
-        searchQuery: debouncedSearchTerm,
+        searchQuery: "",
         limit: 10,
       });
 
       form.reset();
     },
     onError: (err) => {
+      if (openFromError(err, upgradeContext)) return;
+
       let error = err.message;
       if (err instanceof HttpError) {
         error = `${err.statusCode}: ${err.message}`;
