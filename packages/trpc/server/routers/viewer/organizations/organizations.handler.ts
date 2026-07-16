@@ -1,3 +1,6 @@
+import { PLAN_ENTITLEMENTS } from "@calcom/features/billing/lib/entitlements";
+import { EntitlementService } from "@calcom/features/billing/services/EntitlementService";
+import type { PendingOrganizationInvitation } from "@calcom/features/organizations/services/ClerkOrganizationCommandService";
 import { ClerkOrganizationCommandService } from "@calcom/features/organizations/services/ClerkOrganizationCommandService";
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
@@ -7,13 +10,21 @@ import type {
   CreateOrganizationInput,
   InviteOrganizationMemberInput,
   OrganizationIdInput,
+  OrganizationInvitationInput,
   RemoveOrganizationMemberInput,
 } from "./organizations.schema";
 
 type HandlerContext = { user: { id: number } };
 type OrganizationCommands = Pick<
   ClerkOrganizationCommandService,
-  "archiveOrganization" | "changeMemberRole" | "createOrganization" | "inviteMember" | "removeMember"
+  | "archiveOrganization"
+  | "changeMemberRole"
+  | "createOrganization"
+  | "inviteMember"
+  | "listPendingInvitations"
+  | "removeMember"
+  | "resendInvitation"
+  | "revokeInvitation"
 >;
 type OrganizationReadModel = Awaited<ReturnType<PrismaOrganizationReadRepository["getForMember"]>>;
 type OrganizationReadRepository = {
@@ -21,7 +32,31 @@ type OrganizationReadRepository = {
 };
 type OrganizationHandlerDependencies = {
   commands: OrganizationCommands;
+  entitlements: Pick<EntitlementService, "forOrganization">;
   read: OrganizationReadRepository;
+};
+type OrganizationMemberRole = "OWNER" | "ADMIN" | "MEMBER";
+type OrganizationMembersView = {
+  acceptedSeats: number;
+  actorRole: OrganizationMemberRole;
+  canManageInvitations: boolean;
+  id: number;
+  members: Array<{
+    avatarUrl: string | null;
+    email: string;
+    id: number;
+    name: string | null;
+    role: OrganizationMemberRole;
+  }>;
+  name: string;
+  pendingInvitations: Array<{
+    createdAt: Date;
+    email: string;
+    id: string;
+    role: "ADMIN" | "MEMBER";
+  }>;
+  seatLimit: number;
+  slug: string | null;
 };
 
 class PrismaOrganizationReadRepository implements OrganizationReadRepository {
@@ -52,12 +87,21 @@ class PrismaOrganizationReadRepository implements OrganizationReadRepository {
 }
 
 function defaultDependencies(): OrganizationHandlerDependencies {
-  return { commands: new ClerkOrganizationCommandService(), read: new PrismaOrganizationReadRepository() };
+  return {
+    commands: new ClerkOrganizationCommandService(),
+    entitlements: new EntitlementService(),
+    read: new PrismaOrganizationReadRepository(),
+  };
 }
 
 function clerkRole(role: "ADMIN" | "MEMBER"): "org:admin" | "org:member" {
   if (role === "ADMIN") return "org:admin";
   return "org:member";
+}
+
+function invitationRole(role: PendingOrganizationInvitation["role"]): "ADMIN" | "MEMBER" {
+  if (role === "org:admin") return "ADMIN";
+  return "MEMBER";
 }
 
 async function createOrganizationHandler(options: {
@@ -129,12 +173,75 @@ async function getOrganizationHandler(options: {
   return organization;
 }
 
+async function membersOrganizationHandler(options: {
+  ctx: HandlerContext;
+  dependencies?: OrganizationHandlerDependencies;
+  input: OrganizationIdInput;
+}): Promise<OrganizationMembersView> {
+  const dependencies = options.dependencies ?? defaultDependencies();
+  const organization = await dependencies.read.getForMember({
+    organizationId: options.input.organizationId,
+    userId: options.ctx.user.id,
+  });
+  const actor = organization?.members.find(({ user }) => user.id === options.ctx.user.id);
+  if (!organization || !actor) throw new ErrorWithCode(ErrorCode.NotFound, "Organization not found");
+
+  const entitlements = await dependencies.entitlements.forOrganization(organization.id);
+  const isManager = actor.role === "OWNER" || actor.role === "ADMIN";
+  const canManageInvitations = isManager && entitlements.canInviteOrganizationMembers;
+  let pendingInvitations: PendingOrganizationInvitation[] = [];
+  if (canManageInvitations) {
+    pendingInvitations = await dependencies.commands.listPendingInvitations({
+      actorUserId: options.ctx.user.id,
+      organizationId: organization.id,
+    });
+  }
+
+  return {
+    acceptedSeats: organization.members.length,
+    actorRole: actor.role,
+    canManageInvitations,
+    id: organization.id,
+    members: organization.members.map(({ role, user }) => ({ ...user, role })),
+    name: organization.name,
+    pendingInvitations: pendingInvitations.map(({ createdAt, email, id, role }) => ({
+      createdAt,
+      email,
+      id,
+      role: invitationRole(role),
+    })),
+    seatLimit: PLAN_ENTITLEMENTS.TEAM.acceptedOrganizationMembers,
+    slug: organization.slug,
+  };
+}
+
+async function revokeOrganizationInvitationHandler(options: {
+  ctx: HandlerContext;
+  dependencies?: OrganizationHandlerDependencies;
+  input: OrganizationInvitationInput;
+}): Promise<void> {
+  const dependencies = options.dependencies ?? defaultDependencies();
+  await dependencies.commands.revokeInvitation({ actorUserId: options.ctx.user.id, ...options.input });
+}
+
+async function resendOrganizationInvitationHandler(options: {
+  ctx: HandlerContext;
+  dependencies?: OrganizationHandlerDependencies;
+  input: OrganizationInvitationInput;
+}): Promise<void> {
+  const dependencies = options.dependencies ?? defaultDependencies();
+  await dependencies.commands.resendInvitation({ actorUserId: options.ctx.user.id, ...options.input });
+}
+
 export {
   archiveOrganizationHandler,
   changeOrganizationRoleHandler,
   createOrganizationHandler,
   getOrganizationHandler,
   inviteOrganizationMemberHandler,
+  membersOrganizationHandler,
   removeOrganizationMemberHandler,
+  resendOrganizationInvitationHandler,
+  revokeOrganizationInvitationHandler,
 };
-export type { OrganizationHandlerDependencies };
+export type { OrganizationHandlerDependencies, OrganizationMembersView };

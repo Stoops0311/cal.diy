@@ -5,6 +5,7 @@ import {
   ZCreateOrganizationSchema,
   ZInviteOrganizationMemberSchema,
   ZOrganizationIdSchema,
+  ZOrganizationInvitationSchema,
   ZRemoveOrganizationMemberSchema,
 } from "./organizations.schema";
 
@@ -29,9 +30,21 @@ const organizationsRouter = router({
     const { inviteOrganizationMemberHandler } = await import("./organizations.handler");
     return inviteOrganizationMemberHandler({ ctx, input });
   }),
+  members: authedProcedure.input(ZOrganizationIdSchema).query(async ({ ctx, input }) => {
+    const { membersOrganizationHandler } = await import("./organizations.handler");
+    return membersOrganizationHandler({ ctx, input });
+  }),
   removeMember: authedProcedure.input(ZRemoveOrganizationMemberSchema).mutation(async ({ ctx, input }) => {
     const { removeOrganizationMemberHandler } = await import("./organizations.handler");
     return removeOrganizationMemberHandler({ ctx, input });
+  }),
+  resendInvitation: authedProcedure.input(ZOrganizationInvitationSchema).mutation(async ({ ctx, input }) => {
+    const { resendOrganizationInvitationHandler } = await import("./organizations.handler");
+    return resendOrganizationInvitationHandler({ ctx, input });
+  }),
+  revokeInvitation: authedProcedure.input(ZOrganizationInvitationSchema).mutation(async ({ ctx, input }) => {
+    const { revokeOrganizationInvitationHandler } = await import("./organizations.handler");
+    return revokeOrganizationInvitationHandler({ ctx, input });
   }),
 });
 
