@@ -128,6 +128,10 @@ describe("EventWebhooksTab entitlement prompt", () => {
     expect(promptInput).not.toContain(mocks.values.secret);
     expect(promptInput).not.toContain(mocks.values.subscriberUrl);
     expect(promptInput).not.toContain(mocks.values.payloadTemplate);
+    const storedUpgradeState = JSON.stringify(sessionStorage);
+    expect(storedUpgradeState).not.toContain(mocks.values.secret);
+    expect(storedUpgradeState).not.toContain(mocks.values.subscriberUrl);
+    expect(storedUpgradeState).not.toContain(mocks.values.payloadTemplate);
   });
 
   it("keeps a generic create rejection on the existing toast path", () => {
