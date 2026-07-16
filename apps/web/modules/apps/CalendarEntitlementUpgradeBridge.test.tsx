@@ -1,4 +1,7 @@
-import { useEntitlementDeniedHandler } from "@calcom/app-store/_utils/EntitlementUpgradeBridge";
+import {
+  type EntitlementDeniedContext,
+  useEntitlementDeniedHandler,
+} from "@calcom/app-store/_utils/EntitlementUpgradeBridge";
 import type { EntitlementDenial } from "@calcom/features/billing/lib/entitlementDenial";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -42,19 +45,28 @@ const connectedCalendarsDenial: EntitlementDenial = {
   resource: "connectedCalendars",
 };
 
-function DenialTrigger({ denial }: { denial: EntitlementDenial }) {
+function DenialTrigger({
+  context,
+  denial,
+}: {
+  context?: EntitlementDeniedContext;
+  denial: EntitlementDenial;
+}) {
   const onEntitlementDenied = useEntitlementDeniedHandler();
   return (
-    <button type="button" onClick={() => onEntitlementDenied?.(denial)}>
+    <button type="button" onClick={() => onEntitlementDenied?.(denial, context)}>
       deny calendar
     </button>
   );
 }
 
-function renderBridge(denial: EntitlementDenial = connectedCalendarsDenial) {
+function renderBridge(
+  denial: EntitlementDenial = connectedCalendarsDenial,
+  context?: EntitlementDeniedContext
+) {
   render(
     <CalendarEntitlementUpgradeBridge>
-      <DenialTrigger denial={denial} />
+      <DenialTrigger context={context} denial={denial} />
     </CalendarEntitlementUpgradeBridge>
   );
   fireEvent.click(screen.getByRole("button", { name: "deny calendar" }));
@@ -99,6 +111,36 @@ describe("CalendarEntitlementUpgradeBridge", () => {
     });
   });
 
+  it("keeps a Clerk-shaped explicit organization action in Team for server authorization", () => {
+    mocks.pathname = "/apps/installation/accounts";
+    mocks.searchParams = new URLSearchParams("slug=google-calendar");
+
+    renderBridge(connectedCalendarsDenial, { organizationIdCandidate: 77 });
+
+    expect(mocks.openUpgradePrompt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        capability: "connectedCalendars",
+        organizationId: 77,
+        requiredPlan: "TEAM",
+        returnTo: "/apps/installation/accounts?slug=google-calendar",
+      })
+    );
+  });
+
+  it("rejects an explicit action that mismatches the session organization", () => {
+    mocks.session = { user: { org: { id: 41, role: "OWNER" } } };
+
+    renderBridge(connectedCalendarsDenial, { organizationIdCandidate: 77 });
+
+    expect(mocks.openUpgradePrompt).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid explicit organization candidates", () => {
+    renderBridge(connectedCalendarsDenial, { organizationIdCandidate: 0 });
+
+    expect(mocks.openUpgradePrompt).not.toHaveBeenCalled();
+  });
+
   it("ignores denials outside the calendar connection allowlist", () => {
     renderBridge({
       capability: "canCreateWebhooks",
@@ -112,7 +154,7 @@ describe("CalendarEntitlementUpgradeBridge", () => {
   it("does not turn an accepted ordinary member denial into personal Pro", () => {
     mocks.session = { user: { org: { id: 41, role: "MEMBER" } } };
 
-    renderBridge();
+    renderBridge(connectedCalendarsDenial, { organizationIdCandidate: 41 });
 
     expect(mocks.openUpgradePrompt).not.toHaveBeenCalled();
   });

@@ -1,14 +1,11 @@
 import type { IntegrationOAuthCallbackState } from "@calcom/app-store/types";
-import {
-  type EntitlementDenial,
-  parseEntitlementDenial,
-} from "@calcom/features/billing/lib/entitlementDenial";
+import { parseEntitlementDenial } from "@calcom/features/billing/lib/entitlementDenial";
 import { WEBAPP_URL } from "@calcom/lib/constants";
 import type { App } from "@calcom/types/App";
 import type { UseMutationOptions } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
-import { useEntitlementDeniedHandler } from "./EntitlementUpgradeBridge";
+import { type EntitlementDeniedHandler, useEntitlementDeniedHandler } from "./EntitlementUpgradeBridge";
 
 function gotoUrl(url: string, newTab?: boolean) {
   if (newTab) {
@@ -24,7 +21,7 @@ type CustomUseMutationOptions =
 
 type AddAppMutationData = { setupPending: boolean; message?: string } | void;
 export type UseAddAppMutationOptions = CustomUseMutationOptions & {
-  onEntitlementDenied?: (denial: EntitlementDenial) => void;
+  onEntitlementDenied?: EntitlementDeniedHandler;
   onSuccess?: (data: AddAppMutationData) => void;
   installGoogleVideo?: boolean;
   returnTo?: string;
@@ -53,6 +50,7 @@ function useAddAppMutation(_type: App["type"] | null, options?: UseAddAppMutatio
     ...mutationOptions,
     mutationFn: async (variables) => {
       let type: string | null | undefined;
+      const organizationIdCandidate = variables === "" ? undefined : variables.teamId;
       const teamId = variables && variables.teamId ? variables.teamId : undefined;
       const defaultInstall = variables && variables.defaultInstall ? variables.defaultInstall : undefined;
       const returnTo = options?.returnTo
@@ -97,7 +95,11 @@ function useAddAppMutation(_type: App["type"] | null, options?: UseAddAppMutatio
         }
         const denial = parseEntitlementDenial("entitlement" in errorBody ? errorBody.entitlement : undefined);
         if (denial?.kind === "limit" && denial.resource === "connectedCalendars") {
-          onEntitlementDenied?.(denial);
+          if (organizationIdCandidate === undefined) {
+            onEntitlementDenied?.(denial);
+          } else {
+            onEntitlementDenied?.(denial, { organizationIdCandidate });
+          }
         }
         const message = "message" in errorBody ? errorBody.message : undefined;
         throw new Error(typeof message === "string" && message ? message : "Something went wrong");

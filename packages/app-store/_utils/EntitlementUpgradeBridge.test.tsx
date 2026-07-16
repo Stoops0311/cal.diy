@@ -44,7 +44,7 @@ describe("EntitlementUpgradeBridge", () => {
     expect(inside.result.current).toBe(handler);
   });
 
-  it("delivers useAddAppMutation denials through the nearest bridge", async () => {
+  it("delivers the action organization candidate through the nearest bridge", async () => {
     const handler = vi.fn();
     const queryClient = new QueryClient();
     const wrapper = ({ children }: { children: ReactNode }) => (
@@ -57,11 +57,40 @@ describe("EntitlementUpgradeBridge", () => {
     const { result } = renderHook(() => useAddAppMutation("google_calendar"), { wrapper });
 
     await act(async () => {
-      await expect(result.current.mutateAsync("")).rejects.toThrow("Calendar limit reached");
+      await expect(result.current.mutateAsync({ teamId: 77, type: "google_calendar" })).rejects.toThrow(
+        "Calendar limit reached"
+      );
     });
 
     expect(handler).toHaveBeenCalledOnce();
-    expect(handler).toHaveBeenCalledWith(denial);
+    expect(handler).toHaveBeenCalledWith(denial, { organizationIdCandidate: 77 });
+  });
+
+  it("lets an explicit option callback override the bridge exactly once", async () => {
+    const bridgeHandler = vi.fn();
+    const optionHandler = vi.fn();
+    const queryClient = new QueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <EntitlementUpgradeBridgeProvider onEntitlementDenied={bridgeHandler}>
+          {children}
+        </EntitlementUpgradeBridgeProvider>
+      </QueryClientProvider>
+    );
+    const { result } = renderHook(
+      () => useAddAppMutation("google_calendar", { onEntitlementDenied: optionHandler }),
+      { wrapper }
+    );
+
+    await act(async () => {
+      await expect(result.current.mutateAsync({ teamId: 77, type: "google_calendar" })).rejects.toThrow(
+        "Calendar limit reached"
+      );
+    });
+
+    expect(optionHandler).toHaveBeenCalledOnce();
+    expect(optionHandler).toHaveBeenCalledWith(denial, { organizationIdCandidate: 77 });
+    expect(bridgeHandler).not.toHaveBeenCalled();
   });
 
   it("renders provider children unchanged", () => {

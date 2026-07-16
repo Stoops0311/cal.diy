@@ -14,6 +14,7 @@ type EntitlementUpgradeContext = {
   returnTo: string;
   teamId?: number;
   organizationId?: number;
+  organizationIdCandidate?: number;
 };
 
 const gateCopy = {
@@ -57,26 +58,40 @@ export function useEntitlementUpgrade(): {
   const openFromDenial = (denial: EntitlementDenial, context: EntitlementUpgradeContext): boolean => {
     const capability = denial.kind === "capability" ? denial.capability : denial.resource;
     if (!Object.hasOwn(gateCopy, capability)) return false;
-    if (!isValidOptionalId(context.teamId) || !isValidOptionalId(context.organizationId)) return false;
+    if (
+      !isValidOptionalId(context.teamId) ||
+      !isValidOptionalId(context.organizationId) ||
+      !isValidOptionalId(context.organizationIdCandidate)
+    )
+      return false;
+    if (
+      context.organizationId !== undefined &&
+      context.organizationIdCandidate !== undefined &&
+      context.organizationId !== context.organizationIdCandidate
+    )
+      return false;
 
     const returnTo = normalizeRelativePath(context.returnTo);
     if (!returnTo) return false;
     const gate = capability as ContextualUpgradeCapability;
-    const teamScoped = context.teamId !== undefined || context.organizationId !== undefined;
+    const requestedOrganizationId = context.organizationId ?? context.organizationIdCandidate;
+    const teamScoped = context.teamId !== undefined || requestedOrganizationId !== undefined;
     if (teamOnlyCapabilities.has(gate) && !teamScoped) return false;
     const organization = session?.user.org;
     const manageableOrganizationId =
       organization?.role === "OWNER" || organization?.role === "ADMIN" ? organization.id : undefined;
-    if (teamScoped && context.organizationId === undefined) return false;
-    if (context.organizationId !== undefined && context.organizationId !== manageableOrganizationId)
-      return false;
+    if (teamScoped && requestedOrganizationId === undefined) return false;
+    if (requestedOrganizationId !== undefined) {
+      if (organization && requestedOrganizationId !== manageableOrganizationId) return false;
+      if (!organization && context.organizationIdCandidate === undefined) return false;
+    }
     const copyKey = gateCopy[gate];
 
     openUpgradePrompt({
       capability: gate,
       description: t(`billing_upgrade_${copyKey}_description`),
       featureName: t(`billing_upgrade_${copyKey}_feature`),
-      ...(teamScoped ? { organizationId: context.organizationId } : {}),
+      ...(teamScoped ? { organizationId: requestedOrganizationId } : {}),
       requiredPlan: teamScoped ? "TEAM" : "PRO",
       resume: { kind: "returnToFeature" },
       returnTo,

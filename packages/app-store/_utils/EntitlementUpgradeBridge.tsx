@@ -4,7 +4,11 @@ import type { EntitlementDenial } from "@calcom/features/billing/lib/entitlement
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 
-type EntitlementDeniedHandler = (denial: EntitlementDenial) => void;
+type EntitlementDeniedContext = {
+  organizationIdCandidate?: number;
+};
+
+type EntitlementDeniedHandler = (denial: EntitlementDenial, context?: EntitlementDeniedContext) => void;
 
 const EntitlementUpgradeBridgeContext = createContext<EntitlementDeniedHandler | undefined>(undefined);
 
@@ -26,4 +30,4 @@ export function useEntitlementDeniedHandler(): EntitlementDeniedHandler | undefi
   return useContext(EntitlementUpgradeBridgeContext);
 }
 
-export type { EntitlementDeniedHandler };
+export type { EntitlementDeniedContext, EntitlementDeniedHandler };

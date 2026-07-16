@@ -99,6 +99,28 @@ describe("useEntitlementUpgrade", () => {
     );
   });
 
+  it("passes a Clerk-shaped organization candidate to the authoritative prompt provider", () => {
+    mocks.session = { user: {} };
+    const { result } = renderHook(() => useEntitlementUpgrade());
+    const denial: EntitlementDenial = {
+      currentCount: 1,
+      effectivePlan: "FREE",
+      kind: "limit",
+      limit: 1,
+      resource: "connectedCalendars",
+    };
+
+    expect(
+      result.current.openFromDenial(denial, {
+        organizationIdCandidate: 77,
+        returnTo: "/apps/installation/accounts?slug=google-calendar",
+      })
+    ).toBe(true);
+    expect(mocks.openUpgradePrompt).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: 77, requiredPlan: "TEAM" })
+    );
+  });
+
   it.each([
     ["OWNER", 99],
     ["MEMBER", 41],
