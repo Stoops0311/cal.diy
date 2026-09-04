@@ -1,8 +1,8 @@
 import { billingRouter } from "@calcom/trpc/server/routers/viewer/billing/_router";
+import { BillingSettings } from "@calcom/web/modules/billing/BillingSettings";
 import { createRouterCaller, getTRPCContext } from "app/_trpc/context";
 import { _generateMetadata } from "app/_utils";
 import { redirect } from "next/navigation";
-import { BillingSettings } from "~/billing/BillingSettings";
 
 export const generateMetadata = async () =>
   await _generateMetadata(
@@ -19,7 +19,7 @@ export default async function BillingPage({
   searchParams: Promise<{ checkout_id?: string; organizationId?: string }>;
 }) {
   const [context, params] = await Promise.all([getTRPCContext(), searchParams]);
-  if (!context.user) redirect("/auth/login?callbackUrl=/settings/billing");
+  if (!context.session?.user?.id) redirect("/auth/login?callbackUrl=/settings/billing");
 
   const parsedOrganizationId = Number(params.organizationId);
   const organizationId =

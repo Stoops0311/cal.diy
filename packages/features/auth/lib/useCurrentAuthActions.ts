@@ -1,4 +1,3 @@
-import process from "node:process";
 import { useClerk } from "@clerk/nextjs";
 import { signOut as legacySignOut } from "next-auth/react";
 import { useCallback } from "react";
@@ -33,7 +32,7 @@ function useLegacyAuthActions(): CurrentAuthActions {
 }
 
 let useProviderAuthActions: () => CurrentAuthActions = useLegacyAuthActions;
-if (getClientAuthProvider(process.env.NEXT_PUBLIC_AUTH_PROVIDER) === "clerk") {
+if (getClientAuthProvider() === "clerk") {
   useProviderAuthActions = useClerkAuthActions;
 }
 

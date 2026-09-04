@@ -18,15 +18,24 @@ import { authenticateClerkRequest } from "./clerkRequestAuth";
 describe("authenticateClerkRequest", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    toAuth.mockReturnValue({ sessionClaims: { exp: 1_784_116_800 }, userId: "user_pages" });
+    toAuth.mockReturnValue({
+      orgId: "org_pages",
+      sessionClaims: { exp: 1_784_116_800 },
+      userId: "user_pages",
+    });
     authenticateRequest.mockResolvedValue({ isAuthenticated: true, toAuth });
   });
 
   it("uses Clerk's App Router auth helper when there is no legacy request", async () => {
-    appAuth.mockResolvedValue({ sessionClaims: { exp: 1_784_116_800 }, userId: "user_app" });
+    appAuth.mockResolvedValue({
+      orgId: "org_app",
+      sessionClaims: { exp: 1_784_116_800 },
+      userId: "user_app",
+    });
 
     await expect(authenticateClerkRequest()).resolves.toEqual({
       expiresAt: 1_784_116_800_000,
+      organizationId: "org_app",
       userId: "user_app",
     });
     expect(authenticateRequest).not.toHaveBeenCalled();
@@ -41,6 +50,7 @@ describe("authenticateClerkRequest", () => {
 
     await expect(authenticateClerkRequest(req)).resolves.toEqual({
       expiresAt: 1_784_116_800_000,
+      organizationId: "org_pages",
       userId: "user_pages",
     });
     expect(authenticateRequest).toHaveBeenCalledWith(

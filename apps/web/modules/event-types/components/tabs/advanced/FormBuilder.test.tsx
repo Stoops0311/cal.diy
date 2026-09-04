@@ -155,7 +155,10 @@ describe("FormBuilder", () => {
       expectScenario.toNotHaveDeleteButton({ identifier: field.identifier });
       // editable:'system' field can't be toggled
       expectScenario.toNotHaveToggleButton({ identifier: field.identifier });
-      expectScenario.toHaveSourceBadge({ identifier: field.identifier, sourceLabel: "1 Location" });
+      expectScenario.toHaveSourceBadge({
+        identifier: field.identifier,
+        sourceLabel: "active_on_source_count",
+      });
       expectScenario.toHaveRequiredBadge({ identifier: field.identifier });
 
       const newFieldDialog = pageObject.openAddFieldDialog();

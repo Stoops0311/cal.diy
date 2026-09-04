@@ -30,7 +30,7 @@ export type OpenUpgradePromptInput = {
 };
 
 type UpgradePromptContextValue = {
-  openUpgradePrompt(input: OpenUpgradePromptInput): void;
+  openUpgradePrompt(input: OpenUpgradePromptInput, trigger?: HTMLElement): void;
 };
 
 const UpgradePromptContext = createContext<UpgradePromptContextValue>({
@@ -87,10 +87,14 @@ export function UpgradePromptProvider({ children }: { children: React.ReactNode 
     },
   });
   const openUpgradePrompt = useCallback(
-    (input: OpenUpgradePromptInput) => {
+    (input: OpenUpgradePromptInput, explicitTrigger?: HTMLElement) => {
       const requestId = ++authorizationRequestRef.current;
       const requestedOrganizationId = getRequestedOrganizationId(input);
-      const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const trigger =
+        explicitTrigger ??
+        (document.activeElement instanceof HTMLElement && document.activeElement !== document.body
+          ? document.activeElement
+          : null);
       const showPrompt = (): void => {
         if (requestId !== authorizationRequestRef.current) return;
         promptTriggerRef.current = trigger;

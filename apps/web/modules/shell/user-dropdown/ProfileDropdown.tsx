@@ -35,6 +35,7 @@ export function ProfileDropdown() {
     }
 
     return {
+      clerkOrganizationId: profile.clerkOrganizationId,
       label,
       value: profile.upId,
     };
@@ -85,6 +86,7 @@ export function ProfileDropdown() {
                   setMenuOpen(false);
                   if (isSelected) return;
                   update({
+                    clerkOrganizationId: option.clerkOrganizationId,
                     upId: option.value,
                   }).then(() => {
                     refreshData();

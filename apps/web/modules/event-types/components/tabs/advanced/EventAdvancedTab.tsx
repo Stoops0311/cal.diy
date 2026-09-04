@@ -434,6 +434,11 @@ export const EventAdvancedTab = ({
     setInterfaceLanguageVisible(watchedInterfaceLanguage !== null && watchedInterfaceLanguage !== undefined);
   }, [watchedInterfaceLanguage]);
   const [redirectUrlVisible, setRedirectUrlVisible] = useState(!!formMethods.getValues("successRedirectUrl"));
+  const formIsDirty = formMethods.formState.isDirty;
+
+  useEffect(() => {
+    if (!formIsDirty) setRedirectUrlVisible(!!formMethods.getValues("successRedirectUrl"));
+  }, [formIsDirty, formMethods]);
 
   const bookingFields: Prisma.JsonObject = {};
   const selectedThemeIsDark =

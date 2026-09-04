@@ -4,6 +4,7 @@ import { getClerkBackendClient } from "./clerkClient";
 
 type ClerkRequestAuth = {
   expiresAt: number | null;
+  organizationId: string | null;
   userId: string;
 };
 
@@ -41,6 +42,7 @@ async function authenticateClerkRequest(req?: ClerkCompatibleRequest): Promise<C
     if (!authState.userId) return null;
     return {
       expiresAt: getExpiration(authState.sessionClaims),
+      organizationId: authState.orgId ?? null,
       userId: authState.userId,
     };
   }
@@ -54,6 +56,7 @@ async function authenticateClerkRequest(req?: ClerkCompatibleRequest): Promise<C
   if (!authState.userId) return null;
   return {
     expiresAt: getExpiration(authState.sessionClaims),
+    organizationId: authState.orgId ?? null,
     userId: authState.userId,
   };
 }

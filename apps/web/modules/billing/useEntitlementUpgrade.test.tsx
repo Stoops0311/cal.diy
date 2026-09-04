@@ -161,6 +161,21 @@ describe("useEntitlementUpgrade", () => {
     expect(mocks.openUpgradePrompt).toHaveBeenCalledTimes(1);
   });
 
+  it("passes the original gated control to the upgrade prompt", () => {
+    const { result } = renderHook(() => useEntitlementUpgrade());
+    const trigger = document.createElement("button");
+    const openFromDenial = result.current.openFromDenial as unknown as (
+      denial: EntitlementDenial,
+      context: { returnTo: string },
+      trigger: HTMLElement
+    ) => boolean;
+
+    expect(openFromDenial(denialFor("canUseCustomRedirects"), { returnTo: "/event-types/17" }, trigger)).toBe(
+      true
+    );
+    expect(mocks.openUpgradePrompt).toHaveBeenCalledWith(expect.any(Object), trigger);
+  });
+
   it("rejects unknown denials, unsafe returns, and invalid Team identifiers", () => {
     const { result } = renderHook(() => useEntitlementUpgrade());
     const unknown = { kind: "capability", capability: "unknown", effectivePlan: "FREE" };

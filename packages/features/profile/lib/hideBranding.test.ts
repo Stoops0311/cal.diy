@@ -41,6 +41,21 @@ describe("hideBranding", () => {
   });
 
   describe("verified entitlement override", () => {
+    it("treats a synthetic dynamic-event owner as having no branding entitlement", async () => {
+      const forUser = vi.fn().mockRejectedValue(new Error("User entitlements not found"));
+
+      await expect(
+        shouldHideBrandingForEvent({
+          entitlements: { forOrganization: vi.fn(), forUser },
+          eventTypeId: 0,
+          organizationId: null,
+          owner: { hideBranding: true, id: 0 },
+          team: null,
+        })
+      ).resolves.toBe(false);
+      expect(forUser).not.toHaveBeenCalled();
+    });
+
     it("forces branding on for a Free user even when the stored preference hides it", async () => {
       const result = await shouldHideBrandingForEvent({
         entitlements: { forOrganization: vi.fn(), forUser: vi.fn().mockResolvedValue(getEntitlements(null)) },

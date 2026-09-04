@@ -1,9 +1,8 @@
 /* eslint-disable playwright/no-conditional-in-test */
 
 /* eslint-disable playwright/missing-playwright-await */
-import { render, fireEvent } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { vi } from "vitest";
-
 import { Steps } from "./Steps";
 
 const MAX_STEPS = 10;
@@ -23,9 +22,7 @@ describe("Tests for Steps Component", () => {
     const { queryByTestId } = render(<Steps {...Props} />);
 
     const stepIndicatorDivs = queryByTestId("step-indicator-container");
-    const childDivs = stepIndicatorDivs?.querySelectorAll("div");
-
-    const count = childDivs?.length;
+    const count = stepIndicatorDivs?.children.length;
     expect(stepIndicatorDivs).toBeInTheDocument();
 
     expect(count).toBe(MAX_STEPS);

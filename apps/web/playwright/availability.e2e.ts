@@ -1,7 +1,5 @@
-import { expect } from "@playwright/test";
-
 import dayjs from "@calcom/dayjs";
-
+import { expect } from "@playwright/test";
 import { test } from "./lib/fixtures";
 import { localize } from "./lib/localize";
 import { submitAndWaitForResponse } from "./lib/testUtils";
@@ -27,7 +25,7 @@ test.describe("Availability", () => {
     await page.locator('[data-testid="Saturday-switch"]').first().click();
 
     await page.getByTestId("add-override").click();
-    await page.locator('[id="modal-title"]').waitFor();
+    await expect(page.getByRole("dialog", { name: "Select the dates to override" })).toBeVisible();
     await page.getByTestId("incrementMonth").click();
     await page.locator('[data-testid="day"][data-disabled="false"]').first().click();
     await page.getByTestId("date-override-mark-unavailable").click();
@@ -46,7 +44,7 @@ test.describe("Availability", () => {
   test("it can delete date overrides", async ({ page }) => {
     await page.getByTestId("schedules").first().click();
     await page.getByTestId("add-override").click();
-    await page.locator('[id="modal-title"]').waitFor();
+    await expect(page.getByRole("dialog", { name: "Select the dates to override" })).toBeVisible();
     // always go to the next month so there's enough slots regardless of current time.
     await page.getByTestId("incrementMonth").click();
 
@@ -60,7 +58,7 @@ test.describe("Availability", () => {
     await page.locator('[form="availability-form"][type="submit"]').click();
 
     await page.getByTestId("add-override").click();
-    await page.locator('[id="modal-title"]').waitFor();
+    await expect(page.getByRole("dialog", { name: "Select the dates to override" })).toBeVisible();
 
     // always go to the next month so there's enough slots regardless of current time.
     await page.getByTestId("incrementMonth").click();
@@ -101,7 +99,7 @@ test.describe("Availability", () => {
 
     // Add override for today
     await page.getByTestId("add-override").click();
-    await page.locator('[id="modal-title"]').waitFor();
+    await expect(page.getByRole("dialog", { name: "Select the dates to override" })).toBeVisible();
     await page.locator('[data-testid="day"][data-disabled="false"]').first().click();
     await page.getByTestId("add-override-submit-btn").click();
     await page.getByTestId("dialog-rejection").click();

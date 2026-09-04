@@ -10,6 +10,7 @@ import { migrateUserToClerk } from "../../../../packages/features/auth/scripts/i
 import { assertOneLocalUser, waitForOneLocalUser } from "./databaseAssertions";
 import {
   createE2ERunTag,
+  createEmailAlias,
   createFixtureManifest,
   type FixtureManifest,
   isRecoverableInterruptedSignup,
@@ -30,12 +31,13 @@ const polar = new Polar({
 });
 const runTag = createE2ERunTag();
 const suffix = runTag.split("-").at(-1) ?? "fixture";
-const primaryEmail = `convenio+clerk_test_${suffix}@example.com`;
+const testInboxEmail = requireEnvironment("CLERK_POLAR_E2E_EMAIL");
+const primaryEmail = createEmailAlias(testInboxEmail, `convenio_clerk_test_${suffix}`);
 const primaryPassword = `Conv!${suffix}Pass2026`;
 const primaryResetPassword = `Reset!${suffix}Pass2026`;
-const migratedEmail = `convenio+clerk_test_migrated_${suffix}@gmail.com`;
+const migratedEmail = createEmailAlias(testInboxEmail, `convenio_clerk_test_migrated_${suffix}`);
 const migratedPassword = `Migrated!${suffix}Pass2026`;
-const teamMemberEmail = `convenio+clerk_test_member_${suffix}@gmail.com`;
+const teamMemberEmail = createEmailAlias(testInboxEmail, `convenio_clerk_test_member_${suffix}`);
 const teamMemberPassword = `Member!${suffix}Pass2026`;
 const primaryUsername = `conv_${suffix}_primary`;
 const migratedUsername = `conv_${suffix}_migrated`;
@@ -69,7 +71,8 @@ type BrowserClerk = {
       status: string | null;
     };
   };
-  setActive(input: { session: string }): Promise<unknown>;
+  loaded?: boolean;
+  setActive(input: { organization: string } | { session: string }): Promise<unknown>;
   user?: BrowserClerkUser;
 };
 
@@ -201,7 +204,7 @@ async function completePersonalOnboarding(page: Page): Promise<void> {
   }
 
   await expect(page).toHaveURL(/\/onboarding\/getting-started/);
-  await page.getByText("For personal use", { exact: true }).click();
+  await page.getByRole("radio", { name: "I work on my own", exact: true }).check();
   await page.getByTestId("onboarding-continue-btn").click();
   await expect(page).toHaveURL(/\/onboarding\/personal\/settings/);
 
@@ -210,6 +213,8 @@ async function completePersonalOnboarding(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/onboarding\/personal\/calendar/);
 
   await page.getByRole("button", { name: "Skip for now", exact: true }).click();
+  await expect(page).toHaveURL(/\/onboarding\/complete/);
+  await page.getByRole("button", { name: "Keep working free", exact: true }).click();
   await expect(page).toHaveURL(/\/event-types/);
 }
 
@@ -806,7 +811,7 @@ async function verifyOrganizationArchiveAndOwnerBoundary(
   const readOnly = await callTRPC(
     page,
     "organizations/invite",
-    { email: `archived+${suffix}@example.com`, organizationId, role: "MEMBER" },
+    { email: createEmailAlias(testInboxEmail, `archived_${suffix}`), organizationId, role: "MEMBER" },
     "POST"
   );
   expect(readOnly.status).toBe(409);
@@ -821,7 +826,7 @@ async function verifyPolarCustomerPortal(page: Page, organizationId: number): Pr
   });
   await expect(page).toHaveURL(/https:\/\/sandbox\.polar\.sh\//);
   const portal = page.locator("body");
-  await expect(portal).toContainText("Convenio Team — Monthly", { timeout: 30_000 });
+  await expect(portal).toContainText("Convenio Team — Annual", { timeout: 30_000 });
   const portalText = await portal.innerText();
   expect(portalText).toMatch(/Subscription|Plan/i);
   expect(portalText).toMatch(/Payment|Visa|4242/i);
@@ -867,7 +872,7 @@ async function verifyCancellationRetention(page: Page, organizationId: number): 
   const retainedInvite = await callTRPC(
     page,
     "organizations/invite",
-    { email: `retained+${suffix}@gmail.com`, organizationId, role: "MEMBER" },
+    { email: createEmailAlias(testInboxEmail, `retained_${suffix}`), organizationId, role: "MEMBER" },
     "POST"
   );
   expect(retainedInvite.status).toBe(200);
@@ -1000,7 +1005,7 @@ test("authenticated organization endpoints create a Free projection and enforce 
   const deniedInvite = await callTRPC(
     page,
     "organizations/invite",
-    { email: `invitee+${suffix}@example.com`, organizationId, role: "MEMBER" },
+    { email: createEmailAlias(testInboxEmail, `invitee_${suffix}`), organizationId, role: "MEMBER" },
     "POST"
   );
   expect(deniedInvite.status).toBe(403);
@@ -1050,7 +1055,7 @@ test("all configured Polar products open the expected sandbox checkout", async (
   await page.unrouteAll({ behavior: "ignoreErrors" });
 });
 
-test("Polar Pro monthly checkout activates a paid projection", async ({ page }) => {
+test("Polar Pro annual checkout activates a paid projection", async ({ page }) => {
   await setupClerkTestingToken(page);
   const migrated = await migratedBcryptFixture();
   await signInWithPassword(page, migratedEmail, migratedPassword);
@@ -1060,7 +1065,7 @@ test("Polar Pro monthly checkout activates a paid projection", async ({ page }) 
   expect(projection.status).toBe(200);
   expect(readTRPCData<{ plan: string }>(projection.body).plan).toBe("FREE");
 
-  const checkout = await callTRPC(page, "billing/createCheckout", { interval: "MONTH", plan: "PRO" }, "POST");
+  const checkout = await callTRPC(page, "billing/createCheckout", { interval: "YEAR", plan: "PRO" }, "POST");
   expect(checkout.status).toBe(200);
   const { checkoutUrl } = readTRPCData<{ checkoutUrl: string }>(checkout.body);
   await page.goto(checkoutUrl, { timeout: 60_000, waitUntil: "domcontentloaded" }).catch((error: unknown) => {
@@ -1108,7 +1113,7 @@ test("Polar Pro monthly checkout activates a paid projection", async ({ page }) 
   }>(paidProjection.body);
   expect(paid).toMatchObject({
     cancelAtPeriodEnd: false,
-    interval: "MONTH",
+    interval: "YEAR",
     plan: "PRO",
     seatCount: 1,
     status: "ACTIVE",
@@ -1125,7 +1130,7 @@ test("Polar Pro monthly checkout activates a paid projection", async ({ page }) 
   await page.unrouteAll({ behavior: "ignoreErrors" });
 });
 
-test("Polar Team monthly checkout bills accepted Clerk members as seats", async ({ page }) => {
+test("Polar Team annual checkout bills accepted Clerk members as seats", async ({ page }) => {
   await setupClerkTestingToken(page);
   const migrated = await migratedBcryptFixture();
   await signInWithPassword(page, migratedEmail, migratedPassword);
@@ -1144,7 +1149,7 @@ test("Polar Team monthly checkout bills accepted Clerk members as seats", async 
   const checkout = await callTRPC(
     page,
     "billing/createCheckout",
-    { interval: "MONTH", organizationId, plan: "TEAM" },
+    { interval: "YEAR", organizationId, plan: "TEAM" },
     "POST"
   );
   expect(checkout.status).toBe(200);
@@ -1152,7 +1157,7 @@ test("Polar Team monthly checkout bills accepted Clerk members as seats", async 
   await page.goto(checkoutUrl, { timeout: 60_000, waitUntil: "domcontentloaded" }).catch((error) => {
     if (!page.url().startsWith("https://sandbox.polar.sh/checkout/")) throw error;
   });
-  await expect(page.getByText("Convenio Team — Monthly", { exact: true })).toBeVisible({
+  await expect(page.getByText("Convenio Team — Annual", { exact: true })).toBeVisible({
     timeout: 30_000,
   });
   await page.screenshot({
@@ -1192,10 +1197,25 @@ test("Polar Team monthly checkout bills accepted Clerk members as seats", async 
   await verifyTeamMembershipLifecycle(page, organizationId, organization.clerkOrganizationId);
   await verifyPaidSubjectIsolation(page, organizationId);
   await verifyCancellationRetention(page, organizationId);
+
+  await page.goto(`/settings/billing?organizationId=${organizationId}`);
+  await expect(page.getByRole("heading", { name: "Team", exact: true })).toBeVisible();
+  await expect(page.getByText("1 accepted-member seats", { exact: true })).toBeVisible();
+  await expect(page.getByText("Yearly", { exact: true })).toBeVisible();
   await page.screenshot({
     fullPage: true,
     path: `test-results/clerk-polar/screenshots/${runTag}-polar-team-active.png`,
   });
+
+  await page.waitForFunction(() => (window as Window & { Clerk?: BrowserClerk }).Clerk?.loaded === true);
+  await page.evaluate(async (clerkOrganizationId) => {
+    const clerk = (window as Window & { Clerk?: BrowserClerk }).Clerk;
+    if (!clerk) throw new Error("Clerk browser client is unavailable");
+    await clerk.setActive({ organization: clerkOrganizationId });
+  }, organization.clerkOrganizationId);
+  await page.goto("/event-types");
+  await expect(page.getByText("Team", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 of 50 seats in use", { exact: true })).toBeVisible();
   await verifyOrganizationArchiveAndOwnerBoundary(page, organizationId, migrated.localUserId);
   await page.unrouteAll({ behavior: "ignoreErrors" });
 });

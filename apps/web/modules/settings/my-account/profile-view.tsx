@@ -1,6 +1,7 @@
 "use client";
 
 import process from "node:process";
+import { getClientAuthProvider } from "@calcom/features/auth/lib/clientAuthProvider";
 import { ErrorCode } from "@calcom/features/auth/lib/ErrorCode";
 import { useCurrentAuthActions } from "@calcom/features/auth/lib/useCurrentAuthActions";
 import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
@@ -185,6 +186,7 @@ const ProfileView = ({ user }: Props) => {
   });
 
   const isCALIdentityProvider = user?.identityProvider === IdentityProvider.CAL;
+  const requiresLocalPassword = getClientAuthProvider() !== "clerk" && isCALIdentityProvider;
 
   const onConfirmPassword = (e: Event | React.MouseEvent<HTMLElement, MouseEvent>) => {
     e.preventDefault();
@@ -195,7 +197,7 @@ const ProfileView = ({ user }: Props) => {
 
   const onConfirmButton = (e: Event | React.MouseEvent<HTMLElement, MouseEvent>) => {
     e.preventDefault();
-    if (isCALIdentityProvider) {
+    if (requiresLocalPassword) {
       const totpCode = form.getValues("totpCode");
       const password = passwordRef.current.value;
       deleteMeMutation.mutate({ password, totpCode });
@@ -206,7 +208,7 @@ const ProfileView = ({ user }: Props) => {
 
   const onConfirm = ({ totpCode }: DeleteAccountValues, e: BaseSyntheticEvent | undefined) => {
     e?.preventDefault();
-    if (isCALIdentityProvider) {
+    if (requiresLocalPassword) {
       const password = passwordRef.current.value;
       deleteMeMutation.mutate({ password, totpCode });
     } else {
@@ -321,7 +323,7 @@ const ProfileView = ({ user }: Props) => {
           Icon="triangle-alert">
           <div className="mb-10">
             <p className="mb-4 text-sm text-subtle">{t("delete_account_confirmation_message")}</p>
-            {isCALIdentityProvider && (
+            {requiresLocalPassword && (
               <PasswordField
                 data-testid="password"
                 name="password"
@@ -333,7 +335,7 @@ const ProfileView = ({ user }: Props) => {
               />
             )}
 
-            {user?.twoFactorEnabled && isCALIdentityProvider && (
+            {user?.twoFactorEnabled && requiresLocalPassword && (
               <Form handleSubmit={onConfirm} className="pb-4" form={form}>
                 <TwoFactor center={false} />
               </Form>
@@ -347,7 +349,7 @@ const ProfileView = ({ user }: Props) => {
               color="destructive"
               data-testid="delete-account-confirm"
               onClick={(e) => onConfirmButton(e)}
-              loading={deleteMeMutation.isPending}>
+              loading={deleteMeMutation.isPending || deleteMeWithoutPasswordMutation.isPending}>
               {t("delete_my_account")}
             </Button>
           </DialogFooter>

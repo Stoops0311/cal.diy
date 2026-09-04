@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   cleanupTaggedFixtures,
   createE2ERunTag,
+  createEmailAlias,
   type FixtureCleanupAdapter,
   type FixtureManifest,
   isRecoverableInterruptedSignup,
@@ -22,6 +23,12 @@ function adapter(metadata = { convenioE2ERunTag: runTag }): FixtureCleanupAdapte
 }
 
 describe("Clerk and Polar E2E fixture ownership", () => {
+  it("creates a deliverable plus-address alias for each fixture", () => {
+    expect(createEmailAlias("qa+old@example.test", "convenio_clerk_test_ab12cd")).toBe(
+      "qa+convenio_clerk_test_ab12cd@example.test"
+    );
+  });
+
   it("creates a stable UTC run tag", () => {
     expect(createE2ERunTag(new Date("2026-07-15T12:34:56.789Z"), () => "ABC_123")).toBe(
       "convenio-e2e-20260715T123456Z-abc123"
@@ -94,7 +101,7 @@ describe("Clerk and Polar E2E fixture ownership", () => {
       clerkMetadata: {},
       clerkExternalId: "42",
       clerkUserId: "user_fixture",
-      email: "convenio+clerk_test_ab12cd@example.com",
+      email: "qa+convenio_clerk_test_ab12cd@example.test",
       localMetadata: null,
       localUserId: 42,
       mappedClerkUserId: "user_fixture",
@@ -128,7 +135,7 @@ describe("Clerk and Polar E2E fixture ownership", () => {
       clerkExternalId: null,
       clerkMetadata: {},
       createdAt: runStartedAt + 1_000,
-      email: "convenio+clerk_test_ab12cd@example.com",
+      email: "qa+convenio_clerk_test_ab12cd@example.test",
     };
 
     expect(isRecoverableUnprovisionedSignup(candidate, runTag, runStartedAt, runStartedAt + 2_000)).toBe(

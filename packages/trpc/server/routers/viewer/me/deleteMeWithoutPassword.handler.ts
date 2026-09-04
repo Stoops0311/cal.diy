@@ -1,5 +1,6 @@
-import { deleteStripeCustomer } from "@calcom/app-store/stripepayment/lib/customer";
+import { getAuthProvider, getClerkBackendClient } from "@calcom/features/auth/lib/clerkClient";
 import { ErrorCode } from "@calcom/features/auth/lib/ErrorCode";
+import { deleteUser } from "@calcom/features/users/lib/deleteUser";
 import { prisma } from "@calcom/prisma";
 import { IdentityProvider } from "@calcom/prisma/enums";
 import type { TrpcSessionUser } from "@calcom/trpc/server/types";
@@ -12,12 +13,25 @@ type DeleteMeWithoutPasswordOptions = {
 
 export const deleteMeWithoutPasswordHandler = async ({ ctx }: DeleteMeWithoutPasswordOptions) => {
   const user = await prisma.user.findUnique({
-    where: {
-      email: ctx.user.email.toLowerCase(),
+    where: { id: ctx.user.id },
+    select: {
+      clerkUserId: true,
+      email: true,
+      id: true,
+      identityProvider: true,
+      metadata: true,
+      twoFactorEnabled: true,
     },
   });
   if (!user) {
     throw new Error(ErrorCode.UserNotFound);
+  }
+
+  if (getAuthProvider() === "clerk") {
+    if (!user.clerkUserId) throw new Error(ErrorCode.UserNotFound);
+    await getClerkBackendClient().users.deleteUser(user.clerkUserId);
+    await deleteUser(user);
+    return;
   }
 
   if (user.identityProvider === IdentityProvider.CAL) {
@@ -28,15 +42,7 @@ export const deleteMeWithoutPasswordHandler = async ({ ctx }: DeleteMeWithoutPas
     throw new Error(ErrorCode.SocialIdentityProviderRequired);
   }
 
-  // Remove me from Stripe
-  await deleteStripeCustomer(user).catch(console.warn);
-
-  // Remove my account
-  await prisma.user.delete({
-    where: {
-      id: ctx.user.id,
-    },
-  });
+  await deleteUser(user);
 
   return;
 };

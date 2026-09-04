@@ -34,6 +34,11 @@ const getUserBooking = async (uid: string) => {
           username: true,
           timeZone: true,
           avatarUrl: true,
+          brandColor: true,
+          darkBrandColor: true,
+          hideBranding: true,
+          isPlatformManaged: true,
+          theme: true,
         },
       },
       attendees: {

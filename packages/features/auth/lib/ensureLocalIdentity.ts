@@ -1,5 +1,6 @@
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
+import { isPrismaError } from "@calcom/lib/server/getServerErrorFromUnknown";
 import slugify from "@calcom/lib/slugify";
 import { prisma } from "@calcom/prisma";
 import type { Prisma } from "@calcom/prisma/client";
@@ -189,7 +190,10 @@ async function ensureLocalIdentity(
     throw new ErrorWithCode(ErrorCode.ClerkEmailUnverified, "Clerk primary email must be verified");
   }
 
-  const mapped = await mapOrCreateLocalIdentity(input);
+  const mapped = await mapOrCreateLocalIdentity(input).catch((error: unknown) => {
+    if (!isPrismaError(error) || error.code !== "P2002") throw error;
+    return mapOrCreateLocalIdentity(input);
+  });
 
   assertUsableUser(mapped.identity);
   if (input.externalId !== String(mapped.identity.id)) {

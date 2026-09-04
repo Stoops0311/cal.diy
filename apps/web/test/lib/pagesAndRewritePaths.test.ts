@@ -1,8 +1,7 @@
-import { it, expect, describe } from "vitest";
-
+import { describe, expect, it } from "vitest";
 import {
-  topLevelRoutesExcludedFromOrgRewrite,
   topLevelRouteNamesWhitelistedForRewrite,
+  topLevelRoutesExcludedFromOrgRewrite,
 } from "../../pagesAndRewritePaths.js";
 
 describe("pagesAndRewritePaths", () => {
@@ -14,8 +13,9 @@ describe("pagesAndRewritePaths", () => {
       "error",
       "getting-started",
       "maintenance",
-      "more",
+      "manifesto",
       "not-found",
+      "products",
       "reschedule",
       "settings",
       "upgrade",
@@ -38,6 +38,11 @@ describe("pagesAndRewritePaths", () => {
       topLevelRouteNamesWhitelistedForRewrite.forEach((route) => {
         expect(topLevelRoutesExcludedFromOrgRewrite).not.toContain(route);
       });
+    });
+
+    it("should not expose route groups as URL paths", () => {
+      expect(topLevelRoutesExcludedFromOrgRewrite).not.toContain("(marketing)");
+      expect(topLevelRoutesExcludedFromOrgRewrite).not.toContain("page");
     });
   });
 });

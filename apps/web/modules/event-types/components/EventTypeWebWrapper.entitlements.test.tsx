@@ -237,4 +237,30 @@ describe("event type update entitlement failures", () => {
     expect(mocks.openUpgradePrompt).not.toHaveBeenCalled();
     expect(showExistingError).toHaveBeenCalledOnce();
   });
+
+  it("restores persisted form values before opening an upgrade prompt", () => {
+    const { result } = renderHook(() => useEntitlementUpgrade());
+    const restoreForm = vi.fn();
+
+    handleEventTypeUpdateError({
+      context: { returnTo: "/event-types/17?tabName=recurring" },
+      error: {
+        data: {
+          entitlement: {
+            capability: "canUseRecurringEvents",
+            effectivePlan: "FREE",
+            kind: "capability",
+          } satisfies EntitlementDenial,
+        },
+      },
+      openFromError: result.current.openFromError,
+      restoreForm,
+      showExistingError: vi.fn(),
+    });
+
+    expect(restoreForm).toHaveBeenCalledOnce();
+    expect(restoreForm.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.openUpgradePrompt.mock.invocationCallOrder[0]
+    );
+  });
 });

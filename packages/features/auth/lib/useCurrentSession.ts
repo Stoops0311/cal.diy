@@ -1,5 +1,4 @@
-import process from "node:process";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 import { getClientAuthProvider } from "./clientAuthProvider";
@@ -12,8 +11,16 @@ type CurrentSessionHookResult = {
   update: (data?: unknown) => Promise<ConvenioSession | null>;
 };
 
+function isClerkOrganizationUpdate(data: unknown): data is { clerkOrganizationId: string | null } {
+  if (typeof data !== "object" || data === null || !("clerkOrganizationId" in data)) return false;
+  return data.clerkOrganizationId === null || typeof data.clerkOrganizationId === "string";
+}
+
 async function fetchCurrentSession(): Promise<ConvenioSession | null> {
-  const response = await fetch("/api/auth/current-session", { credentials: "same-origin" });
+  const response = await fetch("/api/auth/current-session", {
+    cache: "no-store",
+    credentials: "same-origin",
+  });
   if (response.status === 401) return null;
   if (!response.ok) throw new Error("Unable to load the current session");
   return response.json() as Promise<ConvenioSession>;
@@ -21,34 +28,38 @@ async function fetchCurrentSession(): Promise<ConvenioSession | null> {
 
 function useClerkCurrentSession(): CurrentSessionHookResult {
   const clerkAuth = useAuth();
-  const [data, setData] = useState<ConvenioSession | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const clerk = useClerk();
+  // A null projection means the local session request has not resolved yet, which is
+  // distinct from a resolved request that returned no session. Collapsing the two makes
+  // a signed-in user look unauthenticated on first render and bounces them to /auth/login.
+  const [projection, setProjection] = useState<{ session: ConvenioSession | null } | null>(null);
   const enabled = clerkAuth.isLoaded && clerkAuth.isSignedIn === true;
 
-  const update = useCallback(async (): Promise<ConvenioSession | null> => {
-    if (!enabled) return null;
-    const session = await fetchCurrentSession();
-    setData(session);
-    return session;
-  }, [enabled]);
+  const update = useCallback(
+    async (data?: unknown): Promise<ConvenioSession | null> => {
+      if (!enabled) return null;
+      if (isClerkOrganizationUpdate(data)) {
+        await clerk.setActive({ organization: data.clerkOrganizationId });
+      }
+      const session = await fetchCurrentSession();
+      setProjection({ session });
+      return session;
+    },
+    [clerk, enabled]
+  );
 
   useEffect(() => {
-    if (!enabled) {
-      setData(null);
-      return;
-    }
+    setProjection(null);
+    if (!enabled) return;
 
     let active = true;
-    setIsLoading(true);
     fetchCurrentSession()
       .then((session) => {
-        if (active) setData(session);
+        if (active) setProjection({ session });
       })
       .catch(() => {
-        if (active) setData(null);
-      })
-      .finally(() => {
-        if (active) setIsLoading(false);
+        // A failed request tells us nothing about the user, so stay loading rather than
+        // redirect to login on a transient network error.
       });
     return () => {
       active = false;
@@ -57,10 +68,9 @@ function useClerkCurrentSession(): CurrentSessionHookResult {
 
   let status: CurrentSessionStatus = "loading";
   if (clerkAuth.isLoaded && !clerkAuth.isSignedIn) status = "unauthenticated";
-  if (enabled && !isLoading && data) status = "authenticated";
-  if (enabled && !isLoading && !data) status = "unauthenticated";
+  else if (enabled && projection) status = projection.session ? "authenticated" : "unauthenticated";
 
-  return { data, status, update };
+  return { data: projection?.session ?? null, status, update };
 }
 
 function useLegacyCurrentSession(): CurrentSessionHookResult {
@@ -73,7 +83,7 @@ function useLegacyCurrentSession(): CurrentSessionHookResult {
 }
 
 let useProviderSession: () => CurrentSessionHookResult = useLegacyCurrentSession;
-if (getClientAuthProvider(process.env.NEXT_PUBLIC_AUTH_PROVIDER) === "clerk") {
+if (getClientAuthProvider() === "clerk") {
   useProviderSession = useClerkCurrentSession;
 }
 

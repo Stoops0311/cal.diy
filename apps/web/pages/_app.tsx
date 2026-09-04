@@ -10,7 +10,6 @@ import type { ComponentType, ReactNode } from "react";
 import CacheProvider from "react-inlinesvg/provider";
 
 import "../styles/globals.css";
-import process from "node:process";
 
 const ClerkProviderCompat = ClerkProvider as unknown as ComponentType<{ children: ReactNode }>;
 
@@ -25,7 +24,7 @@ function MyApp(props: AppProps) {
     </WebPushProvider>
   );
 
-  if (getClientAuthProvider(process.env.NEXT_PUBLIC_AUTH_PROVIDER) === "clerk") {
+  if (getClientAuthProvider() === "clerk") {
     return <ClerkProviderCompat>{content}</ClerkProviderCompat>;
   }
   return <SessionProvider session={pageProps.session ?? undefined}>{content}</SessionProvider>;

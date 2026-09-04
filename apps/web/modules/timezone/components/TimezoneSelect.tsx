@@ -1,8 +1,9 @@
+// biome-ignore-all lint/style/noProcessEnv: Next.js requires direct process.env access to inline public variables.
+// biome-ignore-all lint/correctness/noProcessGlobal: Importing node:process prevents Next.js from inlining the value.
 "use client";
 
-import type { Timezones } from "@calcom/lib/timezone";
 import { TimezoneSelectComponent } from "@calcom/features/timezone/components/TimezoneSelectComponent";
-import { CALCOM_VERSION } from "@calcom/lib/constants";
+import type { Timezones } from "@calcom/lib/timezone";
 import { trpc } from "@calcom/trpc/react";
 import { useMemo } from "react";
 import type { Props as SelectProps } from "react-timezone-select";
@@ -28,6 +29,8 @@ const SELECT_SEARCH_DATA: Timezones = [
   { label: "Brazil Time", timezone: "America/Sao_Paulo" },
   { label: "Hawaii-Aleutian Standard Time", timezone: "Pacific/Honolulu" },
 ];
+
+const CALCOM_VERSION: string = process.env.NEXT_PUBLIC_CALCOM_VERSION ?? "development";
 
 export type TimezoneSelectProps = SelectProps & {
   variant?: "default" | "minimal";

@@ -225,6 +225,18 @@ describe("ensureLocalIdentity", () => {
     ).toBe(1);
   });
 
+  it("retries a unique constraint collision while provisioning", async () => {
+    const input = identity();
+    const collision = Object.assign(new Error("Unique constraint failed"), { code: "P2002" });
+    const transaction = vi.spyOn(prisma, "$transaction").mockRejectedValueOnce(collision);
+
+    const result = await ensureLocalIdentity(input, dependencies());
+    createdUserIds.push(result.userId);
+
+    expect(result.created).toBe(true);
+    expect(transaction).toHaveBeenCalledTimes(2);
+  });
+
   it("recovers when two requests provision the same Clerk user concurrently", async () => {
     const input = identity();
     const results = await Promise.allSettled([

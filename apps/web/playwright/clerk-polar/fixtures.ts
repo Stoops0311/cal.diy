@@ -91,6 +91,19 @@ function ownsRunTag(metadata: unknown, runTag: string): boolean {
   );
 }
 
+function createEmailAlias(email: string, label: string): string {
+  const separator = email.lastIndexOf("@");
+  if (separator <= 0 || separator === email.length - 1 || !/^[a-z0-9_]+$/i.test(label)) {
+    throw new Error("A valid base email and alias label are required");
+  }
+  const localPart = email.slice(0, separator).split("+")[0];
+  return `${localPart}+${label}@${email.slice(separator + 1)}`;
+}
+
+function ownsSignupEmail(email: string, suffix: string): boolean {
+  return email.slice(0, email.lastIndexOf("@")).endsWith(`+convenio_clerk_test_${suffix}`);
+}
+
 function isEmptyMetadata(metadata: unknown): boolean {
   return (
     metadata === null ||
@@ -101,7 +114,7 @@ function isEmptyMetadata(metadata: unknown): boolean {
 function isRecoverableInterruptedSignup(candidate: InterruptedSignupCandidate, runTag: string): boolean {
   assertE2ERunTag(runTag);
   const suffix = runTag.split("-").at(-1);
-  if (!suffix || candidate.email !== `convenio+clerk_test_${suffix}@example.com`) return false;
+  if (!suffix || !ownsSignupEmail(candidate.email, suffix)) return false;
   if (!Number.isSafeInteger(candidate.localUserId) || candidate.localUserId <= 0) return false;
   if (candidate.mappedClerkUserId !== candidate.clerkUserId) return false;
   if (candidate.clerkExternalId !== String(candidate.localUserId)) return false;
@@ -119,7 +132,7 @@ function isRecoverableUnprovisionedSignup(
 ): boolean {
   assertE2ERunTag(runTag);
   const suffix = runTag.split("-").at(-1);
-  if (!suffix || candidate.email !== `convenio+clerk_test_${suffix}@example.com`) return false;
+  if (!suffix || !ownsSignupEmail(candidate.email, suffix)) return false;
   if (candidate.clerkExternalId !== null) return false;
   if (!Number.isSafeInteger(candidate.createdAt)) return false;
   if (candidate.createdAt < runStartedAt - 5_000 || candidate.createdAt > now + 5_000) return false;
@@ -221,6 +234,7 @@ export {
   E2EFixtureError,
   assertE2ERunTag,
   cleanupTaggedFixtures,
+  createEmailAlias,
   createE2ERunTag,
   createFixtureManifest,
   isRecoverableInterruptedSignup,

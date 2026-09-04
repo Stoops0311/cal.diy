@@ -107,7 +107,7 @@ export function shouldHideBrandingForEventUsingProfile({
       entityHideBranding: team.hideBranding ?? null,
       organizationHideBranding: team.parent?.hideBranding ?? null,
     });
-  } else if (owner) {
+  } else if (owner?.id) {
     hideBranding = resolveHideBranding({
       entityHideBranding: owner.hideBranding ?? null,
       organizationHideBranding: owner.profile?.organization?.hideBranding ?? null,
@@ -146,7 +146,7 @@ export async function shouldHideBrandingForEvent({
       team,
       eventTypeId,
     });
-  } else if (owner) {
+  } else if (owner?.id) {
     if ((await entitlements.forUser(owner.id)).showBranding) return false;
     // Needed only for User events, not for Team events
     ownerProfile = organizationId

@@ -14,6 +14,7 @@ function createDependencies(
 ): ClerkSessionProjectionDependencies {
   return {
     ensureIdentity: vi.fn().mockResolvedValue({ userId: 42 }),
+    findActiveProfile: vi.fn().mockResolvedValue(null),
     findMappedUser: vi.fn().mockResolvedValue(null),
     getClerkUser: vi.fn().mockResolvedValue({
       emailAddresses: [
@@ -42,12 +43,61 @@ describe("projectClerkSession", () => {
     });
 
     await expect(
-      projectClerkSession({ clerkUserId: "user_clerk", expiresAt: 1_784_116_800_000 }, dependencies)
+      projectClerkSession(
+        { clerkUserId: "user_clerk", expiresAt: 1_784_116_800_000, organizationId: null },
+        dependencies
+      )
     ).resolves.toBe(session);
     expect(dependencies.getClerkUser).not.toHaveBeenCalled();
     expect(dependencies.getLocalSession).toHaveBeenCalledWith({
       expiresAt: 1_784_116_800_000,
       token: { sub: "7" },
+      userId: 7,
+    });
+  });
+
+  it("projects Clerk's active organization into the local organization profile", async () => {
+    const dependencies = createDependencies({
+      findActiveProfile: vi.fn().mockResolvedValue({
+        id: 12,
+        organization: {
+          id: 9,
+          isPlatform: false,
+          logoUrl: null,
+          members: [{ role: "ADMIN" }],
+          name: "Acme",
+          slug: "acme",
+        },
+        uid: "profile-uid",
+        username: "pat",
+      }),
+      findMappedUser: vi.fn().mockResolvedValue({ id: 7, locked: false }),
+    });
+
+    await projectClerkSession(
+      { clerkUserId: "user_clerk", expiresAt: 1_784_116_800_000, organizationId: "org_clerk" },
+      dependencies
+    );
+
+    expect(dependencies.findActiveProfile).toHaveBeenCalledWith(7, "org_clerk");
+    expect(dependencies.getLocalSession).toHaveBeenCalledWith({
+      expiresAt: 1_784_116_800_000,
+      token: {
+        belongsToActiveTeam: true,
+        org: {
+          domainSuffix: "",
+          fullDomain: "http://app.cal.local:3000",
+          id: 9,
+          logoUrl: null,
+          name: "Acme",
+          role: "ADMIN",
+          slug: "acme",
+        },
+        orgAwareUsername: "pat",
+        profileId: 12,
+        sub: "7",
+        upId: "prof-profile-uid",
+      },
       userId: 7,
     });
   });
@@ -58,7 +108,7 @@ describe("projectClerkSession", () => {
     });
 
     await expect(
-      projectClerkSession({ clerkUserId: "user_clerk", expiresAt: null }, dependencies)
+      projectClerkSession({ clerkUserId: "user_clerk", expiresAt: null, organizationId: null }, dependencies)
     ).resolves.toBeNull();
     expect(dependencies.getClerkUser).not.toHaveBeenCalled();
     expect(dependencies.getLocalSession).not.toHaveBeenCalled();
@@ -68,7 +118,10 @@ describe("projectClerkSession", () => {
     const dependencies = createDependencies();
 
     await expect(
-      projectClerkSession({ clerkUserId: "user_clerk", expiresAt: 1_784_116_800_000 }, dependencies)
+      projectClerkSession(
+        { clerkUserId: "user_clerk", expiresAt: 1_784_116_800_000, organizationId: null },
+        dependencies
+      )
     ).resolves.toBe(session);
     expect(dependencies.ensureIdentity).toHaveBeenCalledWith({
       avatarUrl: "https://images.example/avatar.png",
@@ -87,7 +140,7 @@ describe("projectClerkSession", () => {
     });
 
     await expect(
-      projectClerkSession({ clerkUserId: "user_clerk", expiresAt: null }, dependencies)
+      projectClerkSession({ clerkUserId: "user_clerk", expiresAt: null, organizationId: null }, dependencies)
     ).resolves.toBeNull();
     expect(dependencies.ensureIdentity).not.toHaveBeenCalled();
   });

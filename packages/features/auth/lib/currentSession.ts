@@ -1,6 +1,9 @@
+import { WEBAPP_URL } from "@calcom/lib/constants";
 import { prisma } from "@calcom/prisma";
+import type { MembershipRole } from "@calcom/prisma/enums";
 import type { GetServerSidePropsContext, NextApiResponse } from "next";
 import type { Session } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import { getAuthProvider, getClerkBackendClient } from "./clerkClient";
 import { authenticateClerkRequest } from "./clerkRequestAuth";
 import { ensureLocalIdentity } from "./ensureLocalIdentity";
@@ -9,7 +12,20 @@ import { getLegacyNextAuthSession, getSessionForLocalUser } from "./legacyNextAu
 
 type ConvenioSession = Session;
 type CurrentSessionOptions = Partial<LegacySessionOptions>;
-type ClerkSessionIdentity = { clerkUserId: string; expiresAt: number | null };
+type ClerkSessionIdentity = { clerkUserId: string; expiresAt: number | null; organizationId: string | null };
+type ClerkActiveProfile = {
+  id: number;
+  organization: {
+    id: number;
+    isPlatform: boolean;
+    logoUrl: string | null;
+    members: Array<{ role: MembershipRole }>;
+    name: string;
+    slug: string | null;
+  };
+  uid: string;
+  username: string | null;
+};
 type ClerkUserProjection = {
   emailAddresses: Array<{
     emailAddress: string;
@@ -26,6 +42,7 @@ type ClerkUserProjection = {
 
 type ClerkSessionProjectionDependencies = {
   ensureIdentity: typeof ensureLocalIdentity;
+  findActiveProfile: (userId: number, clerkOrganizationId: string) => Promise<ClerkActiveProfile | null>;
   findMappedUser: (clerkUserId: string) => Promise<{ id: number; locked: boolean } | null>;
   getClerkUser: (clerkUserId: string) => Promise<ClerkUserProjection>;
   getLocalSession: typeof getSessionForLocalUser;
@@ -34,6 +51,7 @@ type ClerkSessionProjectionDependencies = {
 type CurrentSessionDependencies = {
   authenticateClerk: (req?: LegacySessionOptions["req"]) => Promise<{
     expiresAt: number | null;
+    organizationId: string | null;
     userId: string;
   } | null>;
   getLegacySession: (options: CurrentSessionOptions) => Promise<ConvenioSession | null>;
@@ -47,6 +65,36 @@ function getPrimaryEmail(user: ClerkUserProjection): ClerkUserProjection["emailA
 
 const clerkSessionProjectionDependencies: ClerkSessionProjectionDependencies = {
   ensureIdentity: ensureLocalIdentity,
+  findActiveProfile: async (userId: number, clerkOrganizationId: string) =>
+    prisma.profile.findFirst({
+      where: {
+        userId,
+        organization: {
+          archivedAt: null,
+          clerkOrganizationId,
+          members: { some: { accepted: true, userId } },
+        },
+      },
+      select: {
+        id: true,
+        uid: true,
+        username: true,
+        organization: {
+          select: {
+            id: true,
+            isPlatform: true,
+            logoUrl: true,
+            name: true,
+            slug: true,
+            members: {
+              where: { accepted: true, userId },
+              select: { role: true },
+              take: 1,
+            },
+          },
+        },
+      },
+    }),
   findMappedUser: async (clerkUserId: string): Promise<{ id: number; locked: boolean } | null> =>
     prisma.user.findUnique({
       where: { clerkUserId, locked: {} },
@@ -68,7 +116,7 @@ const clerkSessionProjectionDependencies: ClerkSessionProjectionDependencies = {
 };
 
 async function projectClerkSession(
-  { clerkUserId, expiresAt }: ClerkSessionIdentity,
+  { clerkUserId, expiresAt, organizationId }: ClerkSessionIdentity,
   dependencies: ClerkSessionProjectionDependencies = clerkSessionProjectionDependencies
 ): Promise<ConvenioSession | null> {
   const mappedUser = await dependencies.findMappedUser(clerkUserId);
@@ -92,9 +140,31 @@ async function projectClerkSession(
     userId = identity.userId;
   }
 
+  const profile = organizationId ? await dependencies.findActiveProfile(userId, organizationId) : null;
+  const membership = profile?.organization.members[0];
+  const token: JWT = { sub: String(userId) };
+  if (profile && membership) {
+    const organization = profile.organization;
+    token.belongsToActiveTeam = true;
+    token.orgAwareUsername = profile.username;
+    token.profileId = profile.id;
+    token.upId = `prof-${profile.uid}`;
+    if (!organization.isPlatform) {
+      token.org = {
+        id: organization.id,
+        name: organization.name,
+        slug: organization.slug ?? "",
+        logoUrl: organization.logoUrl,
+        fullDomain: WEBAPP_URL,
+        domainSuffix: "",
+        role: membership.role,
+      };
+    }
+  }
+
   return dependencies.getLocalSession({
     expiresAt: expiresAt ?? Date.now(),
-    token: { sub: String(userId) },
+    token,
     userId,
   });
 }
@@ -120,6 +190,7 @@ async function getCurrentSession(
   return dependencies.getSessionForClerkUser({
     clerkUserId: clerkAuth.userId,
     expiresAt: clerkAuth.expiresAt,
+    organizationId: clerkAuth.organizationId,
   });
 }
 

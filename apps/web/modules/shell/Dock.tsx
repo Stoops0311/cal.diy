@@ -1,6 +1,7 @@
 "use client";
 
 import { useIsEmbed } from "@calcom/embed-core/embed-iframe";
+import { useCurrentSession as useSession } from "@calcom/features/auth/lib/useCurrentSession";
 import { WEBAPP_URL } from "@calcom/lib/constants";
 import { useIsStandalone } from "@calcom/lib/hooks/useIsStandalone";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
@@ -12,7 +13,6 @@ import { useKBar } from "kbar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { User as UserAuth } from "next-auth";
-import { useSession } from "next-auth/react";
 import posthog from "posthog-js";
 import { useEffect, useState } from "react";
 import { useNavigationItems } from "./navigation/Navigation";

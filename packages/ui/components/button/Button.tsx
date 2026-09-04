@@ -244,7 +244,11 @@ export const Button = forwardRef<HTMLAnchorElement | HTMLButtonElement, ButtonPr
   const isLink = typeof props.href !== "undefined";
   const ariaLabel =
     passThroughProps["aria-label"] ??
-    (variant === "icon" && typeof tooltip === "string" ? tooltip : undefined);
+    (variant === "icon" && typeof tooltip === "string"
+      ? tooltip
+      : variant === "fab" && typeof props.children === "string"
+        ? props.children
+        : undefined);
   const buttonClassName = classNames(buttonClasses({ color, size, loading, variant }), props.className);
   const handleClick = disabled
     ? (e: React.MouseEvent<HTMLElement, MouseEvent>) => {

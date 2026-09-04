@@ -95,9 +95,12 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     });
   }
 
-  const eventTypeRaw = !bookingInfoRaw.eventTypeId
+  const eventTypeFromSource = !bookingInfoRaw.eventTypeId
     ? getDefaultEvent(eventTypeSlug || "")
     : await getEventTypesFromDB(bookingInfoRaw.eventTypeId);
+  const eventTypeRaw = eventTypeFromSource
+    ? { ...eventTypeFromSource, hosts: [...eventTypeFromSource.hosts], users: [...eventTypeFromSource.users] }
+    : null;
   if (!eventTypeRaw) {
     return {
       notFound: true,
@@ -113,20 +116,23 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   bookingInfo.startTime = (bookingInfo?.startTime as Date)?.toISOString() as unknown as Date;
   bookingInfo.endTime = (bookingInfo?.endTime as Date)?.toISOString() as unknown as Date;
 
-  eventTypeRaw.users = eventTypeRaw.hosts?.length
-    ? eventTypeRaw.hosts.map((host) => host.user)
-    : eventTypeRaw.users;
+  eventTypeRaw.users =
+    !bookingInfoRaw.eventTypeId && bookingInfoRaw.user
+      ? [{ ...bookingInfoRaw.user }]
+      : eventTypeRaw.hosts?.length
+        ? eventTypeRaw.hosts.map((host) => host.user)
+        : eventTypeRaw.users;
 
   if (!eventTypeRaw.users.length) {
     if (!eventTypeRaw.owner) {
       if (bookingInfoRaw.user) {
         eventTypeRaw.users.push({
           ...bookingInfoRaw.user,
-          hideBranding: false,
-          theme: null,
-          brandColor: null,
-          darkBrandColor: null,
-          isPlatformManaged: false,
+          hideBranding: bookingInfoRaw.user.hideBranding,
+          theme: bookingInfoRaw.user.theme,
+          brandColor: bookingInfoRaw.user.brandColor,
+          darkBrandColor: bookingInfoRaw.user.darkBrandColor,
+          isPlatformManaged: bookingInfoRaw.user.isPlatformManaged,
         });
       } else {
         return { notFound: true } as const;

@@ -7,6 +7,7 @@ const {
   mockEnrichUserWithTheProfile,
   mockFindUnique,
   mockFindMany,
+  mockTeamFindMany,
   mockGetTeamIdsWithPermission,
   MockUserRepository,
   MockPermissionCheckService,
@@ -15,6 +16,7 @@ const {
   const mockEnrichUserWithTheProfile = vi.fn();
   const mockFindUnique = vi.fn();
   const mockFindMany = vi.fn();
+  const mockTeamFindMany = vi.fn();
   const mockGetTeamIdsWithPermission = vi.fn();
 
   class MockUserRepository {
@@ -30,6 +32,7 @@ const {
     mockEnrichUserWithTheProfile,
     mockFindUnique,
     mockFindMany,
+    mockTeamFindMany,
     mockGetTeamIdsWithPermission,
     MockUserRepository,
     MockPermissionCheckService,
@@ -66,6 +69,9 @@ vi.mock("@calcom/prisma", () => ({
     },
     user: {
       findUnique: vi.fn(),
+    },
+    team: {
+      findMany: (...args: unknown[]) => mockTeamFindMany(...args),
     },
   },
 }));
@@ -124,8 +130,22 @@ describe("getHandler - identity provider email lookup", () => {
       profile: null,
     }));
     mockFindMany.mockResolvedValue([]);
+    mockTeamFindMany.mockResolvedValue([]);
     mockGetTeamIdsWithPermission.mockResolvedValue([]);
     mockFindUnique.mockResolvedValue(null);
+  });
+
+  it("returns the Clerk organization ID needed by the profile switcher", async () => {
+    mockFindAllProfilesForUserIncludingMovedUser.mockResolvedValue([
+      { organization: { id: 41, name: "Acme" }, upId: "prof-acme" },
+    ]);
+    mockTeamFindMany.mockResolvedValue([{ clerkOrganizationId: "org_clerk", id: 41 }]);
+
+    const result = await getHandler({ ctx: createCtx(), input: {} });
+
+    expect(result.profiles).toEqual([
+      expect.objectContaining({ clerkOrganizationId: "org_clerk", upId: "prof-acme" }),
+    ]);
   });
 
   it("maps AZUREAD identity provider to 'azure-ad' in account lookup", async () => {

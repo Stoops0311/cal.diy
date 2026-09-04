@@ -49,13 +49,21 @@ function isValidOptionalId(value: number | undefined): boolean {
 }
 
 export function useEntitlementUpgrade(): {
-  openFromError(error: unknown, context: EntitlementUpgradeContext): boolean;
-  openFromDenial(denial: EntitlementDenial, context: EntitlementUpgradeContext): boolean;
+  openFromError(error: unknown, context: EntitlementUpgradeContext, trigger?: HTMLElement): boolean;
+  openFromDenial(
+    denial: EntitlementDenial,
+    context: EntitlementUpgradeContext,
+    trigger?: HTMLElement
+  ): boolean;
 } {
   const { t } = useLocale();
   const { data: session } = useCurrentSession();
   const { openUpgradePrompt } = useUpgradePrompt();
-  const openFromDenial = (denial: EntitlementDenial, context: EntitlementUpgradeContext): boolean => {
+  const openFromDenial = (
+    denial: EntitlementDenial,
+    context: EntitlementUpgradeContext,
+    trigger?: HTMLElement
+  ): boolean => {
     const capability = denial.kind === "capability" ? denial.capability : denial.resource;
     if (!Object.hasOwn(gateCopy, capability)) return false;
     if (
@@ -87,7 +95,7 @@ export function useEntitlementUpgrade(): {
     }
     const copyKey = gateCopy[gate];
 
-    openUpgradePrompt({
+    const prompt = {
       capability: gate,
       description: t(`billing_upgrade_${copyKey}_description`),
       featureName: t(`billing_upgrade_${copyKey}_feature`),
@@ -95,13 +103,19 @@ export function useEntitlementUpgrade(): {
       requiredPlan: teamScoped ? "TEAM" : "PRO",
       resume: { kind: "returnToFeature" },
       returnTo,
-    });
+    } as const;
+    if (trigger) openUpgradePrompt(prompt, trigger);
+    else openUpgradePrompt(prompt);
     return true;
   };
-  const openFromError = (error: unknown, context: EntitlementUpgradeContext): boolean => {
+  const openFromError = (
+    error: unknown,
+    context: EntitlementUpgradeContext,
+    trigger?: HTMLElement
+  ): boolean => {
     if (!isRecord(error) || !isRecord(error.data)) return false;
     const denial = parseEntitlementDenial(error.data.entitlement);
-    return denial ? openFromDenial(denial, context) : false;
+    return denial ? openFromDenial(denial, context, trigger) : false;
   };
 
   return { openFromDenial, openFromError };

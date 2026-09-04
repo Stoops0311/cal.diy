@@ -51,6 +51,12 @@ describe("Convenio button semantics", () => {
 
     expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
   });
+
+  test("keeps a text label on a mobile FAB when its visible text is hidden", () => {
+    render(<Button variant="fab">Add event type</Button>);
+
+    expect(screen.getByRole("button")).toHaveAttribute("aria-label", "Add event type");
+  });
 });
 
 // TODO: (SEAN) Fix tests for button component. Seems to be a change in the way vitest/react-testing-library is working with the DOM.

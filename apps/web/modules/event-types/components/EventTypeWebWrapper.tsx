@@ -89,13 +89,16 @@ export function handleEventTypeUpdateError({
   context,
   error,
   openFromError,
+  restoreForm,
   showExistingError,
 }: {
   context: EntitlementUpgradeContext;
   error: unknown;
-  openFromError: (error: unknown, context: EntitlementUpgradeContext) => boolean;
+  openFromError: (error: unknown, context: EntitlementUpgradeContext, trigger?: HTMLElement) => boolean;
+  restoreForm?: () => void;
   showExistingError: () => void;
 }): void {
+  restoreForm?.();
   if (openFromError(error, context)) return;
   showExistingError();
 }
@@ -149,6 +152,7 @@ const EventTypeWeb = ({
   const { openFromError } = useEntitlementUpgrade();
   const { data: user, isPending: isLoggedInUserPending } = useMeQuery();
   const isTeamEventTypeDeleted = useRef(false);
+  const updateTriggerRef = useRef<HTMLElement | null>(null);
   const leaveWithoutAssigningHosts = useRef(false);
   const [isOpenAssignmentWarnDialog, setIsOpenAssignmentWarnDialog] = useState<boolean>(false);
   const [pendingRoute, setPendingRoute] = useState("");
@@ -169,6 +173,12 @@ const EventTypeWeb = ({
   });
 
   const updateMutation = trpc.viewer.eventTypesHeavy.update.useMutation({
+    onMutate: () => {
+      updateTriggerRef.current =
+        document.activeElement instanceof HTMLElement && document.activeElement !== document.body
+          ? document.activeElement
+          : null;
+    },
     onSuccess: async () => {
       const currentValues = form.getValues();
 
@@ -186,6 +196,7 @@ const EventTypeWeb = ({
         // guests could still hit a stale cache and see the old page.
       }
       showToast(t("event_type_updated_successfully", { eventTypeTitle: eventType.title }), "success");
+      updateTriggerRef.current = null;
     },
     async onSettled() {
       await utils.viewer.eventTypes.get.invalidate();
@@ -195,7 +206,9 @@ const EventTypeWeb = ({
       handleEventTypeUpdateError({
         context: updateUpgradeContext,
         error: err,
-        openFromError,
+        openFromError: (error, context) =>
+          openFromError(error, context, updateTriggerRef.current ?? undefined),
+        restoreForm: () => form.reset(),
         showExistingError: () => {
           let message = "";
           if (err instanceof HttpError) {

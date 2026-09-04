@@ -34,8 +34,25 @@ export const getHandler = async ({ ctx, input }: MeOptions) => {
 
   const { user: sessionUser, session } = ctx;
 
-  const allUserEnrichedProfiles =
-    await ProfileRepository.findAllProfilesForUserIncludingMovedUser(sessionUser);
+  const userProfiles = await ProfileRepository.findAllProfilesForUserIncludingMovedUser(sessionUser);
+  const organizationIds = userProfiles.flatMap((profile) =>
+    profile.organization ? [profile.organization.id] : []
+  );
+  const clerkOrganizations = organizationIds.length
+    ? await prisma.team.findMany({
+        where: { id: { in: organizationIds } },
+        select: { clerkOrganizationId: true, id: true },
+      })
+    : [];
+  const clerkOrganizationIdByTeam = new Map(
+    clerkOrganizations.map((organization) => [organization.id, organization.clerkOrganizationId])
+  );
+  const allUserEnrichedProfiles = userProfiles.map((profile) => ({
+    ...profile,
+    clerkOrganizationId: profile.organization
+      ? (clerkOrganizationIdByTeam.get(profile.organization.id) ?? null)
+      : null,
+  }));
 
   const user = await new UserRepository(prisma).enrichUserWithTheProfile({
     user: sessionUser,

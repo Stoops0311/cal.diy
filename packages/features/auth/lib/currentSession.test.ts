@@ -11,7 +11,9 @@ const session = {
 
 function createDependencies(overrides: Partial<CurrentSessionDependencies> = {}): CurrentSessionDependencies {
   return {
-    authenticateClerk: vi.fn().mockResolvedValue({ expiresAt: 1784116800000, userId: "user_clerk" }),
+    authenticateClerk: vi
+      .fn()
+      .mockResolvedValue({ expiresAt: 1784116800000, organizationId: "org_clerk", userId: "user_clerk" }),
     getLegacySession: vi.fn().mockResolvedValue(session),
     getProvider: vi.fn().mockReturnValue("clerk"),
     getSessionForClerkUser: vi.fn().mockResolvedValue(session),
@@ -46,6 +48,7 @@ describe("getCurrentSession", () => {
     expect(dependencies.getSessionForClerkUser).toHaveBeenCalledWith({
       clerkUserId: "user_clerk",
       expiresAt: 1784116800000,
+      organizationId: "org_clerk",
     });
   });
 
