@@ -118,3 +118,4 @@ agents/devin-knowledge.json
 
 # pagefind
 _pagefind/
+.neon

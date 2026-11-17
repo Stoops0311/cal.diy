@@ -93,6 +93,8 @@
     "@changesets/cli": "2.29.4",
     "@faker-js/faker": "9.2.0",
     "@jetstreamapp/soql-parser-js": "6.1.0",
+    "@neon/config": "^1.14.2",
+    "@neon/env": "^2.1.5",
     "@playwright/test": "1.57.0",
     "@prisma/internals": "6.16.2",
     "@snaplet/copycat": "4.1.0",

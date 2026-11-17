@@ -8016,6 +8016,135 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@napi-rs/keyring-darwin-arm64@npm:1.3.0":
+  version: 1.3.0
+  resolution: "@napi-rs/keyring-darwin-arm64@npm:1.3.0"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-darwin-x64@npm:1.3.0":
+  version: 1.3.0
+  resolution: "@napi-rs/keyring-darwin-x64@npm:1.3.0"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-freebsd-x64@npm:1.3.0":
+  version: 1.3.0
+  resolution: "@napi-rs/keyring-freebsd-x64@npm:1.3.0"
+  conditions: os=freebsd & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-linux-arm-gnueabihf@npm:1.3.0":
+  version: 1.3.0
+  resolution: "@napi-rs/keyring-linux-arm-gnueabihf@npm:1.3.0"
+  conditions: os=linux & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-linux-arm64-gnu@npm:1.3.0":
+  version: 1.3.0
+  resolution: "@napi-rs/keyring-linux-arm64-gnu@npm:1.3.0"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-linux-arm64-musl@npm:1.3.0":
+  version: 1.3.0
+  resolution: "@napi-rs/keyring-linux-arm64-musl@npm:1.3.0"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-linux-riscv64-gnu@npm:1.3.0":
+  version: 1.3.0
+  resolution: "@napi-rs/keyring-linux-riscv64-gnu@npm:1.3.0"
+  conditions: os=linux & cpu=riscv64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-linux-x64-gnu@npm:1.3.0":
+  version: 1.3.0
+  resolution: "@napi-rs/keyring-linux-x64-gnu@npm:1.3.0"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-linux-x64-musl@npm:1.3.0":
+  version: 1.3.0
+  resolution: "@napi-rs/keyring-linux-x64-musl@npm:1.3.0"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-win32-arm64-msvc@npm:1.3.0":
+  version: 1.3.0
+  resolution: "@napi-rs/keyring-win32-arm64-msvc@npm:1.3.0"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-win32-ia32-msvc@npm:1.3.0":
+  version: 1.3.0
+  resolution: "@napi-rs/keyring-win32-ia32-msvc@npm:1.3.0"
+  conditions: os=win32 & cpu=ia32
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-win32-x64-msvc@npm:1.3.0":
+  version: 1.3.0
+  resolution: "@napi-rs/keyring-win32-x64-msvc@npm:1.3.0"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring@npm:1.3.0":
+  version: 1.3.0
+  resolution: "@napi-rs/keyring@npm:1.3.0"
+  dependencies:
+    "@napi-rs/keyring-darwin-arm64": "npm:1.3.0"
+    "@napi-rs/keyring-darwin-x64": "npm:1.3.0"
+    "@napi-rs/keyring-freebsd-x64": "npm:1.3.0"
+    "@napi-rs/keyring-linux-arm-gnueabihf": "npm:1.3.0"
+    "@napi-rs/keyring-linux-arm64-gnu": "npm:1.3.0"
+    "@napi-rs/keyring-linux-arm64-musl": "npm:1.3.0"
+    "@napi-rs/keyring-linux-riscv64-gnu": "npm:1.3.0"
+    "@napi-rs/keyring-linux-x64-gnu": "npm:1.3.0"
+    "@napi-rs/keyring-linux-x64-musl": "npm:1.3.0"
+    "@napi-rs/keyring-win32-arm64-msvc": "npm:1.3.0"
+    "@napi-rs/keyring-win32-ia32-msvc": "npm:1.3.0"
+    "@napi-rs/keyring-win32-x64-msvc": "npm:1.3.0"
+  dependenciesMeta:
+    "@napi-rs/keyring-darwin-arm64":
+      optional: true
+    "@napi-rs/keyring-darwin-x64":
+      optional: true
+    "@napi-rs/keyring-freebsd-x64":
+      optional: true
+    "@napi-rs/keyring-linux-arm-gnueabihf":
+      optional: true
+    "@napi-rs/keyring-linux-arm64-gnu":
+      optional: true
+    "@napi-rs/keyring-linux-arm64-musl":
+      optional: true
+    "@napi-rs/keyring-linux-riscv64-gnu":
+      optional: true
+    "@napi-rs/keyring-linux-x64-gnu":
+      optional: true
+    "@napi-rs/keyring-linux-x64-musl":
+      optional: true
+    "@napi-rs/keyring-win32-arm64-msvc":
+      optional: true
+    "@napi-rs/keyring-win32-ia32-msvc":
+      optional: true
+    "@napi-rs/keyring-win32-x64-msvc":
+      optional: true
+  checksum: 10/bfef7fe1dfcfc29a5cf0988ce3dad06a19850351598b6a8f2b8ccd6a8f64540a80f66ae3eb018112bdabb366dbb421c026c418756ffe93d2ea19518aa87c0440
+  languageName: node
+  linkType: hard
+
 "@napi-rs/simple-git-android-arm-eabi@npm:0.1.22":
   version: 0.1.22
   resolution: "@napi-rs/simple-git-android-arm-eabi@npm:0.1.22"
@@ -8183,6 +8312,41 @@ __metadata:
     "@emnapi/runtime": "npm:^1.5.0"
     "@tybys/wasm-util": "npm:^0.10.1"
   checksum: 10/6bc32d32d486d07b83220a9b7b2b715e39acacbacef0011ebca05c00b41d80a0535123da10fea7a7d6d7e206712bb50dc50ac3cf88b770754d44378570fb5c05
+  languageName: node
+  linkType: hard
+
+"@neon/config@npm:1.14.2, @neon/config@npm:^1.14.2":
+  version: 1.14.2
+  resolution: "@neon/config@npm:1.14.2"
+  dependencies:
+    "@neon/sdk": "npm:7.14.0"
+    jiti: "npm:^2.7.0"
+    zod: "npm:^4.5.4"
+  checksum: 10/09841aee2be8ea754987d3b1ce684d19f6248db3c41233463df3d51dd7e0af52e672af698c13e0475d18a8f6bcaa7af03ba248fc311d7d5264148370f37d7286
+  languageName: node
+  linkType: hard
+
+"@neon/env@npm:^2.1.5":
+  version: 2.1.5
+  resolution: "@neon/env@npm:2.1.5"
+  dependencies:
+    "@napi-rs/keyring": "npm:1.3.0"
+    "@neon/config": "npm:1.14.2"
+    yargs: "npm:^18.0.0"
+    zod: "npm:^4.5.4"
+  dependenciesMeta:
+    "@napi-rs/keyring":
+      optional: true
+  bin:
+    neon-env: dist/cli.js
+  checksum: 10/7d48395c46c03875a2b099bb1a655e3a2408a886263b511dab4c82e82e75fafbb849527c152174c90f79dbfc1cc4b0a8793174f19166ae5a5bac574fee227d89
+  languageName: node
+  linkType: hard
+
+"@neon/sdk@npm:7.14.0":
+  version: 7.14.0
+  resolution: "@neon/sdk@npm:7.14.0"
+  checksum: 10/54b33a7e5ccaa800749cd0c3447bb58c0839a2ef5d403fffa503bde972b6e86255a84b0088a73a389395029eca84429bd41437aa9ddd8fb0a2f0fa9d47428a10
   languageName: node
   linkType: hard
 
@@ -18277,6 +18441,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ansi-regex@npm:^6.2.2":
+  version: 6.6.0
+  resolution: "ansi-regex@npm:6.6.0"
+  checksum: 10/101ea2a09dd4ab8a2329764a727280c76f38211c95156abd902a15de0a06939d02ca03075c873ff823459ff083a46e4a3c5aba66c7a4394eddfdddfc933e6fdc
+  languageName: node
+  linkType: hard
+
 "ansi-styles@npm:^3.2.1":
   version: 3.2.1
   resolution: "ansi-styles@npm:3.2.1"
@@ -19444,6 +19615,8 @@ __metadata:
     "@changesets/cli": "npm:2.29.4"
     "@faker-js/faker": "npm:9.2.0"
     "@jetstreamapp/soql-parser-js": "npm:6.1.0"
+    "@neon/config": "npm:^1.14.2"
+    "@neon/env": "npm:^2.1.5"
     "@playwright/test": "npm:1.57.0"
     "@prisma/internals": "npm:6.16.2"
     "@snaplet/copycat": "npm:4.1.0"
@@ -20232,6 +20405,17 @@ __metadata:
     strip-ansi: "npm:^6.0.1"
     wrap-ansi: "npm:^7.0.0"
   checksum: 10/eaa5561aeb3135c2cddf7a3b3f562fc4238ff3b3fc666869ef2adf264be0f372136702f16add9299087fb1907c2e4ec5dbfe83bd24bce815c70a80c6c1a2e950
+  languageName: node
+  linkType: hard
+
+"cliui@npm:^9.0.1":
+  version: 9.0.1
+  resolution: "cliui@npm:9.0.1"
+  dependencies:
+    string-width: "npm:^7.2.0"
+    strip-ansi: "npm:^7.1.0"
+    wrap-ansi: "npm:^9.0.0"
+  checksum: 10/df43d8d1c6e3254cbb64b1905310d5f6672c595496a3cbe76946c6d24777136886470686f2772ac9edfe547a74bb70e8017530b3554715aee119efd7752fc0d9
   languageName: node
   linkType: hard
 
@@ -24780,6 +24964,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"get-east-asian-width@npm:^1.5.0":
+  version: 1.7.0
+  resolution: "get-east-asian-width@npm:1.7.0"
+  checksum: 10/8d8d96b54d1cfb6510f1b6dce51c4a6000b4d122757780d519d0147d968a6f5401421dbeff2e6bd3dc742e9b502fbcdbb98a50bf7f62730a6a8d6749a632279c
+  languageName: node
+  linkType: hard
+
 "get-intrinsic@npm:^1.2.4, get-intrinsic@npm:^1.2.5, get-intrinsic@npm:^1.2.6, get-intrinsic@npm:^1.2.7, get-intrinsic@npm:^1.3.0":
   version: 1.3.0
   resolution: "get-intrinsic@npm:1.3.0"
@@ -28157,6 +28348,15 @@ __metadata:
   bin:
     jiti: lib/jiti-cli.mjs
   checksum: 10/8cd72c5fd03a0502564c3f46c49761090f6dadead21fa191b73535724f095ad86c2fa89ee6fe4bc3515337e8d406cc8fb2d37b73fa0c99a34584bac35cd4a4de
+  languageName: node
+  linkType: hard
+
+"jiti@npm:^2.7.0":
+  version: 2.7.0
+  resolution: "jiti@npm:2.7.0"
+  bin:
+    jiti: lib/jiti-cli.mjs
+  checksum: 10/6d75a8dbd61dbee031aa0937fabb748ff8ddf370b971958cc704f5cf26b4c5bdc9dcd0563059b2627a2bd41d946fa0bc64f912fdc8981ca7945a9d63c74ad0f9
   languageName: node
   linkType: hard
 
@@ -38272,6 +38472,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"string-width@npm:^8.2.1":
+  version: 8.3.0
+  resolution: "string-width@npm:8.3.0"
+  dependencies:
+    get-east-asian-width: "npm:^1.5.0"
+    strip-ansi: "npm:^7.1.2"
+  checksum: 10/4cd652495ffb29964d83c341741264b45ffa9843070d553846907bc1f1e10c41399ea3742cb7bca202f2804659967ca713f5caac46675e200fc74fef58c63043
+  languageName: node
+  linkType: hard
+
 "string.prototype.codepointat@npm:^0.2.1":
   version: 0.2.1
   resolution: "string.prototype.codepointat@npm:0.2.1"
@@ -38363,6 +38573,15 @@ __metadata:
   dependencies:
     ansi-regex: "npm:^6.0.1"
   checksum: 10/475f53e9c44375d6e72807284024ac5d668ee1d06010740dec0b9744f2ddf47de8d7151f80e5f6190fc8f384e802fdf9504b76a7e9020c9faee7103623338be2
+  languageName: node
+  linkType: hard
+
+"strip-ansi@npm:^7.1.2":
+  version: 7.2.0
+  resolution: "strip-ansi@npm:7.2.0"
+  dependencies:
+    ansi-regex: "npm:^6.2.2"
+  checksum: 10/96da3bc6d73cfba1218625a3d66cf7d37a69bf0920d8735b28f9eeaafcdb6c1fe8440e1ae9eb1ba0ca355dbe8702da872e105e2e939fa93e7851b3cb5dd7d316
   languageName: node
   linkType: hard
 
@@ -42180,6 +42399,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"yargs-parser@npm:^22.0.0":
+  version: 22.0.0
+  resolution: "yargs-parser@npm:22.0.0"
+  checksum: 10/f13c42bad6ebed1a587a72f2db5694f5fa772bcaf409a701691d13cf74eb5adfcf61a2611de08807e319b829d3e5e6e1578b16ebe174cae8e8be3bf7b8e7a19e
+  languageName: node
+  linkType: hard
+
 "yargs@npm:^15.3.1":
   version: 15.4.1
   resolution: "yargs@npm:15.4.1"
@@ -42226,6 +42452,20 @@ __metadata:
     y18n: "npm:^5.0.5"
     yargs-parser: "npm:^21.1.1"
   checksum: 10/abb3e37678d6e38ea85485ed86ebe0d1e3464c640d7d9069805ea0da12f69d5a32df8e5625e370f9c96dd1c2dc088ab2d0a4dd32af18222ef3c4224a19471576
+  languageName: node
+  linkType: hard
+
+"yargs@npm:^18.0.0":
+  version: 18.2.0
+  resolution: "yargs@npm:18.2.0"
+  dependencies:
+    cliui: "npm:^9.0.1"
+    escalade: "npm:^3.1.1"
+    get-caller-file: "npm:^2.0.5"
+    string-width: "npm:^8.2.1"
+    y18n: "npm:^5.0.5"
+    yargs-parser: "npm:^22.0.0"
+  checksum: 10/a780cc1fa693028baa50c0c88bcc2c59c92817f0f8e2dfbd226aa1c27cf0dbfb1743511012b73a4f415119d9caa22a6de19350c781d5ef75f874359ae7601ac3
   languageName: node
   linkType: hard
 
@@ -42390,6 +42630,13 @@ __metadata:
   version: 4.1.8
   resolution: "zod@npm:4.1.8"
   checksum: 10/1a317c26b39d145d7045be6775d30497545fd1c5a13ce0f3f373ec06676ff7b2e0715f522525c183aae01f18d05d4789ee19533c3e9203087a5adf6753e588e5
+  languageName: node
+  linkType: hard
+
+"zod@npm:^4.5.4":
+  version: 4.6.7
+  resolution: "zod@npm:4.6.7"
+  checksum: 10/3ca8b8d6bb401538e59504c543db629ea7beaa775e504c3f22269b406fdffbf1431c856d59a597bf66d8487e4d2be12b03a55d76fc2c63d9f046eae1ca173bca
   languageName: node
   linkType: hard
 
