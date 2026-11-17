@@ -135,9 +135,9 @@ class PolarWebhookService {
       };
     }
 
+    const providerSubscription = await this.subscriptionSource.getSubscription(subscription.id);
     let seats = 1;
     if (data.type === "team") {
-      const providerSubscription = await this.subscriptionSource.getSubscription(subscription.id);
       if (providerSubscription.externalCustomerId !== data.externalCustomerId) {
         throw conflict("Polar Team subscription ownership does not match the customer");
       }
@@ -165,7 +165,10 @@ class PolarWebhookService {
       eventId,
       externalCustomerId: data.externalCustomerId,
       productId: subscription.productId,
-      productMetadata: subscription.metadata,
+      // Subscription metadata is copied from checkout and is not updated by a plan change, so after a
+      // monthly/annual switch it contradicts the product. The product's metadata is authoritative,
+      // matching what reconciliation reads.
+      productMetadata: providerSubscription.productMetadata,
       seats,
       status: subscription.status,
       subscriptionId: subscription.id,

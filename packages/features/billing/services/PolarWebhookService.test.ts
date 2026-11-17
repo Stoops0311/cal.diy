@@ -53,6 +53,7 @@ function setup() {
   const getSubscription = vi.fn().mockResolvedValue({
     externalCustomerId: "org:org_test",
     id: "subscription_test",
+    productMetadata: { billing_interval: "MONTH", plan_key: "PRO" },
     seats: 4,
   });
   const dependencies: PolarWebhookServiceDependencies = {
@@ -96,7 +97,7 @@ describe("PolarWebhookService", () => {
       eventId,
       externalCustomerId: "user:user_test",
       productId: "product_pro_month",
-      productMetadata: { billing_interval: "MONTH", plan_key: "PRO", seats: 1 },
+      productMetadata: { billing_interval: "MONTH", plan_key: "PRO" },
       seats: 1,
       status: "active",
       subscriptionId: "subscription_test",
@@ -139,6 +140,12 @@ describe("PolarWebhookService", () => {
       metadata: { billing_interval: "MONTH", plan_key: "TEAM", seats: 1 },
       productId: "product_team_month",
     };
+    test.getSubscription.mockResolvedValue({
+      externalCustomerId: "org:org_test",
+      id: "subscription_test",
+      productMetadata: { billing_interval: "MONTH", plan_key: "TEAM" },
+      seats: 4,
+    });
 
     await expect(process(test.service, eventId, event)).resolves.toBe("processed");
 
@@ -147,6 +154,33 @@ describe("PolarWebhookService", () => {
       expect.objectContaining({
         externalCustomerId: "org:org_test",
         seats: 4,
+      })
+    );
+  });
+
+  it("trusts product metadata after a monthly to annual switch left subscription metadata stale", async () => {
+    const test = setup();
+    const eventId = `event_${crypto.randomUUID()}`;
+    const event = customerStateEvent();
+    if (!event.data) throw new Error("Expected customer state data");
+    event.data.activeSubscriptions[0] = {
+      ...event.data.activeSubscriptions[0],
+      productId: "product_pro_year",
+    };
+    test.getSubscription.mockResolvedValue({
+      externalCustomerId: "user:user_test",
+      id: "subscription_test",
+      productMetadata: { billing_interval: "YEAR", plan_key: "PRO" },
+      seats: null,
+    });
+
+    await expect(process(test.service, eventId, event)).resolves.toBe("processed");
+
+    expect(test.projectCustomerState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productId: "product_pro_year",
+        productMetadata: { billing_interval: "YEAR", plan_key: "PRO" },
+        seats: 1,
       })
     );
   });

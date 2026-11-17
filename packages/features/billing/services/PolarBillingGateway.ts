@@ -23,9 +23,12 @@ type PolarBillingGateway = {
     returnUrl: string;
   }): Promise<{ customerPortalUrl: string }>;
   getCustomerState(externalCustomerId: string): Promise<PolarCustomerStateSnapshot>;
-  getSubscription(
-    id: string
-  ): Promise<{ externalCustomerId: string | null; id: string; seats: number | null }>;
+  getSubscription(id: string): Promise<{
+    externalCustomerId: string | null;
+    id: string;
+    productMetadata: Record<string, unknown>;
+    seats: number | null;
+  }>;
   updateSubscription(input: {
     id: string;
     idempotencyKey: string;
@@ -120,13 +123,12 @@ class PolarSdkBillingGateway implements PolarBillingGateway {
     });
   }
 
-  async getSubscription(
-    id: string
-  ): Promise<{ externalCustomerId: string | null; id: string; seats: number | null }> {
+  async getSubscription(id: string): Promise<Awaited<ReturnType<PolarBillingGateway["getSubscription"]>>> {
     const subscription = await this.client.subscriptions.get({ id });
     return {
       externalCustomerId: subscription.customer.externalId ?? null,
       id: subscription.id,
+      productMetadata: subscription.product.metadata,
       seats: subscription.seats ?? null,
     };
   }

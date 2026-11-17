@@ -260,7 +260,14 @@ describe("PolarSubscriptionProjectionService", () => {
     const webhook = new PolarWebhookService({
       environment: polarEnvironment,
       projection: service,
-      subscriptionSource: { getSubscription: async () => ({ externalCustomerId, id: "unused", seats: 1 }) },
+      subscriptionSource: {
+        getSubscription: async () => ({
+          externalCustomerId,
+          id: "unused",
+          productMetadata: { billing_interval: "MONTH", plan_key: "PRO" },
+          seats: 1,
+        }),
+      },
     });
     const delayedEvent: PolarWebhookEvent = {
       data: {
