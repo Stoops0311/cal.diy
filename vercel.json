@@ -1,0 +1,30 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "web": {
+      "root": "apps/web",
+      "framework": "nextjs",
+      "buildCommand": "cd ../.. && yarn build"
+    }
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": { "service": "web" } }],
+  "schedules": {
+    "tasks-cron": { "schedule": "* * * * *", "path": "/api/tasks/cron", "requestMethod": "GET" },
+    "tasks-cleanup": { "schedule": "0 0 * * *", "path": "/api/tasks/cleanup", "requestMethod": "GET" },
+    "calendar-subscriptions": {
+      "schedule": "*/5 * * * *",
+      "path": "/api/cron/calendar-subscriptions",
+      "requestMethod": "GET"
+    },
+    "calendar-subscriptions-cleanup": {
+      "schedule": "0 3 * * *",
+      "path": "/api/cron/calendar-subscriptions-cleanup",
+      "requestMethod": "GET"
+    },
+    "selected-calendars": {
+      "schedule": "*/5 * * * *",
+      "path": "/api/cron/selected-calendars",
+      "requestMethod": "GET"
+    }
+  }
+}
