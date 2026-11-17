@@ -14,6 +14,8 @@ export function getMarketingShellCopy(t: MarketingTranslate) {
     getStarted: t("get_started"),
     etymology: t("marketing_etymology_short"),
     tagline: t("marketing_tagline"),
+    privacy: t("privacy_policy"),
+    terms: t("terms_of_service"),
   };
 }
 
@@ -133,6 +135,12 @@ export function MarketingFooter({ copy }: { copy: MarketingShellCopy }) {
             &copy; {new Date().getFullYear()} {COMPANY_NAME}
           </span>
           <span>{copy.tagline}</span>
+          <Link href="/privacy" className="cv-nav-link">
+            {copy.privacy}
+          </Link>
+          <Link href="/terms" className="cv-nav-link">
+            {copy.terms}
+          </Link>
         </div>
       </div>
     </footer>

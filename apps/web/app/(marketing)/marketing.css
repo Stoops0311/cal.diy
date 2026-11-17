@@ -430,6 +430,44 @@ html.dark .cv-root {
   gap: 16px;
 }
 
+.cv-legal {
+  padding-block: 0 96px;
+}
+
+.cv-legal-body {
+  max-width: 42rem;
+  color: var(--cv-ink);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+
+.cv-legal-body p,
+.cv-legal-body ul {
+  margin: 0 0 1.25em;
+}
+
+.cv-legal-body ul {
+  padding-left: 1.25em;
+  list-style: disc;
+}
+
+.cv-legal-body li {
+  margin-bottom: 0.6em;
+}
+
+.cv-legal-body h2 {
+  margin: 2.5em 0 0.75em;
+  padding-top: 1.5em;
+  border-top: 1px solid var(--cv-hairline);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.cv-legal-body a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* ---------- responsive ---------- */
 
 @media (max-width: 860px) {
