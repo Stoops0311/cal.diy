@@ -4,6 +4,7 @@ import { emailSchema } from "@calcom/lib/emailSchema";
 import getIP from "@calcom/lib/getIP";
 import { piiHasher } from "@calcom/lib/server/PiiHasher";
 import prisma from "@calcom/prisma";
+import { legacyAuthOnly } from "app/api/auth/legacyAuthOnly";
 import { defaultResponderForAppDir } from "app/api/defaultResponderForAppDir";
 import { parseRequestData } from "app/api/parseRequestData";
 import type { NextRequest } from "next/server";
@@ -38,4 +39,4 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const POST = defaultResponderForAppDir(handler);
+export const POST = legacyAuthOnly(defaultResponderForAppDir(handler));
