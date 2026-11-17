@@ -1,11 +1,11 @@
+import { isCronSecretBearer } from "@calcom/lib/server/cronAuth";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-
 import { TaskProcessor } from "../task-processor";
 
 async function handler(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isCronSecretBearer(authHeader)) {
     return new Response("Unauthorized", { status: 401 });
   }
   const processor = new TaskProcessor();
