@@ -6,7 +6,8 @@ import { z, ZodError } from "zod";
 import { Meeting, App, Generic, getOGImageVersion } from "@calcom/lib/OgImages";
 import { WEBAPP_URL } from "@calcom/lib/constants";
 
-export const runtime = "edge";
+// Node, not Edge: Vercel services cannot host Edge Function output.
+export const runtime = "nodejs";
 
 const meetingSchema = z.object({
   imageType: z.literal("meeting"),
